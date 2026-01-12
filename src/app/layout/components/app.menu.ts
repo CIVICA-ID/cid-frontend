@@ -26,9 +26,9 @@ export class AppMenu {
                     routerLink: ['/']
                 },
                 {
-                    label: 'Banking',
+                    label: 'Servicios',
                     icon: 'pi pi-fw pi-building-columns',
-                    routerLink: ['/dashboard-banking']
+                    routerLink: ['/services']
                 },
                 {
                     label: 'Marketing',

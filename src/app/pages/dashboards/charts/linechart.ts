@@ -69,7 +69,7 @@ export class LineChart {
 
     setChartPlugins() {
         if (!this.data) {
-            return;
+            // return;
         }
         const hoverLine = {
             id: 'hoverLine',

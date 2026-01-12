@@ -15,9 +15,9 @@ export const appRoutes: Routes = [
                 data: { breadcrumb: 'E-Commerce Dashboard' }
             },
             {
-                path: 'dashboard-banking',
-                loadComponent: () => import('@/pages/dashboards/banking/bankingdashboard').then((c) => c.BankingDashboard),
-                data: { breadcrumb: 'Banking Dashboard' }
+                path: 'services',
+                loadChildren: () => import('./app/modules/services/services.routes').then(m => m.SERVICES_ROUTES),
+                data: { breadcrumb: 'Servicios' }
             },
             {
                 path: 'dashboard-marketing',

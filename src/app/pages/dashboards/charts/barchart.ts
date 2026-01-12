@@ -95,7 +95,7 @@ export class BarChart {
         const sampledData: any = sampleDataByFixedLength(this.datasets(), option, this.show());
         if (sampledData.length <= 0) {
             this.data = [];
-            return;
+            // return;
         }
         const rootStyles = getComputedStyle(document.documentElement);
         const surface200 = rootStyles.getPropertyValue('--p-surface-200');

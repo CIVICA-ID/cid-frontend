@@ -1,0 +1,111 @@
+<p-table
+    #dt
+    [value]="data"
+    [lazy]="true"
+    [resetPageOnSort]="false"
+    [columns]="columns"
+    dataKey="id"
+    [rows]="10"
+    [paginator]="true"
+    [multiSortMeta]="[{ field: 'createdAt', order: 1 }]"
+    sortMode="multiple"
+    (onLazyLoad)="load($event)"
+    [lazyLoadOnInit]="true"
+    [totalRecords]="configTable.totalRows"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="{{ getPageRange(page, limit, configTable.totalRows) }}"
+    [(selection)]="selectedElements"
+    selectionMode="multiple"
+    (onHeaderCheckboxToggle)="onToggleAll()"
+    (selectionChange)="onToggleAll()"
+    [responsive]="true"
+    [rowHover]="true"
+    responsiveLayout="scroll"
+>
+    <ng-template pTemplate="header" let-columns>
+        <tr>
+            <th style="width: 3rem">
+                <p-tableHeaderCheckbox />
+            </th>
+            <th style="width: 3rem"></th>
+            <th *ngFor="let column of columns" [pSortableColumn]="column.field">
+                <span *ngIf="column.columnType !== 'image'">{{ column.column }} <p-sortIcon [field]="column.field"></p-sortIcon></span>
+                <span *ngIf="column.columnType === 'image'">{{ column.column }}</span>
+            </th>
+            <th></th>
+        </tr>
+        <tr>
+            <th></th>
+            <th></th>
+            <th *ngFor="let column of columns" [style.min-width.px]="widthColumns[column.field]">
+                <p-columnFilter
+                    *ngIf="column.columnType !== 'date' && column.columnType !== 'boolean' && column.columnType !== 'states'"
+                    [type]="column.columnType"
+                    [field]="column.field"
+                    [matchModeOptions]="matchModeOptionsText"
+                    [matchMode]="'contains'"
+                ></p-columnFilter>
+                <p-columnFilter *ngIf="column.columnType === 'boolean'" [type]="column.columnType" [field]="column.field" [matchModeOptions]="matchModeOptionsText" [matchMode]="'equals'"></p-columnFilter>
+                <ng-container *ngIf="column.columnType === 'date'">
+                    <p-columnFilter [type]="column.columnType" [field]="column.field" [matchModeOptions]="matchModeOptionsDate" display="menu">
+                        <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                            <p-datepicker [ngModel]="value" (ngModelChange)="filter($event)" dateFormat="yy/mm/dd" [showTime]="true" hourFormat="24" placeholder="Seleccionar Fecha y Hora" [appendTo]="'body'"> </p-datepicker>
+                        </ng-template>
+                    </p-columnFilter>
+                </ng-container>
+                <ng-container *ngIf="column.columnType === 'states'">
+                    <p-columnFilter [field]="column.field" matchMode="equals" [showMenu]="false">
+                        <ng-template pTemplate="filter" let-value="value" let-filterCallback="filterCallback">
+                            <p-dropdown [ngModel]="value" (ngModelChange)="onStatusFilterChange($event, filterCallback)" [options]="listOptions" optionValue="value" optionLabel="label" placeholder="Select One" [showClear]="true"> </p-dropdown>
+                        </ng-template>
+                    </p-columnFilter>
+                </ng-container>
+            </th>
+            <th></th>
+        </tr>
+    </ng-template>
+    <ng-template #body pTemplate="body" let-rowData let-columns="columns" let-expanded="expanded">
+        <tr>
+            <td>
+                <p-tableCheckbox [value]="rowData" />
+            </td>
+            <td>
+                <i *ngIf="subColumns.length !== 0" [pRowToggler]="rowData" [ngClass]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" style="cursor: pointer; font-size: 1.2rem"></i>
+            </td>
+            <td *ngFor="let col of columns">
+                <ng-container *ngIf="col.fieldType === 'date'">
+                    <span>{{ (getDeepValue(rowData, col.field) | date: 'medium') ? (getDeepValue(rowData, col.field) | date: 'medium') : '-' }}</span>
+                </ng-container>
+                <ng-container *ngIf="col.fieldType === 'text'">
+                    <span>{{ getDeepValue(rowData, col.field) ? getDeepValue(rowData, col.field) : '-' }}</span>
+                </ng-container>
+                <ng-container *ngIf="col.fieldType === 'numeric'">
+                    <span [ngStyle]="{ display: 'block', 'text-align': 'center' }">{{ getDeepValue(rowData, col.field) ? getDeepValue(rowData, col.field) : '-' }}</span>
+                </ng-container>
+                <ng-container *ngIf="col.fieldType === 'boolean'">
+                    <i
+                        class="pi"
+                        [ngClass]="{
+                            'pi-check-circle text-green-500': rowData[col.field],
+                            'pi-times-circle text-pink-500': !rowData[col.field]
+                        }"
+                    ></i>
+                </ng-container>
+                <ng-container *ngIf="col.fieldType === 'states'">
+                    <p-tag [value]="getDeepValue(rowData, col.field)" [severity]="getSeverity(getDeepValue(rowData, col.field))" />
+                </ng-container>
+                <ng-container *ngIf="col.fieldType === 'image'">
+                    <img *ngIf="rowData.imageUrl" [src]="rowData.imageUrl" alt="Image" style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px" />
+                    <img *ngIf="!rowData.imageUrl" [src]="'./assets/sinFondo.jpg'" alt="Image" style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px" />
+                </ng-container>
+            </td>
+            <td>
+                <div class="flex">
+                    <button pTooltip="Editar {{ configTable.module }}" pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-info p-button-text" [routerLink]="['/' + configTable.route + '/edit', rowData.id]"></button>
+                    <button pTooltip="Eliminar {{ configTable.module }}" pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text ml-2" (click)="confirmDelete(rowData.id)"></button>
+                </div>
+            </td>
+        </tr>
+    </ng-template>
+</p-table>
