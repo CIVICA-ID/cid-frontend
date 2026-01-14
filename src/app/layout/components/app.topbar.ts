@@ -1,5 +1,5 @@
 import { Component, computed, ElementRef, inject, model, signal, ViewChild } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
 import { LayoutService } from '@/layout/service/layout.service';
@@ -12,6 +12,7 @@ import { RippleModule } from 'primeng/ripple';
 import { BadgeModule } from 'primeng/badge';
 import { OverlayBadgeModule } from 'primeng/overlaybadge';
 import { AvatarModule } from 'primeng/avatar';
+import { SessionService } from '@/services/session.service';
 
 interface NotificationsBars {
     id: string;
@@ -128,9 +129,9 @@ interface NotificationsBars {
                                 </a>
                             </li>
                             <li>
-                                <a class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
+                                <a (click)="logOut()" class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
                                     <i class="pi pi-power-off"></i>
-                                    <span>Log out</span>
+                                    <span>Cerrar sesión</span>
                                 </a>
                             </li>
                         </ul>
@@ -151,6 +152,8 @@ export class AppTopbar {
     isDarkTheme = computed(() => this.layoutService.isDarkTheme());
 
     @ViewChild('menubutton') menuButton!: ElementRef;
+    private sessionService: SessionService=inject(SessionService);
+    private router: Router=inject(Router);
 
     notificationsBars = signal<NotificationsBars[]>([
         {
@@ -253,5 +256,9 @@ export class AppTopbar {
 
     toggleSearchBar() {
         this.layoutService.layoutState.update((value) => ({ ...value, searchBarActive: !value.searchBarActive }));
+    }
+    logOut(){
+        localStorage.clear();
+        this.router.navigate(["auth/login"]);
     }
 }
