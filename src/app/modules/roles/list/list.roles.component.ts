@@ -60,7 +60,7 @@ export class ListRolesComponent {
     ids: string[] = [];
     searchTerm: string = '';
     list: Observable<any>;
-    listService: Observable<any>;
+    // listService: Observable<any>;
     confirmDisplay: boolean = false;
     constructor(
         private roleService: RoleService,
@@ -72,13 +72,25 @@ export class ListRolesComponent {
         this.miscsService.startRequest();
         this.roleService.getList(this.limit, this.page, this.sort, this.search).subscribe({
             next: (data) => {
-                this.data = data['data'];
-                this.totalRows = data['meta']['totalItems'];
-                this.configTable = {
-                    module: 'Rol',
-                    route: 'roles',
-                    totalRows: this.totalRows
-                };
+                if (data['meta']["totalItems"]) {
+                    this.data = data['data'];
+                    this.totalRows = data['meta']['totalItems'];
+                    this.configTable = {
+                        module: 'Rol',
+                        route: 'roles',
+                        totalRows: this.totalRows
+                    };
+                }
+                else{
+                    this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error', detail: "No se encontraron roles" });
+                    this.data = [];
+                    this.totalRows = 0;
+                    this.configTable = {
+                        module: 'Rol',
+                        route: 'roles',
+                        totalRows: this.totalRows
+                    };
+                }
                 this.miscsService.endRquest();
             },
             error: (error) => {
