@@ -21,9 +21,9 @@ export class AppMenu {
             icon: 'pi pi-home',
             items: [
                 {
-                    label: 'E-Commerce',
+                    label: 'Roles',
                     icon: 'pi pi-fw pi-warehouse',
-                    routerLink: ['/']
+                    routerLink: ['/roles']
                 },
                 {
                     label: 'Servicios',

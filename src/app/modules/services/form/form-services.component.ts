@@ -256,7 +256,6 @@ export class FormServicesComponent implements OnInit, OnChanges {
         } else {
             this.formEmitted.emit(this.form.value);
         }
-        //eliminar people_data ya que solo es para la info del componente hijo
     }
     onCancel(event) {
         event.preventDefault();

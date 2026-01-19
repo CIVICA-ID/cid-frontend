@@ -22,9 +22,9 @@ export const appRoutes: Routes = [
                 data: { breadcrumb: 'Servicios',module:'services' }
             },
             {
-                path: 'uikit',
-                data: { breadcrumb: 'UI Kit' },
-                loadChildren: () => import('@/pages/uikit/uikit.routes')
+                path: 'roles',
+                data: { breadcrumb: 'Roles',module: 'roles' },
+                loadChildren: () => import('@/modules/roles/roles.routes').then(m=>m.ROLES_ROUTES)
             },
             {
                 path: 'documentation',
