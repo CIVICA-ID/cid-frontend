@@ -27,9 +27,9 @@ export const appRoutes: Routes = [
                 loadChildren: () => import('@/modules/roles/roles.routes').then(m=>m.ROLES_ROUTES)
             },
             {
-                path: 'documentation',
-                data: { breadcrumb: 'Documentation' },
-                loadComponent: () => import('@/pages/documentation/documentation').then((c) => c.Documentation)
+                path: 'modules',
+                data: { breadcrumb: 'Módulos',module: 'modules' },
+                loadChildren: () => import('@/modules/modules/modules.routes').then((m) => m.MODULES_ROUTES)
             },
             {
                 path: 'pages',

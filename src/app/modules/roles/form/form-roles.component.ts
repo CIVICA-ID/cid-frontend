@@ -53,9 +53,6 @@ export class FormRolesComponent implements OnInit {
                 next: (data) => {
                     if (data) {
                         this.syncFormArrays(data);
-                        // this.form.patchValue({
-                        //     ...data
-                        // });
                         this.form.patchValue(data);
                     } else {
                         this.messageService.add({ severity: 'error', key: 'msg', summary: 'No se pudo encontrar el rol', life: 3000 });

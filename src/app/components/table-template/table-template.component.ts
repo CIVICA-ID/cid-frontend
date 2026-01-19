@@ -46,7 +46,7 @@ export class TableTemplateComponent {
     };
     @Input()
     listOptions = [];
-    @Input() listService: Observable<any>;
+    // @Input() listService: Observable<any>;
     @ViewChild('dt') table: Table;
     constructor(
         private cdref: ChangeDetectorRef,
@@ -76,18 +76,18 @@ export class TableTemplateComponent {
             this.widthColumns[col.field] = this.min_widths[col.columnType];
         });
         //si no se utilizará el input de listOptions, se carga desde el servicio
-        if (this.listService != undefined) {
-            this.listService.subscribe((data) => {
-                if (data.length != 0) {
-                    this.listOptions = data.map((item) => {
-                        return {
-                            label: item.name.toUpperCase(),
-                            value: item.name
-                        };
-                    });
-                }
-            });
-        }
+        // if (this.listService != undefined) {
+        //     this.listService.subscribe((data) => {
+        //         if (data.length != 0) {
+        //             this.listOptions = data.map((item) => {
+        //                 return {
+        //                     label: item.name.toUpperCase(),
+        //                     value: item.name
+        //                 };
+        //             });
+        //         }
+        //     });
+        // }
     }
     private formatFilterValue(filter: any): string {
         let val = filter.value;

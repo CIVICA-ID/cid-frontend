@@ -11,8 +11,8 @@
                 </ng-template>
             </p-toolbar>
             <div class="pt-3">
-                <app-table-template [columns]="columns" [data]="data" 
-                    [configTable]="configTable" [listService]="listService" 
+                <app-table-template [columns]="columns" [data]="data"
+                    [configTable]="configTable"
                     (idDelete)="delete($event, 2)" (idsDelete)="getIdsDeleted($event)" (paramsListChange)="handleParamsList($event)"></app-table-template>
             </div>
         </div>
