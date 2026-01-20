@@ -32,9 +32,9 @@ export const appRoutes: Routes = [
                 loadChildren: () => import('@/modules/modules/modules.routes').then((m) => m.MODULES_ROUTES)
             },
             {
-                path: 'pages',
-                loadChildren: () => import('@/pages/pages.routes'),
-                data: { breadcrumb: 'Pages' }
+                path: 'users',
+                loadChildren: () => import('@/modules/users/users.routes').then((m)=>m.USERS_ROUTES),
+                data: { breadcrumb: 'Usuarios',module:'users' }
             },
             {
                 path: 'apps',

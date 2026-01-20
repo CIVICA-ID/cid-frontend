@@ -9,8 +9,8 @@ import { ItemName } from '@/api/itemName';
 @Injectable({
     providedIn: 'root'
 })
-export class RoleService {
-    url: string = `${environment.apiUrl}roles`;
+export class BranchesService {
+    url: string = `${environment.apiUrl}branches`;
     constructor(private http: HttpClient) {}
     getList(limit: number, page: number, sort: any, search: any): Observable<Role[]> {
         const body = {
