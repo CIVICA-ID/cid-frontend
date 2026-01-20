@@ -35,6 +35,11 @@ export class AppMenu {
                     icon: 'pi pi-user',
                     routerLink: ['/users']
                 },
+                {
+                    label: 'Sucursales',
+                    icon: 'pi pi-building',
+                    routerLink: ['/branches']
+                }
             ]
         },
         { separator: true },

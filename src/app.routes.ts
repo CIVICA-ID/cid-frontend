@@ -4,6 +4,7 @@ import { Notfound } from '@/pages/notfound/notfound';
 import { LandingLayout } from '@/layout/components/app.landinglayout';
 import { AuthLayout } from '@/layout/components/app.authlayout';
 import { authGuard } from '@/guards/auth.guard';
+import { BRANCHES_ROUTES } from '@/modules/branches/branches.routes';
 
 export const appRoutes: Routes = [
     {
@@ -18,28 +19,28 @@ export const appRoutes: Routes = [
             },
             {
                 path: 'services',
-                loadChildren: () => import('./app/modules/services/services.routes').then(m => m.SERVICES_ROUTES),
-                data: { breadcrumb: 'Servicios',module:'services' }
+                loadChildren: () => import('./app/modules/services/services.routes').then((m) => m.SERVICES_ROUTES),
+                data: { breadcrumb: 'Servicios', module: 'services' }
             },
             {
                 path: 'roles',
-                data: { breadcrumb: 'Roles',module: 'roles' },
-                loadChildren: () => import('@/modules/roles/roles.routes').then(m=>m.ROLES_ROUTES)
+                data: { breadcrumb: 'Roles', module: 'roles' },
+                loadChildren: () => import('@/modules/roles/roles.routes').then((m) => m.ROLES_ROUTES)
             },
             {
                 path: 'modules',
-                data: { breadcrumb: 'Módulos',module: 'modules' },
+                data: { breadcrumb: 'Módulos', module: 'modules' },
                 loadChildren: () => import('@/modules/modules/modules.routes').then((m) => m.MODULES_ROUTES)
             },
             {
                 path: 'users',
-                loadChildren: () => import('@/modules/users/users.routes').then((m)=>m.USERS_ROUTES),
-                data: { breadcrumb: 'Usuarios',module:'users' }
+                loadChildren: () => import('@/modules/users/users.routes').then((m) => m.USERS_ROUTES),
+                data: { breadcrumb: 'Usuarios', module: 'users' }
             },
             {
-                path: 'apps',
-                loadChildren: () => import('@/apps/apps.routes'),
-                data: { breadcrumb: 'Apps' }
+                path: 'branches',
+                loadChildren: () => import('@/modules/branches/branches.routes').then((m) => m.BRANCHES_ROUTES),
+                data: { breadcrumb: 'Sucursales', module: 'branches' }
             },
 
             {
@@ -60,7 +61,7 @@ export const appRoutes: Routes = [
     },
     {
         path: 'auth',
-        loadChildren: () => import('./app/modules/auth/auth.routes').then((c) => c.AUTH_ROUTES),
+        loadChildren: () => import('./app/modules/auth/auth.routes').then((c) => c.AUTH_ROUTES)
     },
     {
         path: 'landing',
@@ -127,6 +128,6 @@ export const appRoutes: Routes = [
     //     ]
     // },
     { path: '**', redirectTo: '/notfound' },
-    {path : 'error', component : Notfound},
-    {path : 'notfound', component: Notfound},
+    { path: 'error', component: Notfound },
+    { path: 'notfound', component: Notfound }
 ];
