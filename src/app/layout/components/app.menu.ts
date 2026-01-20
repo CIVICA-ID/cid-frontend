@@ -29,7 +29,12 @@ export class AppMenu {
                     label: 'Módulos',
                     icon: 'pi pi-box',
                     routerLink: ['/modules']
-                }
+                },
+                {
+                    label: 'Usuarios',
+                    icon: 'pi pi-user',
+                    routerLink: ['/users']
+                },
             ]
         },
         { separator: true },

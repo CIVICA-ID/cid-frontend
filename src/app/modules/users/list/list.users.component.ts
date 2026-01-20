@@ -1,6 +1,5 @@
 import { TableTemplateComponent } from '@/components/table-template/table-template.component';
 import { MiscService } from '@/services/misc.service';
-import { ServicesService } from '@/services/services.service';
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
@@ -14,28 +13,16 @@ import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TooltipModule } from 'primeng/tooltip';
 import { catchError, of, forkJoin, Observable } from 'rxjs';
-import { ModulesServices } from '@/services/modules.service';
+import { UserService } from '@/services/user.service';
 
 @Component({
-    selector: 'app-list-modules',
+    selector: 'app-list-users',
     standalone: true,
-    imports: [
-        CommonModule,
-        ButtonModule,
-        InputTextModule,
-        TooltipModule,
-        ToolbarModule,
-        ConfirmDialogModule,
-        DialogModule,
-        RippleModule,
-        ToastModule,
-        TableTemplateComponent,
-        RouterModule
-    ],
-    providers: [ModulesServices, MessageService, ConfirmationService], // Providers locales
-    templateUrl: './list.modules.component.html'
+    imports: [CommonModule, ButtonModule, InputTextModule, TooltipModule, ToolbarModule, ConfirmDialogModule, DialogModule, RippleModule, ToastModule, TableTemplateComponent, RouterModule],
+    providers: [UserService, MessageService, ConfirmationService], // Providers locales
+    templateUrl: './list.users.component.html'
 })
-export class ListModulesComponent {
+export class ListUsersComponent {
     columns = [
         {
             field: 'id',
@@ -44,11 +31,23 @@ export class ListModulesComponent {
             fieldType: 'text'
         },
         {
-            field: 'name',
-            column: 'Nombre',
+            field: 'nickName',
+            column: 'Nombre de usuario',
             columnType: 'text',
             fieldType: 'text'
-        }
+        },
+        {
+            field: 'email',
+            column: 'Correo electrónico',
+            columnType: 'text',
+            fieldType: 'text',
+        },
+        {
+            field: 'emailStatus',
+            column: 'Verificado',
+            columnType: 'boolean',
+            fieldType: 'boolean'
+        },
     ];
     totalRows: number = 0;
     configTable: any = {};
@@ -62,31 +61,30 @@ export class ListModulesComponent {
     list: Observable<any>;
     confirmDisplay: boolean = false;
     constructor(
-        private moduleService: ModulesServices,
+        private userService: UserService,
         private messageService: MessageService,
         private miscsService: MiscService,
         private confirmationService: ConfirmationService
     ) {}
     listTable(): void {
         this.miscsService.startRequest();
-        this.moduleService.getList(this.limit, this.page, this.sort, this.search).subscribe({
+        this.userService.getList(this.limit, this.page, this.sort, this.search).subscribe({
             next: (data) => {
-                if (data['meta']["totalItems"]) {
+                if (data['meta']['totalItems']) {
                     this.data = data['data'];
                     this.totalRows = data['meta']['totalItems'];
                     this.configTable = {
-                        module: 'Módulos',
-                        route: 'modules',
+                        module: 'Users',
+                        route: 'users',
                         totalRows: this.totalRows
                     };
-                }
-                else{
-                    this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error', detail: "No se encontraron módulos" });
+                } else {
+                    this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error', detail: 'No se encontraron usuarios' });
                     this.data = [];
                     this.totalRows = 0;
                     this.configTable = {
-                        module: 'Módulos',
-                        route: 'modules',
+                        module: 'Users',
+                        route: 'users',
                         totalRows: this.totalRows
                     };
                 }
@@ -95,7 +93,7 @@ export class ListModulesComponent {
             error: (error) => {
                 this.miscsService.endRquest();
                 this.data = [];
-                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de módulos', detail: error.error.message });
+                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de usuarios', detail: error.error.message });
             }
         });
     }
@@ -107,7 +105,7 @@ export class ListModulesComponent {
         this.listTable();
     }
     delete(id, deleteType: number) {
-        let message=deleteType==1?"los registros seleccionados":"el registro";
+        let message = deleteType == 1 ? 'los registros seleccionados' : 'el registro';
         // message=(deleteType)
         this.confirmationService.confirm({
             message: `¿Confirma eliminar ${message}?`,
@@ -122,14 +120,15 @@ export class ListModulesComponent {
                         break;
                     case 2:
                         // this.confirmDelete(id);
-                        this.moduleService.disable(id)
-                        .subscribe(()=>{
-                            this.listTable();
-                            this.messageService.add({ severity: 'success',key: 'message', summary: 'Operación exitosa', life: 3000 });
-                        },
-                        error=>{
-                            this.messageService.add({ life:5000, key: 'message', severity: 'error', summary: "Error al eliminar el módulo", detail:error.error.message });
-                        });
+                        this.userService.disable(id).subscribe(
+                            () => {
+                                this.listTable();
+                                this.messageService.add({ severity: 'success', key: 'message', summary: 'Operación exitosa', life: 3000 });
+                            },
+                            (error) => {
+                                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el usuario', detail: error.error.message });
+                            }
+                        );
                         break;
                 }
             }
@@ -142,7 +141,7 @@ export class ListModulesComponent {
         this.confirmDisplay = true;
         var peticiones: any[] = [];
         for (let i = 0; i < this.ids.length; i++) {
-            const ptt = this.moduleService.disable(this.ids[i]).pipe(
+            const ptt = this.userService.disable(this.ids[i]).pipe(
                 catchError((error) => {
                     this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el registro', detail: error.message });
                     return of(null);

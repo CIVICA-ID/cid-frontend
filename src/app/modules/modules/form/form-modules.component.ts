@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
-import { AbstractControl, AbstractControlOptions, FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import { Component, EventEmitter, inject, Input, OnInit, Output  } from '@angular/core';
+import {  FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -11,16 +11,12 @@ import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
-import { Observable, Subscription } from 'rxjs';
 import { ModulesServices } from '@/services/modules.service';
-import { Checkbox } from 'primeng/checkbox';
-import { RoleService } from '@/services/role.service';
-import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
     selector: 'app-form-modules',
     templateUrl: './form-modules.component.html',
-    imports: [CommonModule, ButtonModule, InputTextModule, ToastModule, ReactiveFormsModule, FormsModule, Fluid, TableModule, MessageModule, CardModule, SelectModule, Checkbox],
+    imports: [CommonModule, ButtonModule, InputTextModule, ToastModule, ReactiveFormsModule, FormsModule, Fluid, TableModule, MessageModule, CardModule, SelectModule],
     standalone: true
 })
 export class FormModulesComponent implements OnInit {
