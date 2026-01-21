@@ -57,7 +57,7 @@
 <p-dialog [(visible)]="visibleDialog" [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }" [modal]="true" [style]="{ width: '55vw' }" [draggable]="false" [resizable]="false" [header]="getDialogHeader()">
     <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-2">
-            <button pButton pRipple icon="pi pi-arrow-left" class="p-button-outlined" (click)="previousStep()" [disabled]="currentStep === 1"></button>
+            <button pButton type="button" pRipple icon="pi pi-arrow-left" class="p-button-outlined" (click)="previousStep()" [disabled]="currentStep === 1"></button>
             <span class="text-sm font-medium text-gray-700"> {{ currentStep }} de {{ steps }} </span>
         </div>
     </div>
@@ -67,7 +67,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                     @for (field of searchFields; track field.controlName) {
                         <div class="flex flex-col gap-1.5">
-                            <label [for]="field.id" class="font-semibold text-sm text-gray-700">
+                            <label [for]="field.id" class="font-semibold ">
                                 {{ field.label }}
                             </label>
                             <input pInputText [id]="field.id" [formControlName]="field.controlName" class="w-full" [class.uppercase]="field.controlName === 'curp'" />
@@ -89,7 +89,7 @@
         @case (2) {
             <div class="flex flex-col gap-4">
                 <div class="flex justify-end">
-                    <button pButton pRipple [label]="getNextButtonLabel()" type="button" icon="pi pi-plus" (click)="addPerson()" class="p-button-outlined !w-32"></button>
+                    <button pButton type="button" pRipple [label]="getNextButtonLabel()" type="button" icon="pi pi-plus" (click)="addPerson()" class="p-button-outlined !w-32"></button>
                 </div>
                 <div class="mt-2 card">
                     <p-table
@@ -145,7 +145,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                     @for (field of addFields; track field.controlName) {
                         <div class="flex flex-col gap-1.5">
-                            <label [for]="field.id" class="font-semibold text-sm text-gray-700">
+                            <label [for]="field.id" class="font-semibold ">
                                 {{ field.label }}
                             </label>
                             @if (field.type == 'text') {
@@ -166,14 +166,14 @@
                     }
                 </div>
                 <div formArrayName="peopleAddresses">
-                    <div class="flex flex-col mb-3">
+                    <div class="flex flex-col ">
                         @if (form.get('peopleAddresses')?.hasError('required')) {
                             <p-message severity="warn" text="Debe agregar al menos un domicilio."></p-message>
                         }
                     </div>
-                    <div class="flex flex-col gap-1">
+                    <div class="flex flex-col ">
                         @for (elementGroup of getPeopleAddressArray().controls; track elementGroup; let i = $index) {
-                            <p-card [formGroupName]="i">
+                            <p-card [formGroupName]="i" class="mt-6">
                                 <ng-template pTemplate="title">
                                     <div class="flex justify-content-between align-items-center">
                                         <div class="flex align-items-center gap-2">
@@ -183,12 +183,17 @@
                                         <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="removeRow(getPeopleAddressArray(), i)" pTooltip="Eliminar este domicilio"></button>
                                     </div>
                                 </ng-template>
-                                <app-addresses (sendAddress)="getAddresses($event, $index, getPeopleAddressArray())"></app-addresses>
+                                <app-addresses (sendAddress)="getAddresses($event, $index, getPeopleAddressArray())" [newAddress]="elementGroup.get('address_data')?.value"></app-addresses>
+                                <div class="mt-2">
+                                    @if (elementGroup.get('address')?.invalid) {
+                                        <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                    }
+                                </div>
                             </p-card>
                         }
                     </div>
-                    <div class="mt-4 flex justify-content-center">
-                        <button pButton type="button" label="Añadir Domicilio" icon="pi pi-plus-circle" class="p-button-raised p-button-secondary" (click)="addRow(getPeopleAddressArray(), newPeopleAddress())"></button>
+                    <div class="mt-4 flex justify-content-center ">
+                        <button pButton type="button" label="Añadir Domicilio" icon="pi pi-plus-circle" class="p-button-raised p-button-secondary w-full" (click)="addRow(getPeopleAddressArray(), newPeopleAddress())"></button>
                     </div>
                 </div>
                 <div class="flex justify-end">
