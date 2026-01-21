@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
-import { AbstractControlOptions, FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, AbstractControlOptions, FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 
 import { FileUploadModule } from 'primeng/fileupload';
@@ -25,6 +25,7 @@ import { PeopleService } from '@/services/people.service';
 import { DatePicker } from 'primeng/datepicker';
 import { SelectModule } from 'primeng/select';
 import { AddressesComponent } from '../addresses/addresses.component';
+import { Address } from '@/api/address';
 
 @Component({
     selector: 'app-people',
@@ -85,6 +86,7 @@ export class PeopleComponent implements OnInit {
         },
         this.formOptions
     );
+    newAddress: null | Address[];
     private peopleService = inject(PeopleService);
     @Input() set newPeople(value: any) {
         if (value) {
@@ -115,7 +117,10 @@ export class PeopleComponent implements OnInit {
                 }
             );
         } else {
+            //caso donde se borra el people desde el front
             this.people = null;
+            this.form.reset();
+            this.formSearch.reset();
         }
     }
 
@@ -224,7 +229,8 @@ export class PeopleComponent implements OnInit {
     }
     newPeopleAddress() {
         return this.formBuilder.group({
-            address: [null, Validators.required]
+            address: [null, Validators.required],
+            address_data:[null]
         });
     }
     getPeopleAddressArray(): FormArray {
@@ -235,9 +241,17 @@ export class PeopleComponent implements OnInit {
         this.changeDetector.detectChanges();
     }
     getAddresses(data: any, index: number, array: FormArray) {
-        array.at(index).patchValue({
-            address: data.id
-        });
+        if (data) {
+            array.at(index).patchValue({
+                address: data.id,
+                address_data: data
+            });
+        } else {
+            array.at(index).patchValue({
+                address: null,
+                address_data: null,
+            });
+        }
     }
     addRow(array: any, newRow: any) {
         array.push(newRow);
@@ -283,9 +297,20 @@ export class PeopleComponent implements OnInit {
             this.miscService.endRquest();
             return;
         }
-        let properties = {};
-        properties = this.form.value;
-        this.peopleService.create(properties).subscribe(
+        const rawData = this.form.getRawValue();
+
+        // Iteramos sobre las direcciones para quitar 'address_data'
+        const cleanAddresses = rawData.peopleAddresses.map((item: any) => {
+            const { address_data, ...rest } = item; // Desestructuración: extrae address_data y deja el resto
+            return rest;
+        });
+
+        const finalData = {
+            ...rawData,
+            peopleAddresses: cleanAddresses
+        };
+
+        this.peopleService.create(finalData).subscribe(
             (data: any) => {
                 this.selectPerson(data['object']);
                 this.miscService.endRquest();

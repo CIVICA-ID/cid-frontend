@@ -28,13 +28,6 @@ import { Country } from '@/api/country';
 })
 export class AddressesComponent implements OnInit {
     address: any;
-    @Input() set newAddress(value: any) {
-        if (value) {
-            this.address = value;
-        } else {
-            this.address = null;
-        }
-    }
     visibleDialog: boolean = false;
     visibleAddForm: boolean = true;
     visibleList: boolean = false;
@@ -60,6 +53,19 @@ export class AddressesComponent implements OnInit {
         },
         this.formOptions
     );
+    @Input() set newAddress(value: any) {
+        if (value) {
+            this.address = value;
+            this.form.patchValue(value);
+            value=null;
+        } else {
+            this.address = null;
+            this.form.reset({
+                type:"Domicilio",
+                principal:false
+            });
+        }
+    }
     fullAddress: string = '';
     addresses = [];
     @Output()
@@ -234,8 +240,8 @@ export class AddressesComponent implements OnInit {
             this.messageService.add({ life: 5000, key: 'msg', severity: 'warn', summary: 'Nombre es dato obligatorio para busqueda' });
         }
     }
-    loadTable(event: TableLazyLoadEvent){
-        this.page =  (event.first / event.rows) + 1;
+    loadTable(event: TableLazyLoadEvent) {
+        this.page = event.first / event.rows + 1;
         this.limit = event.rows;
         this.addressService.getList(this.limit, this.page, this.sortBy, this.filter).subscribe(
             async (data: any) => {
@@ -281,14 +287,14 @@ export class AddressesComponent implements OnInit {
     addAddress() {
         this.nextStep();
     }
-    deleteAddress(){
+    deleteAddress() {
         //se emite valor nulo al padre para que también lo elimine de allá
-        this.address=null;
+        this.address = null;
         this.sendAddress.emit(this.address);
     }
     saveForm() {
         this.miscService.startRequest();
-        if(this.form.invalid){
+        if (this.form.invalid) {
             this.messageService.add({ life: 5000, key: 'msg', severity: 'error', summary: 'Formulario inválido' });
             this.miscService.endRquest();
             return;

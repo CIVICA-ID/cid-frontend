@@ -4,8 +4,8 @@
             <span class="p-inputgroup-addon bg-gray-100 text-gray-700 font-semibold px-4 flex items-center border-none"
                 [style.minWidth.px]="140"> Dirección{{ address ? ':' : '' }} </span>
             <button pButton pRipple type="button" icon="pi pi-map-marker"
-                [label]="address 
-    ? address.street + (address.externalNumber ? ' #' + address.externalNumber : '') + ' ' + (address.colony || '') 
+                [label]="address
+    ? address.street + (address.externalNumber ? ' #' + address.externalNumber : '') + ' ' + (address.colony || '')
     : 'Seleccionar Dirección'"
                 [class]="address ? 'p-button-success' : 'p-button-outlined p-button-secondary'"
                 class="flex-grow border-none text-left justify-start px-4" (click)="openDialog()"></button>
@@ -20,7 +20,7 @@
     [style]="{ width: '55vw' }" [draggable]="false" [resizable]="false" [header]="getDialogHeader()">
     <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-3">
-            <button pButton pRipple icon="pi pi-arrow-left" class="p-button-outlined p-button-sm"
+            <button pButton type="button" pRipple icon="pi pi-arrow-left" class="p-button-outlined p-button-sm"
                 (click)="previousStep()" [disabled]="currentStep === 1"></button>
             <span class="text-sm font-semibold text-gray-600"> Paso {{ currentStep }} de {{ steps }} </span>
         </div>
@@ -31,7 +31,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
             @for (field of fields; track field.controlName) {
             <div class="flex flex-col gap-1.5">
-                <label [for]="field.id" class="font-semibold text-sm text-gray-700">
+                <label [for]="field.id" class="font-semibold ">
                     {{ field.label }}
                 </label>
                 @if (field.type == 'text') {

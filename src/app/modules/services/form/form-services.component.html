@@ -25,7 +25,7 @@
                                 </div>
                             </div>
                             <div class="flex flex-col gap-2">
-                                <label for="iphFolio" class="font-semibold text-sm text-gray-700">IPH</label>
+                                <label for="iphFolio" class="font-semibold">IPH</label>
                                 <input pInputText id="iphFolio" formControlName="iphFolio" />
                                 <div class="h-4">
                                     @if (form.get('iphFolio')?.hasError('required')) {
@@ -36,7 +36,7 @@
                                 </div>
                             </div>
                             <div class="flex flex-col gap-2">
-                                <label for="captureDate" class="font-semibold text-sm text-gray-700">Fecha de
+                                <label for="captureDate" class="font-semibold">Fecha de
                                     captura</label>
                                 <p-datepicker inputId="calendar-24h" formControlName="captureDate" [showTime]="true"
                                     hourFormat="24" />
@@ -45,7 +45,7 @@
                                 }
                             </div>
                             <div class="flex flex-col gap-2">
-                                <label for="serviceDate" class="font-semibold text-sm text-gray-700">Fecha de
+                                <label for="serviceDate" class="font-semibold ">Fecha de
                                     servicio</label>
                                 <p-datepicker inputId="serviceDate" formControlName="serviceDate" [showTime]="true"
                                     [hourFormat]="'24'" [showIcon]="true" />
@@ -56,7 +56,7 @@
                                 </div>
                             </div>
                             <div class="flex flex-col gap-2">
-                                <label for="dateReception" class="font-semibold text-sm text-gray-700">Fecha de
+                                <label for="dateReception" class="font-semibold ">Fecha de
                                     recepción</label>
                                 <p-datepicker inputId="dateReception" formControlName="dateReception" [showTime]="true"
                                     [hourFormat]="'24'" [showIcon]="true" />
@@ -67,7 +67,7 @@
                                 </div>
                             </div>
                             <div class="flex flex-col gap-2">
-                                <label for="arrivalDate" class="font-semibold text-sm text-gray-700">Fecha de
+                                <label for="arrivalDate" class="font-semibold ">Fecha de
                                     arribo</label>
                                 <p-datepicker inputId="arrivalDate" formControlName="arrivalDate" [showTime]="true"
                                     [hourFormat]="'24'" [showIcon]="true" />
@@ -79,7 +79,7 @@
                             </div>
 
                             <div class="flex flex-col gap-2">
-                                <label for="endDate" class="font-semibold text-sm text-gray-700">Fecha de
+                                <label for="endDate" class="font-semibold ">Fecha de
                                     término</label>
                                 <p-datepicker inputId="endDate" formControlName="endDate" [showTime]="true"
                                     [hourFormat]="'24'" [showIcon]="true" />
@@ -91,7 +91,7 @@
                             </div>
 
                             <div class="flex flex-col gap-2">
-                                <label for="arrestDate" class="font-semibold text-sm text-gray-700">Fecha de
+                                <label for="arrestDate" class="font-semibold ">Fecha de
                                     arresto</label>
                                 <p-datepicker inputId="arrestDate" formControlName="arrestDate" [showTime]="true"
                                     [hourFormat]="'24'" [showIcon]="true" />
@@ -103,7 +103,7 @@
                             </div>
 
                             <div class="flex flex-col gap-2">
-                                <label for="submissionDate" class="font-semibold text-sm text-gray-700">Fecha de puesta
+                                <label for="submissionDate" class="font-semibold ">Fecha de puesta
                                     a
                                     disposición</label>
                                 <p-datepicker inputId="submissionDate" formControlName="submissionDate"
@@ -151,9 +151,6 @@
                         </div>
                         <div class="mt-4" formArrayName="affected">
                             <div class="flex flex-col mb-3">
-                                <!-- @if (form.get('elements')?.hasError('duplicated')) {
-                                        <p-message severity="error" text="Elemento duplicado" styleClass="mb-2"></p-message>
-                                    } -->
                                 @if (form.get('affected')?.hasError('required')) {
                                 <p-message severity="warn" text="Debe agregar al menos un elemento."></p-message>
                                 }
@@ -217,13 +214,12 @@
                                     </ng-template>
                                     <app-people (sendPeople)="getPeople($event,$index,getOffenderArray())" [newPeople]="elementGroup.get('idPeople')?.value"></app-people>
                                     <div class="mt-2">
-
-                                        @if (elementGroup.get('people')?.invalid) {
+                                        @if (elementGroup.get('idPeople')?.invalid) {
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
                                         }
                                     </div>
-                                    <div class="flex flex-col gap-1.5">
-                                        <label for="arrestReason" class="font-semibold text-sm text-gray-700">
+                                    <div class="flex flex-col mt-8">
+                                        <label for="arrestReason" class="font-semibold mb-3">
                                             Razón del arresto
                                         </label>
                                         <input pInputText id="arrestReason" formControlName="arrestReason"
@@ -232,8 +228,8 @@
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
                                         }
                                     </div>
-                                    <div class="flex flex-col gap-1.5">
-                                        <label for="arrestType" class="font-semibold text-sm text-gray-700">
+                                    <div class="flex flex-col mt-8">
+                                        <label for="arrestType" class="font-semibold mb-3">
                                             Tipo de arresto
                                         </label>
                                         <p-select formControlName="arrestType" [options]="arrestTypeList"

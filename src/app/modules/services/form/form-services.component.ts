@@ -62,7 +62,7 @@ export class FormServicesComponent implements OnInit, OnChanges {
                     this.syncFormArrays(cleanData);
                     this.form.patchValue({
                         ...cleanData,
-                        address: cleanData.address.id,
+                        address: cleanData.address.id
                     });
                     this.newAddress = cleanData.address;
                 }
@@ -158,7 +158,7 @@ export class FormServicesComponent implements OnInit, OnChanges {
                 const array = formGroup.get(field);
                 if (array && array.value) {
                     array.value.forEach((item: any) => {
-                        const peopleId = item.people;
+                        const peopleId = item.idPeople;
                         if (peopleId) {
                             if (uniqueValues.has(peopleId)) {
                                 hasDuplicate = true;
@@ -189,7 +189,7 @@ export class FormServicesComponent implements OnInit, OnChanges {
     }
     addElement() {
         return this.formBuilder.group({
-            id:[null],
+            id: [null],
             grade: [null, [Validators.maxLength(100)]],
             firstName: [null, [Validators.required, Validators.maxLength(50)]],
             paternalName: [null, [Validators.maxLength(50), Validators.required]],
@@ -200,6 +200,7 @@ export class FormServicesComponent implements OnInit, OnChanges {
     getAddress(data: Address) {
         if (data) {
             this.form.get('address').setValue(data.id);
+            this.newAddress = data;
         } else {
             this.form.get('address').setValue(null);
             this.newAddress = null;
@@ -219,7 +220,7 @@ export class FormServicesComponent implements OnInit, OnChanges {
     }
     addOffender() {
         return this.formBuilder.group({
-            id: [ null],
+            id: [null],
             idPeople: [null, [Validators.required]],
             arrestReason: [null, [Validators.required]],
             arrestType: [null, [Validators.required]]
@@ -241,22 +242,17 @@ export class FormServicesComponent implements OnInit, OnChanges {
             });
             return;
         }
-        if (this.data!=undefined) {
-            let fields:[string,string,string] = ['affected', 'offenders','elements'];
-            let properties = this.form.value;
-            fields.forEach((field) => {
-                properties[field].forEach((anidateField) => {
-                    //si viene el id nulo, indica que es nuevo el registro
-                    if(anidateField.id===null || anidateField.id===""){
-                        delete anidateField.id;
-                    }
-                });
+        let fields: [string, string, string] = ['affected', 'offenders', 'elements'];
+        let properties = this.form.value;
+        fields.forEach((field) => {
+            properties[field].forEach((anidateField) => {
+                //si viene el id nulo, indica que es nuevo el registro
+                if (anidateField.id === null || anidateField.id === '') {
+                    delete anidateField.id;
+                }
             });
-            this.formEmitted.emit(properties);
-        } else {
-            this.formEmitted.emit(this.form.value);
-        }
-        //eliminar people_data ya que solo es para la info del componente hijo
+        });
+        this.formEmitted.emit(properties);
     }
     onCancel(event) {
         event.preventDefault();
