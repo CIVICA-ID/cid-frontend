@@ -1,13 +1,15 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { jwtDecode, InvalidTokenError } from 'jwt-decode';
 import { environment } from '../../environments/environment'; // Ajusta la ruta
 import { SessionService } from '@/services/session.service';
+import { Router } from '@angular/router';
+import { catchError, throwError } from 'rxjs';
 
 export const httpInterceptorService: HttpInterceptorFn = (req, next) => {
     const sessionService = inject(SessionService);
-
-    let tkn = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhOWZmYjFhNC03MzAwLTRhZWYtYTllZS1mNTkzYjEzOWZjMGQiLCJ1c2VybmFtZSI6IkRpZWdvMSIsImlhdCI6MTc2ODIyOTU1OCwiZXhwIjoxNzY4MzE1OTU4fQ.rPM-6LQppRSguchkOowgRo6zBrjkNhe5-h3AsylYWkk';
+    const router = inject(Router);
+    let tkn='';
     let branch = '';
     const rawToken = sessionService.getToken();
 
@@ -20,8 +22,8 @@ export const httpInterceptorService: HttpInterceptorFn = (req, next) => {
                 localStorage.clear();
             } else {
                 tkn = rawToken;
-                // const currentBranch = sessionService.getBranch();
-                // branch = currentBranch !== null ? currentBranch : '';
+                const currentBranch = sessionService.getBranch();
+                branch = currentBranch !== null ? currentBranch : '';
             }
         } catch (error) {
             localStorage.clear();
@@ -39,10 +41,24 @@ export const httpInterceptorService: HttpInterceptorFn = (req, next) => {
     const cloneReq = req.clone({
         setHeaders: {
             'x-access-token': tkn,
-            // 'x-access-branch': branch
+            'x-access-branch': branch
             //   'x-app-version': environment.appVersion
         }
     });
 
-    return next(cloneReq);
+    // return next(cloneReq);
+    return next(cloneReq).pipe(
+        catchError((error: HttpErrorResponse) => {
+            // Aquí es donde capturamos el 403 que mencionaste
+            if (error.status === 403) {
+                // Redirigimos al usuario para que no se quede en la página vacía
+                router.navigate(['/']);
+            } else if (error.status === 401) {
+                sessionService.logout();
+                router.navigate(['/auth/login']);
+            }
+
+            return throwError(() => error);
+        })
+    );
 };

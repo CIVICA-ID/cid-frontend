@@ -14,9 +14,10 @@ import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TooltipModule } from 'primeng/tooltip';
 import { catchError, of, forkJoin, Observable } from 'rxjs';
+import { RoleService } from '@/services/role.service';
 
 @Component({
-    selector: 'app-list-services',
+    selector: 'app-list-roles',
     standalone: true,
     imports: [
         CommonModule,
@@ -32,9 +33,9 @@ import { catchError, of, forkJoin, Observable } from 'rxjs';
         RouterModule
     ],
     providers: [ServicesService, MessageService, ConfirmationService], // Providers locales
-    templateUrl: './list.services.component.html'
+    templateUrl: './list.roles.component.html'
 })
-export class ListServicesComponent {
+export class ListRolesComponent {
     columns = [
         {
             field: 'id',
@@ -43,28 +44,10 @@ export class ListServicesComponent {
             fieldType: 'text'
         },
         {
-            field: 'externalFolio',
-            column: 'Folio externo',
+            field: 'name',
+            column: 'Nombre',
             columnType: 'text',
             fieldType: 'text'
-        },
-        {
-            field: 'iphFolio',
-            column: 'Folio IPH',
-            columnType: 'text',
-            fieldType: 'text'
-        },
-        {
-            field: 'captureDate',
-            column: 'Fecha de captura',
-            columnType: 'date',
-            fieldType: 'date'
-        },
-        {
-            field: 'arrestDate',
-            column: 'Fecha de arresto',
-            columnType: 'date',
-            fieldType: 'date'
         }
     ];
     totalRows: number = 0;
@@ -77,36 +60,36 @@ export class ListServicesComponent {
     ids: string[] = [];
     searchTerm: string = '';
     list: Observable<any>;
+    // listService: Observable<any>;
     confirmDisplay: boolean = false;
     constructor(
-        private servicesService: ServicesService,
+        private roleService: RoleService,
         private messageService: MessageService,
         private miscsService: MiscService,
         private confirmationService: ConfirmationService
     ) {}
     listTable(): void {
         this.miscsService.startRequest();
-        this.servicesService.getList(this.limit, this.page, this.sort, this.search).subscribe({
+        this.roleService.getList(this.limit, this.page, this.sort, this.search).subscribe({
             next: (data) => {
-                if (data['meta']['totalItems'])
-                {
+                if (data['meta']["totalItems"]) {
                     this.data = data['data'];
                     this.totalRows = data['meta']['totalItems'];
                     this.configTable = {
-                        module: 'Servicio',
-                        route: 'services',
+                        module: 'Rol',
+                        route: 'roles',
                         totalRows: this.totalRows
                     };
                 }
                 else{
+                    this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error', detail: "No se encontraron roles" });
                     this.data = [];
                     this.totalRows = 0;
                     this.configTable = {
-                        module: 'Servicio',
-                        route: 'services',
+                        module: 'Rol',
+                        route: 'roles',
                         totalRows: this.totalRows
                     };
-                    this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error', detail: 'No se encontraron servicios' });
                 }
                 this.miscsService.endRquest();
             },
@@ -125,6 +108,7 @@ export class ListServicesComponent {
         this.listTable();
     }
     delete(id, deleteType: number) {
+        console.log('deletes, id:', id);
         let message=deleteType==1?"los registros seleccionados":"el registro";
         // message=(deleteType)
         this.confirmationService.confirm({
@@ -140,13 +124,13 @@ export class ListServicesComponent {
                         break;
                     case 2:
                         // this.confirmDelete(id);
-                        this.servicesService.disable(id)
+                        this.roleService.disable(id)
                         .subscribe(()=>{
                             this.listTable();
                             this.messageService.add({ severity: 'success',key: 'message', summary: 'Operación exitosa', life: 3000 });
                         },
                         error=>{
-                            this.messageService.add({ life:5000, key: 'message', severity: 'error', summary: "Error al eliminar el servicio", detail:error.error.message });
+                            this.messageService.add({ life:5000, key: 'message', severity: 'error', summary: "Error al eliminar el rol", detail:error.error.message });
                         });
                         break;
                 }
@@ -160,7 +144,7 @@ export class ListServicesComponent {
         this.confirmDisplay = true;
         var peticiones: any[] = [];
         for (let i = 0; i < this.ids.length; i++) {
-            const ptt = this.servicesService.disable(this.ids[i]).pipe(
+            const ptt = this.roleService.disable(this.ids[i]).pipe(
                 catchError((error) => {
                     this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el registro', detail: error.message });
                     return of(null);

@@ -1,0 +1,106 @@
+<div class="flex justify-center p-4">
+    <div class="w-full md:max-w-6xl">
+        <div class="card p-6 bg-white shadow-md rounded-lg">
+            <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
+                <p-fluid>
+                    <div class="flex flex-col gap-4">
+                        <div class="flex flex-col gap-2">
+                            <label for="name" class="font-semibold">Nombre del rol</label>
+                            <input pInputText id="name" formControlName="name">
+                            @if (form.get('name')?.hasError('required')) {
+                            <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                            }
+                        </div>
+                    </div>
+                    <div class="mt-2" formArrayName="rights">
+                        <div class="flex flex-col mb-3">
+                            @if (form.hasError('duplicateItem')){
+                                <p-message severity="error" text="Persona duplicada."></p-message>
+                            }
+                            @if (form.get('rights')?.hasError('required')) {
+                                <p-message severity="warn" text="Debe agregar al menos un permiso."></p-message>
+                            }
+                        </div>
+                        <div class="flex flex-col gap-4" [formGroup]="form"> <div formArrayName="rights"> @for (elementGroup of getRightArray().controls; track elementGroup; let i = $index) {
+                            <p-card [formGroupName]="i" styleClass="shadow-md border-l-4 border-indigo-500 mb-6">
+                                <ng-template pTemplate="title">
+                                    <div class="flex justify-between items-center pb-2 border-b border-gray-100">
+                                        <div class="flex items-center gap-2">
+                                            <i class="pi pi-shield text-indigo-600"></i>
+                                            <span class="text-lg font-bold text-gray-800">Configuración de Permiso</span>
+                                        </div>
+                                        <button pButton icon="pi pi-trash"
+                                                class="p-button-rounded p-button-danger p-button-text hover:bg-red-50"
+                                                (click)="removeRow(getRightArray(), i)"></button>
+                                    </div>
+                                </ng-template>
+                                <div class="flex flex-col gap-6">
+                                    <div class="flex flex-col gap-2">
+                                        <label class="font-semibold text-gray-700">Módulo</label>
+                                        <p-select formControlName="moduleId" [options]="listModules"
+                                                  optionLabel="name" optionValue="id" class="w-full"
+                                                  placeholder="Seleccione un módulo" showClear="true">
+                                        </p-select>
+                                        @if (elementGroup.get('moduleId')?.invalid) {
+                                            <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                        }
+                                    </div>
+                                    <div class="grid grid-cols-7 w-full gap-y-4 bg-gray-50 p-4 rounded-lg border border-gray-100 items-center">
+
+                                        <div class="text-center text-[10px] font-bold uppercase tracking-tighter text-indigo-600 leading-tight">Seleccionar<br>todos</div>
+                                        <div class="text-center text-[10px] font-bold uppercase tracking-wider text-gray-500">Crear</div>
+                                        <div class="text-center text-[10px] font-bold uppercase tracking-wider text-gray-500">Editar</div>
+                                        <div class="text-center text-[10px] font-bold uppercase tracking-wider text-gray-500">Borrar</div>
+                                        <div class="text-center text-[10px] font-bold uppercase tracking-wider text-gray-500">Listar</div>
+                                        <div class="text-center text-[10px] font-bold uppercase tracking-wider text-gray-500">Mostrar</div>
+                                        <div class="text-center text-[10px] font-bold uppercase tracking-wider text-gray-500">Deshab.</div>
+
+                                        <div class="flex justify-center">
+                                            <p-checkbox [binary]="true" [formControl]="masterCheck" (onChange)="toggleAll($event)"></p-checkbox>
+                                        </div>
+
+                                        <div class="flex justify-center">
+                                            <p-checkbox formControlName="add" [binary]="true"></p-checkbox>
+                                        </div>
+
+                                        <div class="flex justify-center">
+                                            <p-checkbox formControlName="update" [binary]="true"></p-checkbox>
+                                        </div>
+
+                                        <div class="flex justify-center">
+                                            <p-checkbox formControlName="delete" [binary]="true"></p-checkbox>
+                                        </div>
+
+                                        <div class="flex justify-center">
+                                            <p-checkbox formControlName="list" [binary]="true"></p-checkbox>
+                                        </div>
+
+                                        <div class="flex justify-center">
+                                            <p-checkbox formControlName="display" [binary]="true"></p-checkbox>
+                                        </div>
+
+                                        <div class="flex justify-center">
+                                            <p-checkbox formControlName="disable" [binary]="true"></p-checkbox>
+                                        </div>
+                                    </div>
+                                </div>
+                            </p-card>
+                        }
+                        </div>
+                        </div>
+                        <div class="mt-4 flex justify-content-center">
+                            <button pButton type="button" label="Añadir Permiso" icon="pi pi-plus-circle"
+                                    class="p-button-raised p-button-secondary"
+                                    (click)="addRow(getRightArray(), addRight())"></button>
+                        </div>
+                    </div>
+                </p-fluid>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button pButton pRipple label="Cancelar" (click)="onCancel($event)"
+                        class="p-button-outlined !w-32"></button>
+                    <button pButton pRipple type="button" label="Guardar" type="submit" class="!w-32"></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

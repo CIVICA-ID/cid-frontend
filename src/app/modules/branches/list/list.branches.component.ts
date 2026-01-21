@@ -14,9 +14,11 @@ import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TooltipModule } from 'primeng/tooltip';
 import { catchError, of, forkJoin, Observable } from 'rxjs';
+import { ModulesServices } from '@/services/modules.service';
+import { BranchesService } from '@/services/branches.service';
 
 @Component({
-    selector: 'app-list-services',
+    selector: 'app-list-modules',
     standalone: true,
     imports: [
         CommonModule,
@@ -31,10 +33,10 @@ import { catchError, of, forkJoin, Observable } from 'rxjs';
         TableTemplateComponent,
         RouterModule
     ],
-    providers: [ServicesService, MessageService, ConfirmationService], // Providers locales
-    templateUrl: './list.services.component.html'
+    providers: [ModulesServices, MessageService, ConfirmationService],
+    templateUrl: './list.branches.component.html'
 })
-export class ListServicesComponent {
+export class ListBranchesComponent {
     columns = [
         {
             field: 'id',
@@ -43,28 +45,10 @@ export class ListServicesComponent {
             fieldType: 'text'
         },
         {
-            field: 'externalFolio',
-            column: 'Folio externo',
+            field: 'name',
+            column: 'Nombre',
             columnType: 'text',
             fieldType: 'text'
-        },
-        {
-            field: 'iphFolio',
-            column: 'Folio IPH',
-            columnType: 'text',
-            fieldType: 'text'
-        },
-        {
-            field: 'captureDate',
-            column: 'Fecha de captura',
-            columnType: 'date',
-            fieldType: 'date'
-        },
-        {
-            field: 'arrestDate',
-            column: 'Fecha de arresto',
-            columnType: 'date',
-            fieldType: 'date'
         }
     ];
     totalRows: number = 0;
@@ -79,41 +63,40 @@ export class ListServicesComponent {
     list: Observable<any>;
     confirmDisplay: boolean = false;
     constructor(
-        private servicesService: ServicesService,
+        private branchesService: BranchesService,
         private messageService: MessageService,
         private miscsService: MiscService,
         private confirmationService: ConfirmationService
     ) {}
     listTable(): void {
         this.miscsService.startRequest();
-        this.servicesService.getList(this.limit, this.page, this.sort, this.search).subscribe({
+        this.branchesService.getList(this.limit, this.page, this.sort, this.search).subscribe({
             next: (data) => {
-                if (data['meta']['totalItems'])
-                {
+                if (data['meta']["totalItems"]) {
                     this.data = data['data'];
                     this.totalRows = data['meta']['totalItems'];
                     this.configTable = {
-                        module: 'Servicio',
-                        route: 'services',
+                        module: 'Sucursales',
+                        route: 'branches',
                         totalRows: this.totalRows
                     };
                 }
                 else{
+                    this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error', detail: "No se encontraron sucursales." });
                     this.data = [];
                     this.totalRows = 0;
                     this.configTable = {
-                        module: 'Servicio',
-                        route: 'services',
+                        module: 'Sucursales',
+                        route: 'branches',
                         totalRows: this.totalRows
                     };
-                    this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error', detail: 'No se encontraron servicios' });
                 }
                 this.miscsService.endRquest();
             },
             error: (error) => {
                 this.miscsService.endRquest();
                 this.data = [];
-                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de servicios', detail: error.error.message });
+                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de sucursales.', detail: error.error.message });
             }
         });
     }
@@ -140,13 +123,13 @@ export class ListServicesComponent {
                         break;
                     case 2:
                         // this.confirmDelete(id);
-                        this.servicesService.disable(id)
+                        this.branchesService.disable(id)
                         .subscribe(()=>{
                             this.listTable();
                             this.messageService.add({ severity: 'success',key: 'message', summary: 'Operación exitosa', life: 3000 });
                         },
                         error=>{
-                            this.messageService.add({ life:5000, key: 'message', severity: 'error', summary: "Error al eliminar el servicio", detail:error.error.message });
+                            this.messageService.add({ life:5000, key: 'message', severity: 'error', summary: "Error al eliminar la sucursal.", detail:error.error.message });
                         });
                         break;
                 }
@@ -160,7 +143,7 @@ export class ListServicesComponent {
         this.confirmDisplay = true;
         var peticiones: any[] = [];
         for (let i = 0; i < this.ids.length; i++) {
-            const ptt = this.servicesService.disable(this.ids[i]).pipe(
+            const ptt = this.branchesService.disable(this.ids[i]).pipe(
                 catchError((error) => {
                     this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el registro', detail: error.message });
                     return of(null);

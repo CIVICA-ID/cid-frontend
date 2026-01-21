@@ -1,6 +1,5 @@
 import { TableTemplateComponent } from '@/components/table-template/table-template.component';
 import { MiscService } from '@/services/misc.service';
-import { ServicesService } from '@/services/services.service';
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
@@ -14,27 +13,16 @@ import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TooltipModule } from 'primeng/tooltip';
 import { catchError, of, forkJoin, Observable } from 'rxjs';
+import { UserService } from '@/services/user.service';
 
 @Component({
-    selector: 'app-list-services',
+    selector: 'app-list-users',
     standalone: true,
-    imports: [
-        CommonModule,
-        ButtonModule,
-        InputTextModule,
-        TooltipModule,
-        ToolbarModule,
-        ConfirmDialogModule,
-        DialogModule,
-        RippleModule,
-        ToastModule,
-        TableTemplateComponent,
-        RouterModule
-    ],
-    providers: [ServicesService, MessageService, ConfirmationService], // Providers locales
-    templateUrl: './list.services.component.html'
+    imports: [CommonModule, ButtonModule, InputTextModule, TooltipModule, ToolbarModule, ConfirmDialogModule, DialogModule, RippleModule, ToastModule, TableTemplateComponent, RouterModule],
+    providers: [UserService, MessageService, ConfirmationService], // Providers locales
+    templateUrl: './list.users.component.html'
 })
-export class ListServicesComponent {
+export class ListUsersComponent {
     columns = [
         {
             field: 'id',
@@ -43,29 +31,23 @@ export class ListServicesComponent {
             fieldType: 'text'
         },
         {
-            field: 'externalFolio',
-            column: 'Folio externo',
+            field: 'nickName',
+            column: 'Nombre de usuario',
             columnType: 'text',
             fieldType: 'text'
         },
         {
-            field: 'iphFolio',
-            column: 'Folio IPH',
+            field: 'email',
+            column: 'Correo electrónico',
             columnType: 'text',
-            fieldType: 'text'
+            fieldType: 'text',
         },
         {
-            field: 'captureDate',
-            column: 'Fecha de captura',
-            columnType: 'date',
-            fieldType: 'date'
+            field: 'emailStatus',
+            column: 'Verificado',
+            columnType: 'boolean',
+            fieldType: 'boolean'
         },
-        {
-            field: 'arrestDate',
-            column: 'Fecha de arresto',
-            columnType: 'date',
-            fieldType: 'date'
-        }
     ];
     totalRows: number = 0;
     configTable: any = {};
@@ -79,41 +61,39 @@ export class ListServicesComponent {
     list: Observable<any>;
     confirmDisplay: boolean = false;
     constructor(
-        private servicesService: ServicesService,
+        private userService: UserService,
         private messageService: MessageService,
         private miscsService: MiscService,
         private confirmationService: ConfirmationService
     ) {}
     listTable(): void {
         this.miscsService.startRequest();
-        this.servicesService.getList(this.limit, this.page, this.sort, this.search).subscribe({
+        this.userService.getList(this.limit, this.page, this.sort, this.search).subscribe({
             next: (data) => {
-                if (data['meta']['totalItems'])
-                {
+                if (data['meta']['totalItems']) {
                     this.data = data['data'];
                     this.totalRows = data['meta']['totalItems'];
                     this.configTable = {
-                        module: 'Servicio',
-                        route: 'services',
+                        module: 'Users',
+                        route: 'users',
                         totalRows: this.totalRows
                     };
-                }
-                else{
+                } else {
+                    this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error', detail: 'No se encontraron usuarios' });
                     this.data = [];
                     this.totalRows = 0;
                     this.configTable = {
-                        module: 'Servicio',
-                        route: 'services',
+                        module: 'Users',
+                        route: 'users',
                         totalRows: this.totalRows
                     };
-                    this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error', detail: 'No se encontraron servicios' });
                 }
                 this.miscsService.endRquest();
             },
             error: (error) => {
                 this.miscsService.endRquest();
                 this.data = [];
-                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de servicios', detail: error.error.message });
+                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de usuarios', detail: error.error.message });
             }
         });
     }
@@ -125,7 +105,7 @@ export class ListServicesComponent {
         this.listTable();
     }
     delete(id, deleteType: number) {
-        let message=deleteType==1?"los registros seleccionados":"el registro";
+        let message = deleteType == 1 ? 'los registros seleccionados' : 'el registro';
         // message=(deleteType)
         this.confirmationService.confirm({
             message: `¿Confirma eliminar ${message}?`,
@@ -140,14 +120,15 @@ export class ListServicesComponent {
                         break;
                     case 2:
                         // this.confirmDelete(id);
-                        this.servicesService.disable(id)
-                        .subscribe(()=>{
-                            this.listTable();
-                            this.messageService.add({ severity: 'success',key: 'message', summary: 'Operación exitosa', life: 3000 });
-                        },
-                        error=>{
-                            this.messageService.add({ life:5000, key: 'message', severity: 'error', summary: "Error al eliminar el servicio", detail:error.error.message });
-                        });
+                        this.userService.disable(id).subscribe(
+                            () => {
+                                this.listTable();
+                                this.messageService.add({ severity: 'success', key: 'message', summary: 'Operación exitosa', life: 3000 });
+                            },
+                            (error) => {
+                                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el usuario', detail: error.error.message });
+                            }
+                        );
                         break;
                 }
             }
@@ -160,7 +141,7 @@ export class ListServicesComponent {
         this.confirmDisplay = true;
         var peticiones: any[] = [];
         for (let i = 0; i < this.ids.length; i++) {
-            const ptt = this.servicesService.disable(this.ids[i]).pipe(
+            const ptt = this.userService.disable(this.ids[i]).pipe(
                 catchError((error) => {
                     this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el registro', detail: error.message });
                     return of(null);

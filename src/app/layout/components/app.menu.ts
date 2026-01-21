@@ -17,23 +17,28 @@ import { AppMenuitem } from './app.menuitem';
 export class AppMenu {
     model: any[] = [
         {
-            label: 'Dashboards',
+            label: 'Administración',
             icon: 'pi pi-home',
             items: [
                 {
-                    label: 'E-Commerce',
-                    icon: 'pi pi-fw pi-warehouse',
-                    routerLink: ['/']
+                    label: 'Roles',
+                    icon: 'pi pi-user-edit',
+                    routerLink: ['/roles']
                 },
                 {
-                    label: 'Servicios',
-                    icon: 'pi pi-fw pi-building-columns',
-                    routerLink: ['/services']
+                    label: 'Módulos',
+                    icon: 'pi pi-box',
+                    routerLink: ['/modules']
                 },
                 {
-                    label: 'Marketing',
-                    icon: 'pi pi-fw pi-gauge',
-                    routerLink: ['/dashboard-marketing']
+                    label: 'Usuarios',
+                    icon: 'pi pi-user',
+                    routerLink: ['/users']
+                },
+                {
+                    label: 'Sucursales',
+                    icon: 'pi pi-building',
+                    routerLink: ['/branches']
                 }
             ]
         },
@@ -42,6 +47,11 @@ export class AppMenu {
             label: 'Apps',
             icon: 'pi pi-th-large',
             items: [
+                {
+                    label: 'Servicios',
+                    icon: 'pi pi-fw pi-building-columns',
+                    routerLink: ['/services']
+                },
                 {
                     label: 'Blog',
                     icon: 'pi pi-fw pi-comment',
