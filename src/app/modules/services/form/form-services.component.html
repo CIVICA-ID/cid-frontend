@@ -260,6 +260,14 @@
                                 }
                             </div>
                         </div>
+                        <div class="mt-4">
+                            <app-vehicles (sendVehicle)="getVehicle($event)" [newVehicle]="newVehicle"></app-vehicles>
+                            <div class="mt-2">
+                                @if (form.get('involvedVehicle')?.invalid) {
+                                    <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                }
+                            </div>
+                        </div>
                     </div>
                 </p-fluid>
                 <div class="flex justify-end gap-3 mt-6">

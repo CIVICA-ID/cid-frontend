@@ -18,11 +18,30 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 import { Observable, Subscription } from 'rxjs';
+import { VehiclesComponent } from '@/components/vehicles/vehicles.component';
+import { Vehicle } from '@/api/vehicle';
 
 @Component({
     selector: 'app-form-services',
     templateUrl: './form-services.component.html',
-    imports: [CommonModule, ButtonModule, InputTextModule, ToastModule, ReactiveFormsModule, FormsModule, Fluid, DatePicker, TableModule, MessageModule, CardModule, ElementComponent, AddressesComponent, PeopleComponent, SelectModule],
+    imports: [
+        CommonModule,
+        ButtonModule,
+        InputTextModule,
+        ToastModule,
+        ReactiveFormsModule,
+        FormsModule,
+        Fluid,
+        DatePicker,
+        TableModule,
+        MessageModule,
+        CardModule,
+        ElementComponent,
+        AddressesComponent,
+        PeopleComponent,
+        SelectModule,
+        VehiclesComponent
+    ],
     standalone: true
 })
 export class FormServicesComponent implements OnInit, OnChanges {
@@ -34,6 +53,7 @@ export class FormServicesComponent implements OnInit, OnChanges {
     @Input()
     data: Observable<any>;
     newAddress: null | Address;
+    newVehicle: null | Vehicle;
     private subscription: Subscription;
     arrestTypeList = [
         { label: 'Infraganti', value: 'infraganti' },
@@ -143,7 +163,8 @@ export class FormServicesComponent implements OnInit, OnChanges {
                 elements: this.formBuilder.array([], Validators.required),
                 affected: this.formBuilder.array([], Validators.required),
                 address: [null, Validators.required],
-                offenders: this.formBuilder.array([], Validators.required)
+                offenders: this.formBuilder.array([], Validators.required),
+                involvedVehicle: [null]
             },
             formOptions
         );
@@ -204,6 +225,15 @@ export class FormServicesComponent implements OnInit, OnChanges {
         } else {
             this.form.get('address').setValue(null);
             this.newAddress = null;
+        }
+    }
+    getVehicle(data: Vehicle) {
+        if (data) {
+            this.form.get('involvedVehicle').setValue(data.id);
+            this.newVehicle = data;
+        } else {
+            this.form.get('involvedVehicle').setValue(null);
+            this.newVehicle = null;
         }
     }
     getAffectedArray(): FormArray {
