@@ -1,10 +1,9 @@
 import { Address } from '@/api/address';
-import { People } from '@/api/people';
 import { AddressesComponent } from '@/components/addresses/addresses.component';
 import { ElementComponent } from '@/components/element/element.component';
 import { PeopleComponent } from '@/components/people/people.component';
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, computed, effect, EventEmitter, inject, Injector, Input, OnChanges, OnInit, Output, runInInjectionContext, Signal, SimpleChanges } from '@angular/core';
 import { AbstractControl, AbstractControlOptions, FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -17,10 +16,22 @@ import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
-import { Observable, Subscription } from 'rxjs';
+import { Observable, of, startWith, Subscription } from 'rxjs';
 import { VehiclesComponent } from '@/components/vehicles/vehicles.component';
 import { Vehicle } from '@/api/vehicle';
+import { AdministrativeFaultsCategory } from '@/api/administrative-faults-category';
+import { AdministrativeFaultsCategoryService } from '@/services/administrative-faults-category.service';
+import { CatalogList } from '@/api/catalog-list';
+import { rxResource, toSignal } from '@angular/core/rxjs-interop';
+import { Offender } from '@/api/offender';
+import { AdministrativeFaultsService } from '@/services/administrative-faults.service';
+import { AdministrativeFaults } from '@/api/administrative-faults';
 
+interface OffenderFormGroup extends FormGroup {
+    dynamicOptions: Signal<any[]>;
+    isLoading: Signal<boolean>;
+    isDisabled: Signal<boolean>;
+}
 @Component({
     selector: 'app-form-services',
     templateUrl: './form-services.component.html',
@@ -45,7 +56,6 @@ import { Vehicle } from '@/api/vehicle';
     standalone: true
 })
 export class FormServicesComponent implements OnInit, OnChanges {
-    form: FormGroup;
     @Output()
     formEmitted = new EventEmitter<FormGroup>();
     @Input()
@@ -53,18 +63,47 @@ export class FormServicesComponent implements OnInit, OnChanges {
     @Input()
     data: Observable<any>;
     newAddress: null | Address;
-    newVehicle: null | Vehicle;
     private subscription: Subscription;
+    private administrativeFaultsCategoryService: AdministrativeFaultsCategoryService = inject(AdministrativeFaultsCategoryService);
+    private administrativeFaultsService: AdministrativeFaultsService = inject(AdministrativeFaultsService);
+    private readonly fb = inject(FormBuilder);
+    readonly form: FormGroup = this.fb.group(
+        {
+            externalFolio: [null, [Validators.maxLength(49)]],
+            iphFolio: [null, [Validators.maxLength(49)]],
+            description: [null, Validators.required],
+            captureDate: [null, [Validators.required]],
+            serviceDate: [null, [Validators.required]],
+            dateReception: [null, [Validators.required]],
+            arrivalDate: [null, [Validators.required]],
+            endDate: [null, [Validators.required]],
+            arrestDate: [null, [Validators.required]],
+            submissionDate: [null, [Validators.required]],
+            elements: this.fb.array([], Validators.required),
+            affected: this.fb.array([], Validators.required),
+            address: [null, Validators.required],
+            offenders: this.fb.array([], Validators.required),
+            involvedVehicle: this.fb.group({
+                id: [null],
+                idVehicle: [null],
+                theftReport: [null],
+                deposit: [null]
+            }),
+            id: [null]
+        },
+        {
+            validators: this.duplicatePeople()
+        } as AbstractControlOptions
+    );
+    private readonly injector = inject(Injector);
     arrestTypeList = [
-        { label: 'Infraganti', value: 'infraganti' },
-        { label: 'Persecución', value: 'persecucion' },
-        { label: 'Se encontraron objetos', value: 'se encontraron objetos' },
-        { label: 'Indicios', value: 'indicios' },
-        { label: 'Por señalamiento inmediato de fragrancia', value: 'por señalamiento inmediato de fragrancia' },
-        { label: 'Otro', value: 'otro' }
+        { label: 'INFRAGANTI', value: 'infraganti' },
+        { label: 'PERSECUCION O SE ENCONTRARON OBJETOS O INDICIOS', value: 'persecucion o se encontraron objetos o indicios' },
+        { label: 'POR SEÑALAMIENTO INMEDIATO DE FLAGRANCIA', value: 'por señalamiento inmediato de flagrancia' },
+        { label: 'OTRO', value: 'otro' }
     ];
+    listAdministrativeFaultsCategory: CatalogList[] = [];
     constructor(
-        private formBuilder: FormBuilder,
         private router: Router,
         private messageService: MessageService
     ) {}
@@ -108,10 +147,37 @@ export class FormServicesComponent implements OnInit, OnChanges {
             });
         }
         if (data.offenders) {
-            const arr = this.getOffenderArray();
-            arr.clear();
-            data.offenders.forEach((item) => {
-                arr.push(this.addOffender());
+            const offendersArray = this.getOffenderArray();
+            // arr.clear();
+            //
+            // data.offenders.forEach((item) => {
+            //     arr.push(this.addOffender());
+            // });
+            // console.log(data);
+            // console.log('this.listAdministrativeFaultsCategory', this.listAdministrativeFaultsCategory);
+            // // this.administrativeFaultsService.getCategorysById(data.)
+            // for(const item of this.form.get("offenders")){
+            //     console.log(item);
+            //     this.administrativeFaultsService.getCategorysById(data.offenders[i].id_administrative_fault).subscribe({
+            //         next: (data) => {
+            //             // this.form.get("offenders")[i].get("id_administrative_fault_category").setValue(data)
+            //         }
+            //     });
+            // }
+            data.offenders.forEach((offenderData: any) => {
+                const newGroup = this.addOffender();
+                if (offenderData.id_administrative_fault && !offenderData.id_administrative_fault_category) {
+                    this.administrativeFaultsService.getById(offenderData.id_administrative_fault).subscribe((category:AdministrativeFaults) => {
+                        newGroup.patchValue({
+                            ...offenderData,
+                            id_administrative_fault_category: category.id_category
+                        });
+                        offendersArray.push(newGroup);
+                    });
+                } else {
+                    newGroup.patchValue(offenderData);
+                    offendersArray.push(newGroup);
+                }
             });
         }
     }
@@ -127,7 +193,6 @@ export class FormServicesComponent implements OnInit, OnChanges {
         for (const key in obj) {
             if (obj.hasOwnProperty(key)) {
                 const value = obj[key];
-
                 // Validamos si el string tiene formato de fecha ISO
                 if (typeof value === 'string' && this.isIsoDateString(value)) {
                     processedObj[key] = new Date(value);
@@ -147,27 +212,25 @@ export class FormServicesComponent implements OnInit, OnChanges {
         return isoRegex.test(value);
     }
     ngOnInit() {
-        const formOptions: AbstractControlOptions = { validators: this.duplicatePeople() };
-        this.form = this.formBuilder.group(
-            {
-                externalFolio: [null, [Validators.maxLength(50)]],
-                iphFolio: [null, [Validators.maxLength(50)]],
-                description: [null, Validators.required],
-                captureDate: [null, [Validators.required]],
-                serviceDate: [null, [Validators.required]],
-                dateReception: [null, [Validators.required]],
-                arrivalDate: [null, [Validators.required]],
-                endDate: [null, [Validators.required]],
-                arrestDate: [null, [Validators.required]],
-                submissionDate: [null, [Validators.required]],
-                elements: this.formBuilder.array([], Validators.required),
-                affected: this.formBuilder.array([], Validators.required),
-                address: [null, Validators.required],
-                offenders: this.formBuilder.array([], Validators.required),
-                involvedVehicle: [null]
+        this.administrativeFaultsCategoryService.getList().subscribe({
+            next: (data: any) => {
+                if (data && data.length > 0) {
+                    this.listAdministrativeFaultsCategory = data.map((element) => ({
+                        label: element.name.toUpperCase(),
+                        value: element.id
+                    }));
+                }
             },
-            formOptions
-        );
+            error: (error) => {
+                this.messageService.add({
+                    life: 5000,
+                    key: 'msg',
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Hubo un error al cargar el listado de categorías de faltas administrativas'
+                });
+            }
+        });
     }
     duplicatePeople(): ValidatorFn {
         return (control: AbstractControl): ValidationErrors | null => {
@@ -209,7 +272,7 @@ export class FormServicesComponent implements OnInit, OnChanges {
         return this.form.get('elements') as FormArray;
     }
     addElement() {
-        return this.formBuilder.group({
+        return this.fb.group({
             id: [null],
             grade: [null, [Validators.maxLength(100)]],
             firstName: [null, [Validators.required, Validators.maxLength(50)]],
@@ -229,18 +292,16 @@ export class FormServicesComponent implements OnInit, OnChanges {
     }
     getVehicle(data: Vehicle) {
         if (data) {
-            this.form.get('involvedVehicle').setValue(data.id);
-            this.newVehicle = data;
+            this.form.get('involvedVehicle.idVehicle').setValue(data.id);
         } else {
-            this.form.get('involvedVehicle').setValue(null);
-            this.newVehicle = null;
+            this.form.get('involvedVehicle.idVehicle').setValue(null);
         }
     }
     getAffectedArray(): FormArray {
         return this.form.get('affected') as FormArray;
     }
     addAffected() {
-        return this.formBuilder.group({
+        return this.fb.group({
             id: [null],
             idPeople: [null, Validators.required]
         });
@@ -248,12 +309,45 @@ export class FormServicesComponent implements OnInit, OnChanges {
     getOffenderArray(): FormArray {
         return this.form.get('offenders') as FormArray;
     }
-    addOffender() {
-        return this.formBuilder.group({
+    getOffenderGroup(control: AbstractControl): OffenderFormGroup {
+        return control as OffenderFormGroup;
+    }
+    addOffender(): OffenderFormGroup {
+        const group = this.fb.group({
             id: [null],
             idPeople: [null, [Validators.required]],
-            arrestReason: [null, [Validators.required]],
+            id_administrative_fault: [null ],
+            id_administrative_fault_category: [null],
             arrestType: [null, [Validators.required]]
+        });
+        return runInInjectionContext(this.injector, () => {
+            const categoryControl = group.get('id_administrative_fault_category')!;
+            const faultControl = group.get('id_administrative_fault')!;
+            // Encontrará el primer valor
+            const categoryValue = toSignal(categoryControl.valueChanges.pipe(startWith(categoryControl.value)), { initialValue: categoryControl.value });
+            //como efecto secundario se activará o desactivará si se tiene un valor en categoryValue
+            effect(() => {
+                const id = categoryValue();
+                if (id) {
+                    faultControl.enable({ emitEvent: false }); // Habilitamos si hay categoría
+                } else {
+                    faultControl.disable({ emitEvent: false }); // Deshabilitamos si no la hay
+                    faultControl.setValue(null, { emitEvent: false }); // Limpiamos valor
+                }
+            });
+            //se hará de manera sincrónica
+            const resource = rxResource({
+                request: () => categoryValue(),
+                loader: ({ request: id }) => (id ? this.administrativeFaultsService.getCategorysById(id) : of([]))
+            });
+            const offenderGroup = group as unknown as OffenderFormGroup;
+            // Asignamos los Signals a las propiedades del grupo
+            offenderGroup.dynamicOptions = computed(() => {
+                const data = resource.value();
+                return data ? data.map((item: any) => ({ label: item.description, value: item.id })) : [];
+            });
+            offenderGroup.isLoading = resource.isLoading;
+            return offenderGroup;
         });
     }
     removeRow(array: FormArray, index: number) {
@@ -263,6 +357,7 @@ export class FormServicesComponent implements OnInit, OnChanges {
         array.push(newRow);
     }
     onSubmit() {
+        console.log(this.form);
         if (this.form.invalid) {
             this.messageService.add({
                 key: 'msg',
@@ -280,8 +375,17 @@ export class FormServicesComponent implements OnInit, OnChanges {
                 if (anidateField.id === null || anidateField.id === '') {
                     delete anidateField.id;
                 }
+                if (field == 'offenders') {
+                    delete anidateField.id_administrative_fault_category;
+                }
             });
         });
+        console.log('properties', properties);
+        //si el elemento es nuevo no tendrá id
+        if (properties.id == null) {
+            delete properties.id;
+            delete properties.involvedVehicle.id;
+        }
         this.formEmitted.emit(properties);
     }
     onCancel(event) {

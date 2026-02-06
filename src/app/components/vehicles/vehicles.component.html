@@ -1,19 +1,24 @@
 <div class="flex flex-col w-full">
     <div class="w-full max-w-1xl">
         <div class="flex items-stretch p-inputgroup shadow-sm border border-gray-300 rounded-lg overflow-hidden">
-            <span class="p-inputgroup-addon bg-gray-100 text-gray-700 font-semibold px-4 flex items-center border-none" [style.minWidth.px]="140"> Vehículo{{ vehicle ? ':' : '' }} </span>
-            <button pButton pRipple type="button" [class]="vehicle ? 'p-button-success' : 'p-button-outlined p-button-secondary'" class="flex-grow border-none text-left justify-start px-4" (click)="openDialog()">
+            <span class="p-inputgroup-addon bg-gray-100 text-gray-700 font-semibold px-4 flex items-center border-none" [style.minWidth.px]="140"> Vehículo{{ form.get('idBrand')?.value ? ':' : '' }} </span>
+            <button pButton pRipple type="button" [class]="form.valid ? 'p-button-success' : 'p-button-outlined p-button-secondary'" class="flex-grow border-none text-left justify-start px-4" (click)="openDialog()">
                 <i class="pi pi-car mr-2"></i>
-                @if (vehicle) {
+                @if (form.get('idBrand')?.value) {
                     <div class="flex items-center gap-2">
-                        <div class="w-4 h-4 rounded-full border border-white/50 shadow-sm" [style.backgroundColor]="vehicle.idColor?.hex"></div>
-                        <span class="truncate uppercase"> {{ vehicle.idBrand.label }} {{ vehicle.idSubBrand?.label || '' }} {{ vehicle?.plates || '' }} {{ vehicle?.model || '' }} - {{ vehicle.idColor.label }} </span>
+                        <div class="w-4 h-4 rounded-full border border-white/50 shadow-sm" [style.backgroundColor]="form.get('idColor')?.value?.hex"></div>
+                        <span class="truncate uppercase">
+                            {{ form.get('idBrand')?.value?.label }}
+                            {{ form.get('idSubBrand')?.value?.label || '' }}
+                            {{ form.get('plates')?.value || '' }}
+                            - {{ form.get('idColor')?.value?.label }}
+                        </span>
                     </div>
                 } @else {
                     <span>Seleccionar Vehículo</span>
                 }
             </button>
-            @if (vehicle) {
+            @if (form.get('idBrand')?.value) {
                 <button pButton pRipple icon="pi pi-times" class="p-button-danger p-button-text border-none bg-gray-50" (click)="deleteVehicle()" pTooltip="Quitar selección"></button>
             }
         </div>

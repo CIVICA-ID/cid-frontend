@@ -23,9 +23,10 @@ export class VehiclesService {
     create(address: any): Observable<Object> {
         return this.http.post(this.url, address);
     }
-    // getAddresses(search: string) {
-    //     return this.http.get<Address>(this.url + "/" + search);
-    // }
+    getById(id:string)
+    {
+        return this.http.get<any>(this.url+"/"+id);
+    }
     //   disable(id:string)
     //   {
     //     return this.http.delete(this.url+"/disable/"+id);

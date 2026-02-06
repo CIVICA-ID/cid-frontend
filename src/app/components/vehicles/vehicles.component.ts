@@ -19,11 +19,8 @@ import { forkJoin } from 'rxjs';
 import { VehiclesService } from '@/services/vehicles.service';
 import { VehicleColorsService } from '@/services/vehicle-colors.service';
 import { StateService } from '@/services/states.service';
+import { CatalogList } from '@/api/catalog-list';
 
-interface CatalogList {
-    label: string;
-    value: string;
-}
 @Component({
     selector: 'app-vehicles',
     templateUrl: './vehicles.component.html',
@@ -53,15 +50,35 @@ export class VehiclesComponent implements OnInit {
         },
         this.formOptions
     );
+    private vehicleService: VehiclesService = inject(VehiclesService);
     //se añade esto para que al seleccionar un address completo se autocomplete los valores en el form
     @Input() set newVehicle(value: any) {
         if (value) {
-            // console.log('value', value);
-            this.vehicle = value;
-            this.form.patchValue(value);
-            value = null;
+            this.vehicleService.getById(value).subscribe(
+                (data: Vehicle) => {
+                    if (!data['message']) {
+                        this.vehicle = data;
+                    } else {
+                        this.messageService.add({
+                            life: 5000,
+                            key: 'msg',
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'No se pudo encontrar el vehícuo'
+                        });
+                    }
+                },
+                (error) => {
+                    this.messageService.add({
+                        life: 5000,
+                        key: 'msg',
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'Error al obtener el vehículo, error: ' + error.message
+                    });
+                }
+            );
         } else {
-            this.vehicle = null;
             this.form.reset();
         }
     }
@@ -154,7 +171,6 @@ export class VehiclesComponent implements OnInit {
     private vehicleColorsService: VehicleColorsService = inject(VehicleColorsService);
     private statesService: StateService = inject(StateService);
     ngOnInit(): void {
-        this.visibleDialog = true;
         this.getLists();
     }
     initFields() {
@@ -257,6 +273,19 @@ export class VehiclesComponent implements OnInit {
                         value: element.id
                     }));
                 }
+                //cargar el elemento seleccionado, sólo si existe un vehículo
+                if (this.vehicle != null) {
+                    const foundSubBrand = Object.values(this.subBrandsList)
+                        .flat()
+                        .find((item) => item.value === this.vehicle.idSubBrand);
+                    this.form.patchValue({
+                        ...this.vehicle,
+                        idBrand: this.findIdCatalog(this.brandsList, this.vehicle.idBrand),
+                        idColor: this.findIdCatalog(this.vehiclesColorsList, this.vehicle.idColor),
+                        idSubBrand: foundSubBrand || null,
+                        idState: this.findIdCatalog(this.statesList, this.vehicle.idState) || null
+                    });
+                }
                 this.initFields();
             },
             error: (err) => {
@@ -287,16 +316,15 @@ export class VehiclesComponent implements OnInit {
         const foundSubBrand = Object.values(this.subBrandsList)
             .flat()
             .find((item) => item.value === vehicle.idSubBrand);
-        this.vehicle = {
+        this.form.patchValue( {
             ...vehicle,
             idBrand: this.findIdCatalog(this.brandsList, vehicle.idBrand),
             idColor: this.findIdCatalog(this.vehiclesColorsList, vehicle.idColor),
             idSubBrand: foundSubBrand,
             idState: this.findIdCatalog(this.statesList, vehicle.idState)
-        };
-        console.log(this.vehicle);
+        });
         //se envía el dato al componente padre
-        this.sendVehicle.emit(this.vehicle);
+        this.sendVehicle.emit(vehicle);
         this.resetSteps();
         this.visibleDialog = false;
     }
@@ -394,16 +422,14 @@ export class VehiclesComponent implements OnInit {
                 const foundSubBrand = Object.values(this.subBrandsList)
                     .flat()
                     .find((item) => item.value === data['object'].idSubBrand);
-                this.vehicle = {
+                this.form.patchValue(  {
                     ...data['object'],
                     idBrand: this.findIdCatalog(this.brandsList, data['object'].idBrand),
                     idColor: this.findIdCatalog(this.vehiclesColorsList, data['object'].idColor),
                     idSubBrand: foundSubBrand,
-                    idState: this.findIdCatalog(this.statesList, data['object'].idState),
-                };
-                console.log("subBrand",this.subBrandsList);
-                console.log('vehicle', this.vehicle);
-                this.sendVehicle.emit(this.vehicle);
+                    idState: this.findIdCatalog(this.statesList, data['object'].idState)
+                });
+                this.sendVehicle.emit(data["object"]);
                 this.resetSteps();
                 this.visibleDialog = false;
                 this.messageService.add({ severity: 'success', key: 'msg', summary: 'Operación exitosa', life: 3000 });

@@ -1,10 +1,10 @@
 export interface Vehicle {
     id: string;
-    brand: string;
-    subbrand?: string;
+    idBrand: string;
+    idSubBrand?: string;
     idState: string;
     model: string;
-    color?: string;
+    idColor?: string;
     tonality?: string;
     plates: string;
     vin: string;
@@ -12,4 +12,17 @@ export interface Vehicle {
     active: boolean;
     createdAt: Date | string;
     updatedAt: Date | string;
+    involvedVehicle: InvolvedVehicle[];
+}
+
+export interface InvolvedVehicle {
+    id: string;
+    active: boolean;
+    createdAt: string | Date;
+    updatedAt: string | Date;
+    idService: string;
+    idVehicle: string | Vehicle;
+    vehicle?: Vehicle;
+    theftReport: string;
+    deposit: string;
 }
