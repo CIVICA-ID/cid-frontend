@@ -89,7 +89,7 @@
                 currentPageReportTemplate="{{ getPageRange(page, limit, totalRows) }}" [responsive]="true"
                 [rowHover]="true" responsiveLayout="scroll">
                 <ng-template pTemplate="header">
-                    <tr class="bg-gray-50 text-xs uppercase text-gray-500">
+                    <tr class="bg-gray-50 uppercase text-gray-500">
                         <th class="py-3 px-4">Calle y Números</th>
                         <th class="py-3 px-4">Colonia</th>
                         <th class="py-3 px-4">Municipio/Estado</th>
@@ -98,13 +98,13 @@
                 </ng-template>
                 <ng-template pTemplate="body" let-address>
                     <tr class="hover:bg-blue-50/50 transition-colors">
-                        <td class="px-4 text-sm font-medium">
+                        <td class="px-4 font-medium">
                             {{ address.street }} #{{ address.externalNumber }}
-                            <span class="text-gray-400 text-xs" *ngIf="address.internalNumber">Int. {{
+                            <span class="text-gray-400 " *ngIf="address.internalNumber">Int. {{
                                 address.internalNumber }}</span>
                         </td>
-                        <td class="px-4 text-sm text-gray-600">{{ address.colony }}</td>
-                        <td class="px-4 text-sm">{{ address.municipality | uppercase }}, {{ address.state | uppercase }}
+                        <td class="px-4  text-gray-600">{{ address.colony }}</td>
+                        <td class="px-4 ">{{ address.municipality | uppercase }}, {{ address.state | uppercase }}
                         </td>
                         <td class="px-4 text-center">
                             <button pButton pRipple icon="pi pi-check"
