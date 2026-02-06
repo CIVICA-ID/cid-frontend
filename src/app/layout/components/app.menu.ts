@@ -53,6 +53,11 @@ export class AppMenu {
                     routerLink: ['/services']
                 },
                 {
+                    label: 'Juez',
+                    icon: 'pi pi-fw pi-comments',
+                    routerLink: ['/court-entry']
+                },
+                {
                     label: 'Blog',
                     icon: 'pi pi-fw pi-comment',
                     items: [
@@ -72,11 +77,6 @@ export class AppMenu {
                             routerLink: ['/apps/blog/edit']
                         }
                     ]
-                },
-                {
-                    label: 'Chat',
-                    icon: 'pi pi-fw pi-comments',
-                    routerLink: ['/apps/chat']
                 },
                 {
                     label: 'Files',
