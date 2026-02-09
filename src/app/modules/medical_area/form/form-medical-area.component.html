@@ -1,0 +1,23 @@
+<div class="flex justify-center p-4">
+    <div class="w-full md:max-w-6xl">
+        <div class="card p-6 bg-white shadow-md rounded-lg">
+            <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
+                <p-fluid>
+                    <div class="flex flex-col gap-4">
+                        <div class="flex flex-col gap-2">
+                            <label for="name" class="font-semibold">Nombre</label>
+                            <input pInputText id="name" formControlName="name">
+                            @if (form.get('name')?.hasError('required')) {
+                            <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                            }
+                        </div>
+                    </div>
+                </p-fluid>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button pButton pRipple label="Cancelar" (click)="onCancel($event)" class="p-button-outlined !w-32"></button>
+                    <button pButton pRipple type="button" label="Guardar" type="submit" class="!w-32"></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

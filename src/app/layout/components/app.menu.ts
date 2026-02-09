@@ -39,6 +39,11 @@ export class AppMenu {
                     label: 'Sucursales',
                     icon: 'pi pi-building',
                     routerLink: ['/branches']
+                },
+                {
+                    label: 'Áreas médicas',
+                    icon: 'pi pi-heart',
+                    routerLink: ['/medical_area']
                 }
             ]
         },
