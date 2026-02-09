@@ -1,0 +1,75 @@
+<p-toast [breakpoints]="{ '920px': { width: '100%', right: '0', left: '0' } }" key="msg" />
+<div class="flex justify-center p-4">
+  <div class="w-full md:max-w-4xl">
+    <div class="card p-6 bg-white shadow-md rounded-lg">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-semibold">Detalle del reporte médico</h2>
+        <div class="flex gap-2">
+          <button pButton pRipple label="Editar" icon="pi pi-pencil" class="p-button-info" (click)="editMedicalReport()" [disabled]="!medicalReport"></button>
+          <button pButton pRipple label="Regresar" icon="pi pi-arrow-left" class="p-button-outlined" (click)="backToList()"></button>
+        </div>
+      </div>
+
+      @if (loading) {
+        <div class="py-6 text-center text-slate-600">Cargando...</div>
+      } @else if (error) {
+        <div class="py-6 text-center text-red-600">No se pudo cargar la información.</div>
+      } @else {
+        <div class="grid gap-4">
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">ID</span>
+            <span class="text-base">{{ medicalReport?.id || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Responsable</span>
+            <span class="text-base">{{ medicalReport?.staff?.full_name || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Infractor</span>
+            <span class="text-base">{{ medicalReport?.offender?.id || medicalReport?.id_offender || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">ID staff</span>
+            <span class="text-base">{{ medicalReport?.id_staff || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Tipo de sangre</span>
+            <span class="text-base">{{ medicalReport?.blood_type || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">RH</span>
+            <span class="text-base">{{ medicalReport?.rh_factor || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Estado de ingreso</span>
+            <span class="text-base">{{ medicalReport?.entry_status || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Fecha dictamen</span>
+            <span class="text-base">{{ medicalReport?.dictation_date ? (medicalReport?.dictation_date | date: 'mediumDate') : '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Peso (kg)</span>
+            <span class="text-base">{{ medicalReport?.weight ?? '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Altura (m)</span>
+            <span class="text-base">{{ medicalReport?.height ?? '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Dictamen</span>
+            <span class="text-base whitespace-pre-line">{{ medicalReport?.dictation || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Observaciones</span>
+            <span class="text-base whitespace-pre-line">{{ medicalReport?.observations || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Activo</span>
+            <span class="text-base">{{ medicalReport?.active === true ? 'Sí' : (medicalReport?.active === false ? 'No' : '-') }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

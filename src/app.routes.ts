@@ -42,6 +42,16 @@ export const appRoutes: Routes = [
                 loadChildren: () => import('@/modules/branches/branches.routes').then((m) => m.BRANCHES_ROUTES),
                 data: { breadcrumb: 'Sucursales', module: 'branches' }
             },
+            {
+                path: 'medical-reports',
+                loadChildren: () => import('@/modules/medical_reports/module/routes').then((m) => m.MEDICAL_REPORTS_ROUTES),
+                data: { breadcrumb: 'Reportes médicos', module: 'medical_reports' }
+            },
+            {
+                path: 'psychosocial-reports',
+                loadChildren: () => import('@/modules/psychosocial_reports/module/routes').then((m) => m.PSYCHOSOCIAL_REPORTS_ROUTES),
+                data: { breadcrumb: 'Reportes psicosociales', module: 'psychosocial_reports' }
+            },
 
             {
                 path: 'blocks',

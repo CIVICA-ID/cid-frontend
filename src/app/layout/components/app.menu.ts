@@ -53,6 +53,16 @@ export class AppMenu {
                     routerLink: ['/services']
                 },
                 {
+                    label: 'Reportes médicos',
+                    icon: 'pi pi-briefcase',
+                    routerLink: ['/medical-reports']
+                },
+                {
+                    label: 'Reportes psicosociales',
+                    icon: 'pi pi-book',
+                    routerLink: ['/psychosocial-reports']
+                },
+                {
                     label: 'Blog',
                     icon: 'pi pi-fw pi-comment',
                     items: [

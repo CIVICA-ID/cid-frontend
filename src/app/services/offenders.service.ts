@@ -1,0 +1,27 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class OffendersService {
+  private readonly url = `${environment.apiUrl}offenders`;
+
+  constructor(private http: HttpClient) {}
+
+  getList(limit: number, page: number, sort: string[][], search: any): Observable<any> {
+    const body = {
+      limit: limit,
+      page: page,
+      sortBy: sort,
+      filter: search
+    };
+    return this.http.post<any>(`${this.url}/list`, body);
+  }
+
+  getById(id: string): Observable<any> {
+    return this.http.get<any>(`${this.url}/${id}`);
+  }
+}
