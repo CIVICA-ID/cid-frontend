@@ -152,7 +152,8 @@
                                 <input pInputText [id]="field.id" [formControlName]="field.controlName" [fluid]="true" [class.uppercase]="field.controlName === 'curp'" />
                             } @else if (field.type == 'date') {
                                 <p-datepicker [inputId]="field.id" [formControlName]="field.controlName" [fluid]="true" [showTime]="false" [showIcon]="true" />
-                            } @else if (field.type == 'list') {
+                            }
+                            @else if (field.type == 'list') {
                                 <p-select [formControlName]="field.controlName" [options]="field.options" optionLabel="label" optionValue="value" placeholder="Seleccionar uno" [showClear]="true" [group]="field.group" />
                             }
                             <div class="min-h-5">
