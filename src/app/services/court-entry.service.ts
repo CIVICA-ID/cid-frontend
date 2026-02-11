@@ -29,6 +29,6 @@ export class CourtEntryService {
         return this.http.put(this.url + '/disable/' + id, '');
     }
     update(id: string, data: any) {
-        return this.http.put(this.url + '/' + id, data);
+        return this.http.patch(this.url + '/' + id, data);
     }
 }

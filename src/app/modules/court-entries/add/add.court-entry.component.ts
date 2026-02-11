@@ -6,57 +6,55 @@ import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { ToastModule } from 'primeng/toast';
-import { Observable } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 import { MiscService } from '@/services/misc.service';
-import { ModulesServices } from '@/services/modules.service';
-import { FormUsersComponent } from '@/modules/users/form/form-users.component';
-import { UserService } from '@/services/user.service';
+import { CourtEntryService } from '@/services/court-entry.service';
+import { FormCourtEntryComponent } from '@/modules/court-entries/form/form-court-entry.component';
+import { AudiencesService } from '@/services/audiences.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
-    templateUrl: './add.users.component.html',
-    imports: [
-        CommonModule,
-        ButtonModule,
-        InputTextModule,
-        ToastModule,
-        ReactiveFormsModule,
-        FormUsersComponent
-    ],
+    templateUrl: './add.court-entry.component.html',
+    imports: [CommonModule, ButtonModule, InputTextModule, ToastModule, ReactiveFormsModule, FormCourtEntryComponent],
     providers: [MessageService],
     standalone: true
 })
-export class AddUsersComponent {
+export class AddCourtEntryComponent {
     data: Observable<any>;
     constructor(
-        private usersService: UserService,
+        private courtEntryService: CourtEntryService,
+        private audienceService: AudiencesService,
         private messageService: MessageService,
         private router: Router,
         private miscService: MiscService
     ) {}
     onFormEmitted(event) {
         this.miscService.startRequest();
-        this.usersService.create(event).subscribe(
-            () => {
+        forkJoin({
+            audience: this.audienceService.create(event.formAudience),
+            courtEntry: this.courtEntryService.update(event.formAudience.idCourtEntry, event.courtEntry)
+        }).subscribe({
+            next: () => {
                 this.messageService.add({
                     key: 'msg',
                     severity: 'success',
-                    detail:"Usuario creado correctamente",
+                    detail: 'Corte creada correctamente',
                     life: 3000
                 });
                 setTimeout(() => {
-                    this.router.navigate(['/users']);
+                    this.router.navigate(['/court-entry']);
                     this.miscService.endRquest();
                 }, 1000);
             },
-            (error) => {
+            error: (error) => {
                 this.miscService.endRquest();
                 this.messageService.add({
                     key: 'msg',
                     severity: 'error',
-                    detail: 'Error al guardar el usuario, error: ' + error.error.message,
+                    detail: 'Error al guardar la corte, error: ' + error.error.message,
                     life: 3000
                 });
             }
-        );
+        });
     }
 }
