@@ -1,5 +1,5 @@
 export interface Offender {
-    id: string;
+    id?: string;
     active: boolean;
     createdAt: Date | string;
     updatedAt: Date | string;
@@ -7,4 +7,7 @@ export interface Offender {
     id_service: string;
     idPeople: string;
     id_administrative_fault: string;
+    arrestType: string;
+    idPeople: string;
+    id_administrative_fault_category: string;
 }

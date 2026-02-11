@@ -53,6 +53,7 @@ export class AddressesComponent implements OnInit {
         },
         this.formOptions
     );
+    //se añade esto para que al seleccionar un address completo se autocomplete los valores en el form
     @Input() set newAddress(value: any) {
         if (value) {
             this.address = value;
@@ -66,23 +67,17 @@ export class AddressesComponent implements OnInit {
             });
         }
     }
-    fullAddress: string = '';
-    addresses = [];
     @Output()
     sendAddress = new EventEmitter<Address>();
     currentStep: number = 1;
     steps = 3;
-    zoom = 15;
     page: number = 1;
     sortBy: [[string, string]] = [['createdAt', 'DESC']];
     totalRows: number = 0;
     limit: number = 10;
-    currentSearch: string = '';
-    isLoadingAddresses: boolean = false;
     municipalitiesList = [];
     statesList = [];
     countriesList: { label: string; value: string }[] = [];
-    selectedState: string = '';
     fields = [];
     typeAddressList = [
         { label: 'Domicilio', value: 'Domicilio' },

@@ -13,4 +13,17 @@ export interface Vehicle {
     createdAt: Date | string;
     updatedAt: Date | string;
     // involvedVehicle: InvolvedVehicle[];
+    involvedVehicle: InvolvedVehicle[];
+}
+
+export interface InvolvedVehicle {
+    id: string;
+    active: boolean;
+    createdAt: string | Date;
+    updatedAt: string | Date;
+    idService: string;
+    idVehicle: string | Vehicle;
+    vehicle?: Vehicle;
+    theftReport: string;
+    deposit: string;
 }
