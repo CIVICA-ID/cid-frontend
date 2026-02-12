@@ -69,9 +69,9 @@ export const appRoutes: Routes = [
             },
 
             {
-                path: 'blocks',
-                data: { breadcrumb: 'Free Blocks' },
-                loadChildren: () => import('@/pages/blocks/blocks.routes')
+                path: 'court-entry',
+                data: { breadcrumb: 'Registros del Juez' },
+                loadChildren: () => import('@/modules/court-entries/court-entry.routes').then(m=>m.COURT_ENTRY_ROUTES)
             },
             {
                 path: 'ecommerce',

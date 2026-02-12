@@ -2,14 +2,12 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { Offender } from '@/api/offender';
-
 
 @Injectable({
-  providedIn: 'root'
+    providedIn: 'root'
 })
-export class OffendersService {
-    url: string = `${environment.apiUrl}offenders`;
+export class CourtEntryService {
+    url: string = `${environment.apiUrl}court-entries`;
     constructor(private http: HttpClient) {}
     getList(limit: number, page: number, sort: string[][], search: any): Observable<any> {
         const body = {
@@ -25,12 +23,12 @@ export class OffendersService {
         return this.http.post(this.url, data);
     }
     getById(id: string) {
-        return this.http.get<Offender>(this.url + '/' + id);
+        return this.http.get<any>(this.url + '/' + id);
     }
     disable(id: string) {
         return this.http.put(this.url + '/disable/' + id, '');
     }
     update(id: string, data: any) {
-        return this.http.put(this.url + '/' + id, data);
+        return this.http.patch(this.url + '/' + id, data);
     }
 }

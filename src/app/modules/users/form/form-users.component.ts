@@ -193,7 +193,6 @@ export class FormUsersComponent implements OnInit {
         array.push(newRow);
     }
     onSubmit() {
-        console.log(this.form);
         if (this.form.invalid) {
             this.messageService.add({
                 key: 'msg',

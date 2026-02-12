@@ -101,9 +101,18 @@
                 </ng-container>
             </td>
             <td>
+<!--                //es para las tablas que añadirán información sobre un registro-->
                 <div class="flex">
-                    <button pTooltip="Editar {{ configTable.module }}" pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-info p-button-text" [routerLink]="['/' + configTable.route + '/edit', rowData.id]"></button>
+                    @if(configTable.add && rowData.processed){
+                        <button pTooltip="Editar {{ configTable.module }}" pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-info p-button-text" [routerLink]="['/' + configTable.route + '/edit', rowData.id]"></button>
+                    }
+                    @else if(!configTable.add){
+                        <button pTooltip="Editar {{ configTable.module }}" pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-info p-button-text" [routerLink]="['/' + configTable.route + '/edit', rowData.id]"></button>
+                    }
                     <button pTooltip="Eliminar {{ configTable.module }}" pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text ml-2" (click)="confirmDelete(rowData.id)"></button>
+                    @if(configTable.add && !rowData.processed){
+                        <button pTooltip="Agregar {{ configTable.module }}" pButton pRipple icon="pi pi-plus" class="p-button-rounded p-button-info p-button-text" [routerLink]="['/' + configTable.route + '/add', rowData.id]"></button>
+                    }
                 </div>
             </td>
         </tr>

@@ -1,17 +1,20 @@
-export class Address {
-    id:string;
-    street!: string;
-    externalNumber!: number;
-    internalNumber?: number;
-    cross1?: string;
-    cross2?: string;
-    municipality!: string;
-    state!: string;
-    region?: string;
-    colony!: string;
-    country!: string;
-    operationalArea?: string;
-    place?: string;
+export interface Address {
+    id: string;
+    active: boolean;
+    createdAt: Date | string;
+    updatedAt: Date | string;
+    street: string;
+    externalNumber: number;
+    internalNumber: number;
+    cross1: string;
+    cross2: string;
+    municipality: string | null;
+    state: string;
+    region: string;
+    colony: string;
+    country: string;
+    operationalArea: string;
+    place: string;
     principal: boolean;
-    type!: string;
+    type: string;
 }

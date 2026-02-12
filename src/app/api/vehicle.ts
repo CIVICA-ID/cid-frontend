@@ -12,6 +12,7 @@ export interface Vehicle {
     active: boolean;
     createdAt: Date | string;
     updatedAt: Date | string;
+    // involvedVehicle: InvolvedVehicle[];
     involvedVehicle: InvolvedVehicle[];
 }
 
