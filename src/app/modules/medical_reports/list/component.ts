@@ -79,6 +79,30 @@ export class ListComponent {
       fieldType: 'date'
     },
     {
+      field: 'dictation',
+      column: 'Dictamen',
+      columnType: 'text',
+      fieldType: 'text'
+    },
+    {
+      field: 'observations',
+      column: 'Observaciones',
+      columnType: 'text',
+      fieldType: 'text'
+    },
+    {
+      field: 'weight',
+      column: 'Peso (kg)',
+      columnType: 'numeric',
+      fieldType: 'numeric'
+    },
+    {
+      field: 'height',
+      column: 'Altura (m)',
+      columnType: 'numeric',
+      fieldType: 'numeric'
+    },
+    {
       field: 'id_staff',
       column: 'ID staff',
       columnType: 'text',

@@ -63,6 +63,21 @@ export class AppMenu {
                     routerLink: ['/psychosocial-reports']
                 },
                 {
+                    label: 'Estadías en celda',
+                    icon: 'pi pi-inbox',
+                    routerLink: ['/cell-stays']
+                },
+                {
+                    label: 'Pertenencias',
+                    icon: 'pi pi-briefcase',
+                    routerLink: ['/belongings']
+                },
+                {
+                    label: 'Boletas de libertad',
+                    icon: 'pi pi-ticket',
+                    routerLink: ['/freedom-tickets']
+                },
+                {
                     label: 'Blog',
                     icon: 'pi pi-fw pi-comment',
                     items: [

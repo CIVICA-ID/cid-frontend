@@ -13,10 +13,10 @@ import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TooltipModule } from 'primeng/tooltip';
 import { catchError, forkJoin, Observable, of } from 'rxjs';
-import { PsychosocialReportsService } from '../module/service';
+import { FreedomTicketsService } from '../module/service';
 
 @Component({
-  selector: 'app-list-psychosocial-reports',
+  selector: 'app-list-freedom-tickets',
   standalone: true,
   imports: [
     CommonModule,
@@ -31,7 +31,7 @@ import { PsychosocialReportsService } from '../module/service';
     TableTemplateComponent,
     RouterModule
   ],
-  providers: [PsychosocialReportsService, MessageService, ConfirmationService],
+  providers: [FreedomTicketsService, MessageService, ConfirmationService],
   templateUrl: './template.html'
 })
 export class ListComponent {
@@ -43,32 +43,50 @@ export class ListComponent {
       fieldType: 'text'
     },
     {
-      field: 'staff.full_name',
-      column: 'Responsable',
+      field: 'cellStay.cellRegister',
+      column: 'Registro celda',
       columnType: 'text',
       fieldType: 'text'
     },
     {
-      field: 'offender.id',
-      column: 'Infractor',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'dictation_date',
-      column: 'Fecha dictamen',
+      field: 'releaseDate',
+      column: 'Fecha de liberación',
       columnType: 'date',
       fieldType: 'date'
     },
     {
-      field: 'dictation',
-      column: 'Dictamen',
+      field: 'arrestHours',
+      column: 'Horas de arresto',
+      columnType: 'numeric',
+      fieldType: 'numeric'
+    },
+    {
+      field: 'fineAmount',
+      column: 'Monto multa',
+      columnType: 'numeric',
+      fieldType: 'numeric'
+    },
+    {
+      field: 'exitReason',
+      column: 'Motivo de salida',
       columnType: 'text',
       fieldType: 'text'
     },
     {
-      field: 'observations',
-      column: 'Observaciones',
+      field: 'paymentTicketFolio',
+      column: 'Folio de pago',
+      columnType: 'text',
+      fieldType: 'text'
+    },
+    {
+      field: 'civilJudge',
+      column: 'Juez cívico',
+      columnType: 'text',
+      fieldType: 'text'
+    },
+    {
+      field: 'custodian',
+      column: 'Custodio',
       columnType: 'text',
       fieldType: 'text'
     },
@@ -92,7 +110,7 @@ export class ListComponent {
   confirmDisplay = false;
 
   constructor(
-    private psychosocialReportsService: PsychosocialReportsService,
+    private freedomTicketsService: FreedomTicketsService,
     private messageService: MessageService,
     private miscsService: MiscService,
     private confirmationService: ConfirmationService
@@ -100,19 +118,19 @@ export class ListComponent {
 
   listTable(): void {
     this.miscsService.startRequest();
-    this.psychosocialReportsService.getList(this.limit, this.page, this.sort, this.search).subscribe({
+    this.freedomTicketsService.getList(this.limit, this.page, this.sort, this.search).subscribe({
       next: (data) => {
         if (data?.meta?.totalItems) {
           this.data = data['data'];
           this.totalRows = data['meta']['totalItems'];
         } else {
-          this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error', detail: 'No se encontraron reportes psicosociales' });
+          this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error', detail: 'No se encontraron boletas de libertad' });
           this.data = [];
           this.totalRows = 0;
         }
         this.configTable = {
-          module: 'Reportes psicosociales',
-          route: 'psychosocial-reports',
+          module: 'Boletas de libertad',
+          route: 'freedom-tickets',
           totalRows: this.totalRows
         };
         this.miscsService.endRquest();
@@ -120,7 +138,7 @@ export class ListComponent {
       error: (error) => {
         this.miscsService.endRquest();
         this.data = [];
-        this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de reportes psicosociales', detail: error?.error?.message || error.message });
+        this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de boletas de libertad', detail: error?.error?.message || error.message });
       }
     });
   }
@@ -147,13 +165,13 @@ export class ListComponent {
             this.deleteSelected();
             break;
           case 2:
-            this.psychosocialReportsService.disable(id).subscribe(
+            this.freedomTicketsService.disable(id).subscribe(
               () => {
                 this.listTable();
                 this.messageService.add({ severity: 'success', key: 'message', summary: 'Operación exitosa', life: 3000 });
               },
               (error) => {
-                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el reporte psicosocial', detail: error?.error?.message || error.message });
+                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar la boleta de libertad', detail: error?.error?.message || error.message });
               }
             );
             break;
@@ -170,7 +188,7 @@ export class ListComponent {
     this.confirmDisplay = true;
     const requests: any[] = [];
     for (let i = 0; i < this.ids.length; i++) {
-      const req = this.psychosocialReportsService.disable(this.ids[i]).pipe(
+      const req = this.freedomTicketsService.disable(this.ids[i]).pipe(
         catchError((error) => {
           this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el registro', detail: error.message });
           return of(null);

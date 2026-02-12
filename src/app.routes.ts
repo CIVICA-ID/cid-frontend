@@ -52,6 +52,21 @@ export const appRoutes: Routes = [
                 loadChildren: () => import('@/modules/psychosocial_reports/module/routes').then((m) => m.PSYCHOSOCIAL_REPORTS_ROUTES),
                 data: { breadcrumb: 'Reportes psicosociales', module: 'psychosocial_reports' }
             },
+            {
+                path: 'cell-stays',
+                loadChildren: () => import('@/modules/cell_stays/module/routes').then((m) => m.CELL_STAYS_ROUTES),
+                data: { breadcrumb: 'Estadías en celda', module: 'cell_stays' }
+            },
+            {
+                path: 'belongings',
+                loadChildren: () => import('@/modules/belongings/module/routes').then((m) => m.BELONGINGS_ROUTES),
+                data: { breadcrumb: 'Pertenencias', module: 'belongings' }
+            },
+            {
+                path: 'freedom-tickets',
+                loadChildren: () => import('@/modules/freedom_tickets/module/routes').then((m) => m.FREEDOM_TICKETS_ROUTES),
+                data: { breadcrumb: 'Boletas de libertad', module: 'freedom_tickets' }
+            },
 
             {
                 path: 'blocks',

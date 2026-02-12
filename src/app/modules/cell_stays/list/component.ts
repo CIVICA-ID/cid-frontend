@@ -13,10 +13,10 @@ import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TooltipModule } from 'primeng/tooltip';
 import { catchError, forkJoin, Observable, of } from 'rxjs';
-import { PsychosocialReportsService } from '../module/service';
+import { CellStaysService } from '../module/service';
 
 @Component({
-  selector: 'app-list-psychosocial-reports',
+  selector: 'app-list-cell-stays',
   standalone: true,
   imports: [
     CommonModule,
@@ -31,7 +31,7 @@ import { PsychosocialReportsService } from '../module/service';
     TableTemplateComponent,
     RouterModule
   ],
-  providers: [PsychosocialReportsService, MessageService, ConfirmationService],
+  providers: [CellStaysService, MessageService, ConfirmationService],
   templateUrl: './template.html'
 })
 export class ListComponent {
@@ -43,28 +43,16 @@ export class ListComponent {
       fieldType: 'text'
     },
     {
-      field: 'staff.full_name',
-      column: 'Responsable',
+      field: 'cellRegister',
+      column: 'Registro de celda',
       columnType: 'text',
       fieldType: 'text'
     },
     {
-      field: 'offender.id',
-      column: 'Infractor',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'dictation_date',
-      column: 'Fecha dictamen',
+      field: 'entryDate',
+      column: 'Fecha de ingreso',
       columnType: 'date',
       fieldType: 'date'
-    },
-    {
-      field: 'dictation',
-      column: 'Dictamen',
-      columnType: 'text',
-      fieldType: 'text'
     },
     {
       field: 'observations',
@@ -92,7 +80,7 @@ export class ListComponent {
   confirmDisplay = false;
 
   constructor(
-    private psychosocialReportsService: PsychosocialReportsService,
+    private cellStaysService: CellStaysService,
     private messageService: MessageService,
     private miscsService: MiscService,
     private confirmationService: ConfirmationService
@@ -100,19 +88,19 @@ export class ListComponent {
 
   listTable(): void {
     this.miscsService.startRequest();
-    this.psychosocialReportsService.getList(this.limit, this.page, this.sort, this.search).subscribe({
+    this.cellStaysService.getList(this.limit, this.page, this.sort, this.search).subscribe({
       next: (data) => {
         if (data?.meta?.totalItems) {
           this.data = data['data'];
           this.totalRows = data['meta']['totalItems'];
         } else {
-          this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error', detail: 'No se encontraron reportes psicosociales' });
+          this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error', detail: 'No se encontraron estadías en celda' });
           this.data = [];
           this.totalRows = 0;
         }
         this.configTable = {
-          module: 'Reportes psicosociales',
-          route: 'psychosocial-reports',
+          module: 'Estadías en celda',
+          route: 'cell-stays',
           totalRows: this.totalRows
         };
         this.miscsService.endRquest();
@@ -120,7 +108,7 @@ export class ListComponent {
       error: (error) => {
         this.miscsService.endRquest();
         this.data = [];
-        this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de reportes psicosociales', detail: error?.error?.message || error.message });
+        this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de estadías en celda', detail: error?.error?.message || error.message });
       }
     });
   }
@@ -147,13 +135,13 @@ export class ListComponent {
             this.deleteSelected();
             break;
           case 2:
-            this.psychosocialReportsService.disable(id).subscribe(
+            this.cellStaysService.disable(id).subscribe(
               () => {
                 this.listTable();
                 this.messageService.add({ severity: 'success', key: 'message', summary: 'Operación exitosa', life: 3000 });
               },
               (error) => {
-                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el reporte psicosocial', detail: error?.error?.message || error.message });
+                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar la estadía en celda', detail: error?.error?.message || error.message });
               }
             );
             break;
@@ -170,7 +158,7 @@ export class ListComponent {
     this.confirmDisplay = true;
     const requests: any[] = [];
     for (let i = 0; i < this.ids.length; i++) {
-      const req = this.psychosocialReportsService.disable(this.ids[i]).pipe(
+      const req = this.cellStaysService.disable(this.ids[i]).pipe(
         catchError((error) => {
           this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el registro', detail: error.message });
           return of(null);
