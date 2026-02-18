@@ -22,7 +22,15 @@
             </div>
             <div class="flex flex-col gap-2">
               <label for="id_staff" class="font-semibold">ID staff</label>
-              <input pInputText id="id_staff" formControlName="id_staff">
+              <p-select
+                [options]="staffOptions"
+                formControlName="id_staff"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar staff"
+                [filter]="true"
+                [showClear]="true"
+              ></p-select>
               @if (form.get('id_staff')?.hasError('required')) {
                 <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
               }

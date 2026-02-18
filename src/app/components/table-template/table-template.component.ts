@@ -24,6 +24,7 @@ export class TableTemplateComponent {
     @Input() data = [];
     @Input() subColumns = [];
     @Input() configTable: any = {};
+    @Input() loading: boolean = false;
     @Input() statusArray: string[] = [];
     matchModeOptionsText: SelectItem[] = [];
     matchModeOptionsDate: SelectItem[] = [];
@@ -42,7 +43,7 @@ export class TableTemplateComponent {
         boolean: 90,
         date: 140,
         numeric: 230,
-        text: 260
+        text: 100
     };
     @Input()
     listOptions = [];
@@ -164,6 +165,21 @@ export class TableTemplateComponent {
                 return 'secondary'; // Gris (para estados desconocidos)
         }
     }
+
+    isUuid(value: any): boolean {
+        if (typeof value !== 'string') return false;
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+    }
+
+    formatUuid(value: any): string {
+        if (typeof value !== 'string') return '-';
+        if (!this.isUuid(value)) return value;
+
+        const first = value.slice(0, 8).toUpperCase();
+        const last = value.slice(-4).toUpperCase();
+        return `${first}...${last}`;
+    }
+
     confirmDelete(id: string) {
         this.idDelete.emit(id);
     }

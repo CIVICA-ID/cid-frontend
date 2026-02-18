@@ -19,7 +19,15 @@
             </div>
             <div class="flex flex-col gap-2">
               <label for="id_staff" class="font-semibold">ID staff</label>
-              <input pInputText id="id_staff" formControlName="id_staff">
+              <p-select
+                [options]="staffOptions"
+                formControlName="id_staff"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar staff"
+                [filter]="true"
+                [showClear]="true"
+              ></p-select>
             </div>
             <div class="flex flex-col gap-2">
               <label for="dictation_date" class="font-semibold">Fecha de dictamen</label>

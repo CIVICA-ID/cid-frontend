@@ -1,7 +1,7 @@
 import { TableTemplateComponent } from '@/components/table-template/table-template.component';
 import { MiscService } from '@/services/misc.service';
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -12,7 +12,7 @@ import { RippleModule } from 'primeng/ripple';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TooltipModule } from 'primeng/tooltip';
-import { catchError, forkJoin, Observable, of } from 'rxjs';
+import { catchError, finalize, forkJoin, Observable, of, Subject, switchMap, takeUntil, tap } from 'rxjs';
 import { FreedomTicketsService } from '../module/service';
 
 @Component({
@@ -34,7 +34,7 @@ import { FreedomTicketsService } from '../module/service';
   providers: [FreedomTicketsService, MessageService, ConfirmationService],
   templateUrl: './template.html'
 })
-export class ListComponent {
+export class ListComponent implements OnInit, OnDestroy {
   columns = [
     {
       field: 'id',
@@ -97,17 +97,24 @@ export class ListComponent {
       fieldType: 'boolean'
     }
   ];
-  totalRows = 0;
-  configTable: any = {};
-  data = [];
+  totalRows = signal<number>(0);
+  data = signal<any[]>([]);
+  configTable = computed(() => ({
+    module: 'Boletas de libertad',
+    route: 'freedom-tickets',
+    totalRows: this.totalRows()
+  }));
   limit = 10;
   search = {};
   sort: string[][] = [];
   page = 1;
-  ids: string[] = [];
+  ids = signal<string[]>([]);
+  isLoading = signal<boolean>(false);
   searchTerm = '';
   list: Observable<any>;
   confirmDisplay = false;
+  private readonly reloadList$ = new Subject<void>();
+  private readonly destroy$ = new Subject<void>();
 
   constructor(
     private freedomTicketsService: FreedomTicketsService,
@@ -116,31 +123,53 @@ export class ListComponent {
     private confirmationService: ConfirmationService
   ) {}
 
-  listTable(): void {
-    this.miscsService.startRequest();
-    this.freedomTicketsService.getList(this.limit, this.page, this.sort, this.search).subscribe({
-      next: (data) => {
-        if (data?.meta?.totalItems) {
-          this.data = data['data'];
-          this.totalRows = data['meta']['totalItems'];
-        } else {
-          this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error', detail: 'No se encontraron boletas de libertad' });
-          this.data = [];
-          this.totalRows = 0;
+  ngOnInit(): void {
+    this.reloadList$
+      .pipe(
+        tap(() => {
+          this.isLoading.set(true);
+          this.miscsService.startRequest();
+        }),
+        switchMap(() =>
+          this.freedomTicketsService.getList(this.limit, this.page, this.sort, this.search).pipe(
+            catchError((error: any) => {
+              this.data.set([]);
+              this.totalRows.set(0);
+              this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de boletas de libertad', detail: error?.error?.message || error.message });
+              return of(null);
+            }),
+            finalize(() => {
+              this.isLoading.set(false);
+              this.miscsService.endRquest();
+            })
+          )
+        ),
+        takeUntil(this.destroy$)
+      )
+      .subscribe((data) => {
+        if (!data) {
+          return;
         }
-        this.configTable = {
-          module: 'Boletas de libertad',
-          route: 'freedom-tickets',
-          totalRows: this.totalRows
-        };
-        this.miscsService.endRquest();
-      },
-      error: (error) => {
-        this.miscsService.endRquest();
-        this.data = [];
-        this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de boletas de libertad', detail: error?.error?.message || error.message });
-      }
-    });
+
+        if (data?.meta?.totalItems) {
+          this.data.set(data['data']);
+          this.totalRows.set(data['meta']['totalItems']);
+        } else {
+          this.messageService.add({ life: 5000, key: 'message', severity: 'warn', summary: 'No se encontraron boletas de libertad', detail: '' });
+          this.data.set([]);
+          this.totalRows.set(0);
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.reloadList$.complete();
+  }
+
+  listTable(): void {
+    this.reloadList$.next();
   }
 
   handleParamsList(event: any) {
@@ -151,10 +180,14 @@ export class ListComponent {
     this.listTable();
   }
 
-  delete(id, deleteType: number) {
-    const message = deleteType == 1 ? 'los registros seleccionados' : 'el registro';
+  delete(id: string | null, deleteType: number) {
+    const message =
+      deleteType === 1
+        ? `Se eliminarán ${this.ids().length} registros seleccionados. ¿Desea continuar?`
+        : `Se eliminará ${this.getRecordDescription(id)}. ¿Desea continuar?`;
+
     this.confirmationService.confirm({
-      message: `¿Confirma eliminar ${message}?`,
+      message,
       header: 'Confirmar',
       icon: 'pi pi-info-circle',
       acceptLabel: 'Aceptar',
@@ -165,6 +198,9 @@ export class ListComponent {
             this.deleteSelected();
             break;
           case 2:
+            if (!id) {
+              return;
+            }
             this.freedomTicketsService.disable(id).subscribe(
               () => {
                 this.listTable();
@@ -180,15 +216,45 @@ export class ListComponent {
     });
   }
 
+  private getRecordDescription(id: string | null): string {
+    if (!id) {
+      return 'el registro seleccionado';
+    }
+
+    const row = this.data().find((item) => item?.id === id);
+    if (!row) {
+      return `el registro con ID ${id}`;
+    }
+
+    const candidateFields = this.columns
+      .map((column) => column.field)
+      .filter((field) => field !== 'id' && field !== 'active');
+
+    for (const field of candidateFields) {
+      const value = this.getDeepValue(row, field);
+      if (value === null || value === undefined || `${value}`.trim() === '') {
+        continue;
+      }
+      return `el registro "${value}"`;
+    }
+
+    return `el registro con ID ${id}`;
+  }
+
+  private getDeepValue(obj: any, path: string): any {
+    return path.split('.').reduce((acc, key) => (acc || {})[key], obj);
+  }
+
   getIdsDeleted(ids: string[]) {
-    this.ids = ids;
+    this.ids.set(ids);
   }
 
   deleteSelected() {
     this.confirmDisplay = true;
     const requests: any[] = [];
-    for (let i = 0; i < this.ids.length; i++) {
-      const req = this.freedomTicketsService.disable(this.ids[i]).pipe(
+    const selectedIds = this.ids();
+    for (let i = 0; i < selectedIds.length; i++) {
+      const req = this.freedomTicketsService.disable(selectedIds[i]).pipe(
         catchError((error) => {
           this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el registro', detail: error.message });
           return of(null);
@@ -200,7 +266,7 @@ export class ListComponent {
       () => {
         this.messageService.add({ severity: 'success', key: 'message', summary: 'Operación exitosa', detail: 'Registros eliminados exitosamente', life: 3000 });
         this.listTable();
-        this.ids = [];
+        this.ids.set([]);
       },
       (err) => {
         this.messageService.add({ severity: 'error', key: 'message', summary: 'Error al eliminar registros', detail: err.message, life: 3000 });

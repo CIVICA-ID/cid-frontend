@@ -38,6 +38,11 @@ export const appRoutes: Routes = [
                 data: { breadcrumb: 'Usuarios', module: 'users' }
             },
             {
+                path: 'staff',
+                loadChildren: () => import('@/modules/staff/module/routes').then((m) => m.STAFF_ROUTES),
+                data: { breadcrumb: 'Staff', module: 'staff' }
+            },
+            {
                 path: 'branches',
                 loadChildren: () => import('@/modules/branches/branches.routes').then((m) => m.BRANCHES_ROUTES),
                 data: { breadcrumb: 'Sucursales', module: 'branches' }

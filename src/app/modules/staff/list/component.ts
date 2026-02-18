@@ -1,4 +1,5 @@
 import { TableTemplateComponent } from '@/components/table-template/table-template.component';
+import { PageSectionHeaderComponent } from '@/components/page-section-header/page-section-header.component';
 import { MiscService } from '@/services/misc.service';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
@@ -6,120 +7,54 @@ import { RouterModule } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { RippleModule } from 'primeng/ripple';
 import { ToastModule } from 'primeng/toast';
-import { ToolbarModule } from 'primeng/toolbar';
-import { TooltipModule } from 'primeng/tooltip';
 import { catchError, finalize, forkJoin, Observable, of, Subject, switchMap, takeUntil, tap } from 'rxjs';
-import { MedicalReportsService } from '../module/service';
+import { StaffService } from '../module/service';
 
 @Component({
-  selector: 'app-list-medical-reports',
+  selector: 'app-list-staff',
   standalone: true,
   imports: [
     CommonModule,
     ButtonModule,
-    InputTextModule,
-    TooltipModule,
-    ToolbarModule,
     ConfirmDialogModule,
-    DialogModule,
-    RippleModule,
     ToastModule,
+    PageSectionHeaderComponent,
     TableTemplateComponent,
     RouterModule
   ],
-  providers: [MedicalReportsService, MessageService, ConfirmationService],
+  providers: [StaffService, MessageService, ConfirmationService],
   templateUrl: './template.html'
 })
 export class ListComponent implements OnInit, OnDestroy {
   columns = [
     {
-      field: 'id',
-      column: 'ID',
+      field: 'full_name',
+      column: 'Nombre completo',
       columnType: 'text',
       fieldType: 'text'
     },
     {
-      field: 'staff.full_name',
-      column: 'Responsable',
+      field: 'specialty',
+      column: 'Especialidad',
       columnType: 'text',
       fieldType: 'text'
     },
     {
-      field: 'offender.id',
-      column: 'Infractor',
+      field: 'phone',
+      column: 'Teléfono',
       columnType: 'text',
       fieldType: 'text'
     },
-    {
-      field: 'blood_type',
-      column: 'Tipo de sangre',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'rh_factor',
-      column: 'RH',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'entry_status',
-      column: 'Estado ingreso',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'dictation_date',
-      column: 'Fecha dictamen',
-      columnType: 'date',
-      fieldType: 'date'
-    },
-    {
-      field: 'dictation',
-      column: 'Dictamen',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'observations',
-      column: 'Observaciones',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'weight',
-      column: 'Peso (kg)',
-      columnType: 'numeric',
-      fieldType: 'numeric'
-    },
-    {
-      field: 'height',
-      column: 'Altura (m)',
-      columnType: 'numeric',
-      fieldType: 'numeric'
-    },
-    {
-      field: 'id_staff',
-      column: 'ID staff',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'active',
-      column: 'Activo',
-      columnType: 'boolean',
-      fieldType: 'boolean'
-    }
   ];
   totalRows = signal<number>(0);
   data = signal<any[]>([]);
+  activeRows = computed(() => this.data().filter((row) => row?.active === true).length);
+  inactiveRows = computed(() => this.data().filter((row) => row?.active === false).length);
   configTable = computed(() => ({
-    module: 'Reportes médicos',
-    route: 'medical-reports',
+    module: 'Staff',
+    route: 'staff',
+    view: true,
     totalRows: this.totalRows()
   }));
   limit = 10;
@@ -127,6 +62,7 @@ export class ListComponent implements OnInit, OnDestroy {
   sort: string[][] = [];
   page = 1;
   ids = signal<string[]>([]);
+  selectedRows = computed(() => this.ids().length);
   isLoading = signal<boolean>(false);
   searchTerm = '';
   list: Observable<any>;
@@ -135,7 +71,7 @@ export class ListComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   constructor(
-    private medicalReportsService: MedicalReportsService,
+    private staffService: StaffService,
     private messageService: MessageService,
     private miscsService: MiscService,
     private confirmationService: ConfirmationService
@@ -149,11 +85,11 @@ export class ListComponent implements OnInit, OnDestroy {
           this.miscsService.startRequest();
         }),
         switchMap(() =>
-          this.medicalReportsService.getList(this.limit, this.page, this.sort, this.search).pipe(
+          this.staffService.getList(this.limit, this.page, this.sort, this.search).pipe(
             catchError((error: any) => {
               this.data.set([]);
               this.totalRows.set(0);
-              this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de reportes médicos', detail: error?.error?.message || error.message });
+              this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de staff', detail: error?.error?.message || error.message });
               return of(null);
             }),
             finalize(() => {
@@ -173,7 +109,7 @@ export class ListComponent implements OnInit, OnDestroy {
           this.data.set(data['data']);
           this.totalRows.set(data['meta']['totalItems']);
         } else {
-          this.messageService.add({ life: 5000, key: 'message', severity: 'warn', summary: 'No se encontraron reportes médicos', detail: '' });
+          this.messageService.add({ life: 5000, key: 'message', severity: 'warn', summary: 'No se encontró información de staff', detail: '' });
           this.data.set([]);
           this.totalRows.set(0);
         }
@@ -219,13 +155,13 @@ export class ListComponent implements OnInit, OnDestroy {
             if (!id) {
               return;
             }
-            this.medicalReportsService.disable(id).subscribe(
+            this.staffService.disable(id).subscribe(
               () => {
                 this.listTable();
                 this.messageService.add({ severity: 'success', key: 'message', summary: 'Operación exitosa', life: 3000 });
               },
               (error) => {
-                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el reporte médico', detail: error?.error?.message || error.message });
+                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el registro de staff', detail: error?.error?.message || error.message });
               }
             );
             break;
@@ -264,15 +200,17 @@ export class ListComponent implements OnInit, OnDestroy {
   }
 
   getIdsDeleted(ids: string[]) {
+    console.log("aqui se obtienen los ids seleccionados:", ids);  
     this.ids.set(ids);
   }
 
   deleteSelected() {
+    console.log('IDs a eliminar:', this.ids());
     this.confirmDisplay = true;
     const requests: any[] = [];
     const selectedIds = this.ids();
     for (let i = 0; i < selectedIds.length; i++) {
-      const req = this.medicalReportsService.disable(selectedIds[i]).pipe(
+      const req = this.staffService.disable(selectedIds[i]).pipe(
         catchError((error) => {
           this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el registro', detail: error.message });
           return of(null);

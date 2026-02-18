@@ -14,6 +14,7 @@ import { ToastModule } from 'primeng/toast';
 import { MiscService } from '@/services/misc.service';
 import { PsychosocialReportsService } from '../module/service';
 import { OffendersService } from '@/services/offenders.service';
+import { StaffService } from '@/modules/staff/module/service';
 
 @Component({
   selector: 'app-psychosocial-reports-save',
@@ -42,6 +43,7 @@ export class SaveComponent implements OnInit {
   private readonly miscService = inject(MiscService);
   private readonly psychosocialReportsService = inject(PsychosocialReportsService);
   private readonly offendersService = inject(OffendersService);
+  private readonly staffService = inject(StaffService);
 
   form: FormGroup = this.fb.group({
     id_offender: [null, Validators.required],
@@ -54,12 +56,14 @@ export class SaveComponent implements OnInit {
   isEditMode = false;
   id: string | null = null;
   offenderOptions: { label: string; value: string }[] = [];
+  staffOptions: { label: string; value: string }[] = [];
 
   ngOnInit(): void {
     this.id = this.route.snapshot.params['id'] ?? null;
     this.isEditMode = !!this.id;
 
     this.loadOffenders();
+    this.loadStaff();
 
     if (this.isEditMode && this.id) {
       this.loadPsychosocialReport(this.id);
@@ -87,6 +91,26 @@ export class SaveComponent implements OnInit {
     });
   }
 
+  loadStaff() {
+    this.staffService.getListSimple().subscribe({
+      next: (data) => {
+        const rows = data ?? [];
+        this.staffOptions = rows.map((item: any) => {
+          const fullName = (item?.full_name ?? '').trim();
+          const professionalLicense = (item?.professional_license ?? '').trim();
+          const label = fullName && professionalLicense ? `${fullName} - ${professionalLicense}` : fullName || professionalLicense || item.id;
+          return {
+            label,
+            value: item.id
+          };
+        });
+      },
+      error: () => {
+        this.staffOptions = [];
+      }
+    });
+  }
+
   loadPsychosocialReport(id: string) {
     this.miscService.startRequest();
     this.psychosocialReportsService.getById(id).subscribe({
@@ -94,7 +118,7 @@ export class SaveComponent implements OnInit {
         if (data) {
           this.form.patchValue({
             id_offender: (data as any).offender?.id ?? (data as any).id_offender ?? null,
-            id_staff: (data as any).id_staff ?? null,
+            id_staff: (data as any).staff?.id ?? (data as any).id_staff ?? null,
             dictation_date: (data as any).dictation_date ? String((data as any).dictation_date).slice(0, 10) : null,
             dictation: (data as any).dictation ?? null,
             observations: (data as any).observations ?? null

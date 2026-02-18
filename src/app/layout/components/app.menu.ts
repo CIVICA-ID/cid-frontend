@@ -36,6 +36,11 @@ export class AppMenu {
                     routerLink: ['/users']
                 },
                 {
+                    label: 'Staff',
+                    icon: 'pi pi-id-card',
+                    routerLink: ['/staff']
+                },
+                {
                     label: 'Sucursales',
                     icon: 'pi pi-building',
                     routerLink: ['/branches']
