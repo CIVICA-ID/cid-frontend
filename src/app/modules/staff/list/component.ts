@@ -1,16 +1,43 @@
-import { TableTemplateComponent } from '@/components/table-template/table-template.component';
+import { Staff } from '@/api/staff';
 import { PageSectionHeaderComponent } from '@/components/page-section-header/page-section-header.component';
+import { TableTemplateComponent } from '@/components/table-template/table-template.component';
 import { MiscService } from '@/services/misc.service';
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, signal, DestroyRef, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterModule } from '@angular/router';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 import { catchError, finalize, forkJoin, of, Subject, switchMap, tap } from 'rxjs';
 import { StaffService } from '../module/service';
+
+type SortExpression = string[][];
+type SearchFilters = Record<string, string>;
+
+interface TableColumn {
+  field: string;
+  column: string;
+  columnType: 'text' | 'date' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
+  fieldType: 'text' | 'date' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
+}
+
+interface ListParamsEvent {
+  page: number;
+  limit: number;
+  search: SearchFilters;
+  sort: SortExpression;
+}
+
+interface StaffListResponse {
+  data?: Staff[];
+  meta?: {
+    totalItems?: number;
+  };
+}
+
+type DeleteType = 1 | 2;
 
 @Component({
   selector: 'app-list-staff',
@@ -25,10 +52,11 @@ import { StaffService } from '../module/service';
     RouterModule
   ],
   providers: [StaffService, MessageService, ConfirmationService],
-  templateUrl: './template.html'
+  templateUrl: './template.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ListComponent implements OnInit, OnDestroy {
-  columns = [
+export class ListComponent implements OnInit {
+  readonly columns: TableColumn[] = [
     {
       field: 'full_name',
       column: 'Nombre completo',
@@ -46,84 +74,57 @@ export class ListComponent implements OnInit, OnDestroy {
       column: 'Teléfono',
       columnType: 'text',
       fieldType: 'text'
-    },
+    }
   ];
-  totalRows = signal<number>(0);
-  data = signal<any[]>([]);
-  activeRows = computed(() => this.data().filter((row) => row?.active === true).length);
-  inactiveRows = computed(() => this.data().filter((row) => row?.active === false).length);
-  configTable = computed(() => ({
+  readonly totalRows = signal<number>(0);
+  readonly data = signal<Staff[]>([]);
+  readonly configTable = computed(() => ({
     module: 'Staff',
     route: 'staff',
     view: true,
     totalRows: this.totalRows()
   }));
   limit = 10;
-  search = {};
-  sort: string[][] = [];
+  search: SearchFilters = {};
+  sort: SortExpression = [];
   page = 1;
-  ids = signal<string[]>([]);
-  selectedRows = computed(() => this.ids().length);
-  isLoading = signal<boolean>(false);
-  searchTerm = '';
+  readonly ids = signal<string[]>([]);
+  readonly selectedRows = computed(() => this.ids().length);
+  readonly isLoading = signal<boolean>(false);
   private readonly reloadList$ = new Subject<void>();
-  private destroyRef = inject(DestroyRef);
+  private readonly destroyRef = inject(DestroyRef);
 
   constructor(
-    private staffService: StaffService,
-    private messageService: MessageService,
-    private miscsService: MiscService,
-    private confirmationService: ConfirmationService
+    private readonly staffService: StaffService,
+    private readonly messageService: MessageService,
+    private readonly miscService: MiscService,
+    private readonly confirmationService: ConfirmationService
   ) {}
 
   ngOnInit(): void {
     this.reloadList$
       .pipe(
-        tap(() => {
-          this.isLoading.set(true);
-          this.miscsService.startRequest();
-        }),
+        tap(() => this.setLoadingState(true)),
         switchMap(() =>
           this.staffService.getList(this.limit, this.page, this.sort, this.search).pipe(
-            catchError((error: any) => {
-              this.data.set([]);
-              this.totalRows.set(0);
-              this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de staff', detail: error?.error?.message || error.message });
-              return of(null);
+            catchError((error: unknown) => {
+              this.resetList();
+              this.showErrorMessage('Error cargando la lista de staff', error);
+              return of<StaffListResponse | null>(null);
             }),
-            finalize(() => {
-              this.isLoading.set(false);
-              this.miscsService.endRquest();
-            })
+            finalize(() => this.setLoadingState(false))
           )
         ),
         takeUntilDestroyed(this.destroyRef)
       )
-      .subscribe((data) => {
-        if (!data) {
-          return;
-        }
-
-        if (data?.meta?.totalItems) {
-          this.data.set(data['data']);
-          this.totalRows.set(data['meta']['totalItems']);
-        } else {
-          this.messageService.add({ life: 5000, key: 'message', severity: 'warn', summary: 'No se encontró información de staff', detail: '' });
-          this.data.set([]);
-          this.totalRows.set(0);
-        }
-      });
-  }
-
-  ngOnDestroy(): void {
-    this.reloadList$.complete();
+      .subscribe((response) => this.handleListResponse(response));
   }
 
   listTable(): void {
     this.reloadList$.next();
   }
 
-  handleParamsList(event: any) {
+  handleParamsList(event: ListParamsEvent): void {
     this.page = event.page;
     this.limit = event.limit;
     this.search = event.search;
@@ -131,10 +132,12 @@ export class ListComponent implements OnInit, OnDestroy {
     this.listTable();
   }
 
-  delete(id: string | null, deleteType: number) {
-    const idsToDelete = deleteType === 1 ? this.ids() : id ? [id] : [];
+  delete(id: string | null, deleteType: DeleteType): void {
+    const idsToDelete = this.resolveIdsToDelete(id, deleteType);
 
-    if (idsToDelete.length === 0) return;
+    if (idsToDelete.length === 0) {
+      return;
+    }
 
     const message =
       deleteType === 1
@@ -147,51 +150,86 @@ export class ListComponent implements OnInit, OnDestroy {
       icon: 'pi pi-info-circle',
       acceptLabel: 'Aceptar',
       rejectLabel: 'Cancelar',
-      accept: () => {
-        this.isLoading.set(true);
-        this.miscsService.startRequest();
-
-        const requests = idsToDelete.map((itemId) =>
-          this.staffService.disable(itemId).pipe(
-            catchError((error: any) => {
-              this.messageService.add({
-                life: 5000,
-                key: 'message',
-                severity: 'error',
-                summary: 'Error al eliminar',
-                detail: error?.error?.message || error.message || `No se pudo eliminar el registro con ID: ${itemId}`
-              });
-              return of(null);
-            })
-          )
-        );
-
-        forkJoin(requests)
-          .pipe(
-            finalize(() => {
-              this.isLoading.set(false);
-              this.miscsService.endRquest();
-              this.listTable();
-              if (deleteType === 1) {
-                this.ids.set([]);
-              }
-            }),
-            takeUntilDestroyed(this.destroyRef)
-          )
-          .subscribe((results) => {
-            const successes = results.filter((r) => r !== null).length;
-            if (successes > 0) {
-              this.messageService.add({
-                severity: 'success',
-                key: 'message',
-                summary: 'Operación exitosa',
-                detail: `${successes} registro(s) procesado(s) correctamente`,
-                life: 3000
-              });
-            }
-          });
-      }
+      accept: () => this.deleteRecords(idsToDelete, deleteType)
     });
+  }
+
+  getIdsDeleted(ids: string[]): void {
+    this.ids.set(Array.from(new Set(ids)));
+  }
+
+  private handleListResponse(response: StaffListResponse | null): void {
+    if (!response) {
+      return;
+    }
+
+    const rows = Array.isArray(response.data) ? response.data : [];
+    const totalItems = response.meta?.totalItems ?? rows.length;
+
+    if (totalItems > 0 || rows.length > 0) {
+      this.data.set(rows);
+      this.totalRows.set(totalItems > 0 ? totalItems : rows.length);
+      return;
+    }
+
+    this.messageService.add({
+      life: 5000,
+      key: 'message',
+      severity: 'warn',
+      summary: 'No se encontró información de staff',
+      detail: ''
+    });
+    this.resetList();
+  }
+
+  private resolveIdsToDelete(id: string | null, deleteType: DeleteType): string[] {
+    if (deleteType === 1) {
+      return this.ids();
+    }
+    return id ? [id] : [];
+  }
+
+  private deleteRecords(idsToDelete: string[], deleteType: DeleteType): void {
+    this.setLoadingState(true);
+
+    const requests = idsToDelete.map((itemId) =>
+      this.staffService.disable(itemId).pipe(
+        catchError((error: unknown) => {
+          this.messageService.add({
+            life: 5000,
+            key: 'message',
+            severity: 'error',
+            summary: 'Error al eliminar',
+            detail: this.getErrorDetail(error, `No se pudo eliminar el registro con ID: ${itemId}`)
+          });
+          return of(null);
+        })
+      )
+    );
+
+    forkJoin(requests)
+      .pipe(
+        finalize(() => {
+          this.setLoadingState(false);
+          this.listTable();
+          if (deleteType === 1) {
+            this.ids.set([]);
+          }
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((results) => {
+        const successes = results.reduce<number>((acc, result) => (result !== null ? acc + 1 : acc), 0);
+        if (successes > 0) {
+          this.messageService.add({
+            severity: 'success',
+            key: 'message',
+            summary: 'Operación exitosa',
+            detail: `${successes} registro(s) procesado(s) correctamente`,
+            life: 3000
+          });
+        }
+      });
   }
 
   private getRecordDescription(id: string | null): string {
@@ -219,11 +257,44 @@ export class ListComponent implements OnInit, OnDestroy {
     return `el registro con ID ${id}`;
   }
 
-  private getDeepValue(obj: any, path: string): any {
-    return path.split('.').reduce((acc, key) => (acc || {})[key], obj);
+  private getDeepValue(obj: unknown, path: string): unknown {
+    return path.split('.').reduce<unknown>((acc, key) => {
+      if (acc && typeof acc === 'object') {
+        return (acc as Record<string, unknown>)[key];
+      }
+      return undefined;
+    }, obj);
   }
 
-  getIdsDeleted(ids: string[]) {
-    this.ids.set(ids);
+  private setLoadingState(loading: boolean): void {
+    this.isLoading.set(loading);
+    if (loading) {
+      this.miscService.startRequest();
+      return;
+    }
+    this.miscService.endRquest();
+  }
+
+  private resetList(): void {
+    this.data.set([]);
+    this.totalRows.set(0);
+  }
+
+  private showErrorMessage(summary: string, error: unknown): void {
+    this.messageService.add({
+      life: 5000,
+      key: 'message',
+      severity: 'error',
+      summary,
+      detail: this.getErrorDetail(error, 'Ocurrió un error inesperado')
+    });
+  }
+
+  private getErrorDetail(error: unknown, fallback: string): string {
+    if (error && typeof error === 'object') {
+      const typedError = error as { error?: { message?: string }; message?: string };
+      return typedError.error?.message || typedError.message || fallback;
+    }
+    return fallback;
   }
 }
