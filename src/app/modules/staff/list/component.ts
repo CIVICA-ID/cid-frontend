@@ -2,13 +2,14 @@ import { TableTemplateComponent } from '@/components/table-template/table-templa
 import { PageSectionHeaderComponent } from '@/components/page-section-header/page-section-header.component';
 import { MiscService } from '@/services/misc.service';
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, signal, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterModule } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
-import { catchError, finalize, forkJoin, Observable, of, Subject, switchMap, takeUntil, tap } from 'rxjs';
+import { catchError, finalize, forkJoin, of, Subject, switchMap, tap } from 'rxjs';
 import { StaffService } from '../module/service';
 
 @Component({
@@ -65,10 +66,8 @@ export class ListComponent implements OnInit, OnDestroy {
   selectedRows = computed(() => this.ids().length);
   isLoading = signal<boolean>(false);
   searchTerm = '';
-  list: Observable<any>;
-  confirmDisplay = false;
   private readonly reloadList$ = new Subject<void>();
-  private readonly destroy$ = new Subject<void>();
+  private destroyRef = inject(DestroyRef);
 
   constructor(
     private staffService: StaffService,
@@ -98,7 +97,7 @@ export class ListComponent implements OnInit, OnDestroy {
             })
           )
         ),
-        takeUntil(this.destroy$)
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((data) => {
         if (!data) {
@@ -117,8 +116,6 @@ export class ListComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
     this.reloadList$.complete();
   }
 
@@ -135,9 +132,13 @@ export class ListComponent implements OnInit, OnDestroy {
   }
 
   delete(id: string | null, deleteType: number) {
+    const idsToDelete = deleteType === 1 ? this.ids() : id ? [id] : [];
+
+    if (idsToDelete.length === 0) return;
+
     const message =
       deleteType === 1
-        ? `Se eliminarán ${this.ids().length} registros seleccionados. ¿Desea continuar?`
+        ? `Se eliminarán ${idsToDelete.length} registros seleccionados. ¿Desea continuar?`
         : `Se eliminará ${this.getRecordDescription(id)}. ¿Desea continuar?`;
 
     this.confirmationService.confirm({
@@ -147,25 +148,48 @@ export class ListComponent implements OnInit, OnDestroy {
       acceptLabel: 'Aceptar',
       rejectLabel: 'Cancelar',
       accept: () => {
-        switch (deleteType) {
-          case 1:
-            this.deleteSelected();
-            break;
-          case 2:
-            if (!id) {
-              return;
-            }
-            this.staffService.disable(id).subscribe(
-              () => {
-                this.listTable();
-                this.messageService.add({ severity: 'success', key: 'message', summary: 'Operación exitosa', life: 3000 });
-              },
-              (error) => {
-                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el registro de staff', detail: error?.error?.message || error.message });
+        this.isLoading.set(true);
+        this.miscsService.startRequest();
+
+        const requests = idsToDelete.map((itemId) =>
+          this.staffService.disable(itemId).pipe(
+            catchError((error: any) => {
+              this.messageService.add({
+                life: 5000,
+                key: 'message',
+                severity: 'error',
+                summary: 'Error al eliminar',
+                detail: error?.error?.message || error.message || `No se pudo eliminar el registro con ID: ${itemId}`
+              });
+              return of(null);
+            })
+          )
+        );
+
+        forkJoin(requests)
+          .pipe(
+            finalize(() => {
+              this.isLoading.set(false);
+              this.miscsService.endRquest();
+              this.listTable();
+              if (deleteType === 1) {
+                this.ids.set([]);
               }
-            );
-            break;
-        }
+            }),
+            takeUntilDestroyed(this.destroyRef)
+          )
+          .subscribe((results) => {
+            const successes = results.filter((r) => r !== null).length;
+            if (successes > 0) {
+              this.messageService.add({
+                severity: 'success',
+                key: 'message',
+                summary: 'Operación exitosa',
+                detail: `${successes} registro(s) procesado(s) correctamente`,
+                life: 3000
+              });
+            }
+          });
       }
     });
   }
@@ -200,33 +224,6 @@ export class ListComponent implements OnInit, OnDestroy {
   }
 
   getIdsDeleted(ids: string[]) {
-    console.log("aqui se obtienen los ids seleccionados:", ids);  
     this.ids.set(ids);
-  }
-
-  deleteSelected() {
-    console.log('IDs a eliminar:', this.ids());
-    this.confirmDisplay = true;
-    const requests: any[] = [];
-    const selectedIds = this.ids();
-    for (let i = 0; i < selectedIds.length; i++) {
-      const req = this.staffService.disable(selectedIds[i]).pipe(
-        catchError((error) => {
-          this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el registro', detail: error.message });
-          return of(null);
-        })
-      );
-      requests.push(req);
-    }
-    forkJoin(requests).subscribe(
-      () => {
-        this.messageService.add({ severity: 'success', key: 'message', summary: 'Operación exitosa', detail: 'Registros eliminados exitosamente', life: 3000 });
-        this.listTable();
-        this.ids.set([]);
-      },
-      (err) => {
-        this.messageService.add({ severity: 'error', key: 'message', summary: 'Error al eliminar registros', detail: err.message, life: 3000 });
-      }
-    );
   }
 }
