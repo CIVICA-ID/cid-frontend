@@ -1,11 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { Fluid } from 'primeng/fluid';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputTextarea } from 'primeng/inputtextarea';
 import { MessageModule } from 'primeng/message';
@@ -29,7 +31,9 @@ import { CellStaysService } from '@/modules/cell_stays/module/service';
     Fluid,
     MessageModule,
     CardModule,
-    SelectModule
+    SelectModule,
+    IconFieldModule,
+    InputIconModule
   ],
   providers: [MessageService],
   templateUrl: './template.html'
@@ -44,20 +48,35 @@ export class SaveComponent implements OnInit {
   private readonly cellStaysService = inject(CellStaysService);
 
   form: FormGroup = this.fb.group({
-    idCellStay: [null, Validators.required],
-    arrestHours: [null, Validators.required],
-    releaseDate: [null, Validators.required],
-    exitReason: [null, [Validators.required, Validators.maxLength(100)]],
-    fineAmount: [null],
-    paymentTicketFolio: [null, Validators.maxLength(50)],
-    observations: [null],
-    civilJudge: [null, [Validators.required, Validators.maxLength(150)]],
-    custodian: [null, [Validators.required, Validators.maxLength(150)]]
+    idCellStay: [null, [Validators.required]],
+    arrestHours: [null, [Validators.required, Validators.min(0)]],
+    releaseDate: [null, [Validators.required]],
+    exitReason: [null, [Validators.required, this.trimRequiredValidator(), Validators.maxLength(100)]],
+    fineAmount: [null, [Validators.min(0)]],
+    paymentTicketFolio: [null, [Validators.maxLength(50)]],
+    observations: [null, [Validators.maxLength(500)]],
+    civilJudge: [null, [Validators.required, this.trimRequiredValidator(), Validators.maxLength(150)]],
+    custodian: [null, [Validators.required, this.trimRequiredValidator(), Validators.maxLength(150)]]
   });
 
   isEditMode = false;
   id: string | null = null;
+  submitted = false;
   cellStayOptions: { label: string; value: string }[] = [];
+
+  private trimRequiredValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (control.value === null || control.value === undefined) {
+        return null;
+      }
+
+      if (typeof control.value !== 'string') {
+        return null;
+      }
+
+      return control.value.trim().length > 0 ? null : { whitespace: true };
+    };
+  }
 
   ngOnInit(): void {
     this.id = this.route.snapshot.params['id'] ?? null;
@@ -118,7 +137,10 @@ export class SaveComponent implements OnInit {
   }
 
   onSubmit() {
+    this.submitted = true;
+
     if (this.form.invalid) {
+      this.form.markAllAsTouched();
       this.messageService.add({
         key: 'msg',
         severity: 'error',
@@ -132,8 +154,14 @@ export class SaveComponent implements OnInit {
     const payload = {
       ...raw,
       arrestHours: raw.arrestHours !== null && raw.arrestHours !== '' ? Number(raw.arrestHours) : null,
-      fineAmount: raw.fineAmount !== null && raw.fineAmount !== '' ? Number(raw.fineAmount) : null
+      exitReason: String(raw.exitReason ?? '').trim(),
+      fineAmount: raw.fineAmount !== null && raw.fineAmount !== '' ? Number(raw.fineAmount) : null,
+      paymentTicketFolio: raw.paymentTicketFolio ? String(raw.paymentTicketFolio).trim() : null,
+      observations: raw.observations ? String(raw.observations).trim() : null,
+      civilJudge: String(raw.civilJudge ?? '').trim(),
+      custodian: String(raw.custodian ?? '').trim()
     };
+
     this.miscService.startRequest();
 
     if (this.isEditMode && this.id) {
@@ -188,8 +216,18 @@ export class SaveComponent implements OnInit {
     );
   }
 
-  onCancel(event) {
+  onCancel(event: Event) {
     event.preventDefault();
     this.router.navigate(['/freedom-tickets']);
+  }
+
+  isInvalid(controlName: string): boolean {
+    const control = this.form.get(controlName);
+    return !!control && control.invalid && (control.dirty || control.touched || this.submitted);
+  }
+
+  textLength(controlName: string): number {
+    const value = this.form.get(controlName)?.value;
+    return typeof value === 'string' ? value.length : 0;
   }
 }

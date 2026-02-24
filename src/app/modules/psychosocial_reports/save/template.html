@@ -1,10 +1,22 @@
 <p-toast [breakpoints]="{ '920px': { width: '100%', right: '0', left: '0' } }" key="msg" />
-<div class="flex justify-center p-4">
-  <div class="w-full md:max-w-6xl">
-    <div class="card p-6 bg-white shadow-md rounded-lg">
-      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
+<div class="px-4 py-4 md:px-8">
+  <div class="mx-auto w-full max-w-[96rem] flex flex-col gap-5">
+    <div class="card overflow-hidden border border-slate-200 shadow-md">
+      <div class="bg-slate-50 px-6 py-5 md:px-8 border-b border-slate-200">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h2 class="text-2xl font-semibold leading-tight m-0">{{ isEditMode ? 'Actualizar Reporte Psicosocial' : 'Alta de Reporte Psicosocial' }}</h2>
+            <p class="text-sm text-slate-600 mt-2 mb-0">Registra el análisis psicosocial para soporte de decisiones y seguimiento interdisciplinario.</p>
+          </div>
+          <span class="inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+            {{ isEditMode ? 'Edición' : 'Nuevo' }}
+          </span>
+        </div>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="p-6 md:p-8">
         <p-fluid>
-          <div class="flex flex-col gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="flex flex-col gap-2">
               <label for="id_offender" class="font-semibold">Infractor</label>
               <p-select
@@ -15,13 +27,15 @@
                 placeholder="Seleccionar infractor"
                 [filter]="true"
                 [showClear]="true"
+                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('id_offender') }"
               ></p-select>
-              @if (form.get('id_offender')?.hasError('required')) {
+              @if (isInvalid('id_offender') && form.get('id_offender')?.hasError('required')) {
                 <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
               }
             </div>
+
             <div class="flex flex-col gap-2">
-              <label for="id_staff" class="font-semibold">ID staff</label>
+              <label for="id_staff" class="font-semibold">Staff responsable</label>
               <p-select
                 [options]="staffOptions"
                 formControlName="id_staff"
@@ -30,34 +44,76 @@
                 placeholder="Seleccionar staff"
                 [filter]="true"
                 [showClear]="true"
+                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('id_staff') }"
               ></p-select>
-              @if (form.get('id_staff')?.hasError('required')) {
+              @if (isInvalid('id_staff') && form.get('id_staff')?.hasError('required')) {
                 <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
               }
             </div>
-            <div class="flex flex-col gap-2">
+
+            <div class="flex flex-col gap-2 md:col-span-2">
               <label for="dictation_date" class="font-semibold">Fecha de dictamen</label>
-              <input pInputText id="dictation_date" type="date" formControlName="dictation_date">
-              @if (form.get('dictation_date')?.hasError('required')) {
+              <p-iconfield>
+                <p-inputicon class="pi pi-calendar" />
+                <input
+                  pInputText
+                  id="dictation_date"
+                  type="date"
+                  formControlName="dictation_date"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('dictation_date') }"
+                />
+              </p-iconfield>
+              @if (isInvalid('dictation_date') && form.get('dictation_date')?.hasError('required')) {
                 <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
               }
             </div>
-            <div class="flex flex-col gap-2">
-              <label for="dictation" class="font-semibold">Dictamen</label>
-              <textarea pInputTextarea id="dictation" formControlName="dictation" rows="4"></textarea>
-              @if (form.get('dictation')?.hasError('required')) {
+
+            <div class="flex flex-col gap-2 md:col-span-2">
+              <label for="dictation" class="font-semibold">Dictamen psicosocial</label>
+              <textarea
+                pInputTextarea
+                id="dictation"
+                formControlName="dictation"
+                rows="5"
+                placeholder="Describe hallazgos, valoración psicosocial y recomendaciones de intervención."
+                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('dictation') }"
+              ></textarea>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Campo principal del reporte.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('dictation') }}/200</small>
+              </div>
+              @if (isInvalid('dictation') && (form.get('dictation')?.hasError('required') || form.get('dictation')?.hasError('whitespace'))) {
                 <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
               }
+              @if (isInvalid('dictation') && form.get('dictation')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 200 caracteres</small>
+              }
             </div>
-            <div class="flex flex-col gap-2">
+
+            <div class="flex flex-col gap-2 md:col-span-2">
               <label for="observations" class="font-semibold">Observaciones</label>
-              <textarea pInputTextarea id="observations" formControlName="observations" rows="4"></textarea>
+              <textarea
+                pInputTextarea
+                id="observations"
+                formControlName="observations"
+                rows="5"
+                placeholder="Anota comentarios complementarios para trabajo social, psicología o seguimiento institucional."
+                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('observations') }"
+              ></textarea>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Información adicional opcional.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('observations') }}/1000</small>
+              </div>
+              @if (isInvalid('observations') && form.get('observations')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 1000 caracteres</small>
+              }
             </div>
           </div>
         </p-fluid>
-        <div class="flex justify-end gap-3 mt-6">
-          <button pButton pRipple label="Cancelar" (click)="onCancel($event)" class="p-button-outlined !w-32"></button>
-          <button pButton pRipple type="submit" label="Guardar" class="!w-32"></button>
+
+        <div class="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+          <button pButton pRipple label="Cancelar" (click)="onCancel($event)" class="p-button-outlined sm:!w-32"></button>
+          <button pButton pRipple type="submit" [label]="isEditMode ? 'Actualizar' : 'Guardar'" class="sm:!w-32"></button>
         </div>
       </form>
     </div>

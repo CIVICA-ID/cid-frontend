@@ -1,11 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { Fluid } from 'primeng/fluid';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputTextarea } from 'primeng/inputtextarea';
 import { MessageModule } from 'primeng/message';
@@ -30,7 +32,9 @@ import { StaffService } from '@/modules/staff/module/service';
     Fluid,
     MessageModule,
     CardModule,
-    SelectModule
+    SelectModule,
+    IconFieldModule,
+    InputIconModule
   ],
   providers: [MessageService],
   templateUrl: './template.html'
@@ -46,17 +50,32 @@ export class SaveComponent implements OnInit {
   private readonly staffService = inject(StaffService);
 
   form: FormGroup = this.fb.group({
-    id_offender: [null, Validators.required],
-    id_staff: [null, Validators.required],
-    dictation_date: [null, Validators.required],
-    dictation: [null, [Validators.required, Validators.maxLength(200)]],
-    observations: [null]
+    id_offender: [null, [Validators.required]],
+    id_staff: [null, [Validators.required]],
+    dictation_date: [null, [Validators.required]],
+    dictation: [null, [Validators.required, this.trimRequiredValidator(), Validators.maxLength(200)]],
+    observations: [null, [Validators.maxLength(1000)]]
   });
 
   isEditMode = false;
   id: string | null = null;
+  submitted = false;
   offenderOptions: { label: string; value: string }[] = [];
   staffOptions: { label: string; value: string }[] = [];
+
+  private trimRequiredValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (control.value === null || control.value === undefined) {
+        return null;
+      }
+
+      if (typeof control.value !== 'string') {
+        return null;
+      }
+
+      return control.value.trim().length > 0 ? null : { whitespace: true };
+    };
+  }
 
   ngOnInit(): void {
     this.id = this.route.snapshot.params['id'] ?? null;
@@ -136,7 +155,10 @@ export class SaveComponent implements OnInit {
   }
 
   onSubmit() {
+    this.submitted = true;
+
     if (this.form.invalid) {
+      this.form.markAllAsTouched();
       this.messageService.add({
         key: 'msg',
         severity: 'error',
@@ -146,7 +168,12 @@ export class SaveComponent implements OnInit {
       return;
     }
 
-    const payload = this.form.value;
+    const payload = {
+      ...this.form.value,
+      dictation: String(this.form.value.dictation ?? '').trim(),
+      observations: this.form.value.observations ? String(this.form.value.observations).trim() : null
+    };
+
     this.miscService.startRequest();
 
     if (this.isEditMode && this.id) {
@@ -201,8 +228,18 @@ export class SaveComponent implements OnInit {
     );
   }
 
-  onCancel(event) {
+  onCancel(event: Event) {
     event.preventDefault();
     this.router.navigate(['/psychosocial-reports']);
+  }
+
+  isInvalid(controlName: string): boolean {
+    const control = this.form.get(controlName);
+    return !!control && control.invalid && (control.dirty || control.touched || this.submitted);
+  }
+
+  textLength(controlName: string): number {
+    const value = this.form.get(controlName)?.value;
+    return typeof value === 'string' ? value.length : 0;
   }
 }

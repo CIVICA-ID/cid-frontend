@@ -6,6 +6,8 @@ import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { Fluid } from 'primeng/fluid';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputTextarea } from 'primeng/inputtextarea';
 import { MessageModule } from 'primeng/message';
@@ -30,7 +32,9 @@ import { StaffService } from '@/modules/staff/module/service';
     Fluid,
     MessageModule,
     CardModule,
-    SelectModule
+    SelectModule,
+    IconFieldModule,
+    InputIconModule
   ],
   providers: [MessageService],
   templateUrl: './template.html'
@@ -52,16 +56,28 @@ export class SaveComponent implements OnInit {
     rh_factor: [null, [Validators.maxLength(5)]],
     blood_type: [null],
     entry_status: [null, [Validators.maxLength(50)]],
-    weight: [null],
-    height: [null],
-    dictation: [null],
-    observations: [null]
+    weight: [null, [Validators.min(0)]],
+    height: [null, [Validators.min(0)]],
+    dictation: [null, [Validators.maxLength(2000)]],
+    observations: [null, [Validators.maxLength(1000)]]
   });
 
   isEditMode = false;
   id: string | null = null;
+  submitted = false;
   offenderOptions: { label: string; value: string }[] = [];
   staffOptions: { label: string; value: string }[] = [];
+
+  bloodTypeOptions = [
+    { label: 'A+', value: 'A+' },
+    { label: 'A-', value: 'A-' },
+    { label: 'B+', value: 'B+' },
+    { label: 'B-', value: 'B-' },
+    { label: 'AB+', value: 'AB+' },
+    { label: 'AB-', value: 'AB-' },
+    { label: 'O+', value: 'O+' },
+    { label: 'O-', value: 'O-' }
+  ];
 
   ngOnInit(): void {
     this.id = this.route.snapshot.params['id'] ?? null;
@@ -74,17 +90,6 @@ export class SaveComponent implements OnInit {
       this.loadMedicalReport(this.id);
     }
   }
-
-  bloodTypeOptions = [
-    { label: 'A+', value: 'A+' },
-    { label: 'A-', value: 'A-' },
-    { label: 'B+', value: 'B+' },
-    { label: 'B-', value: 'B-' },
-    { label: 'AB+', value: 'AB+' },
-    { label: 'AB-', value: 'AB-' },
-    { label: 'O+', value: 'O+' },
-    { label: 'O-', value: 'O-' }
-  ];
 
   loadOffenders() {
     this.offendersService.getList(100, 1, [], {}).subscribe({
@@ -157,7 +162,10 @@ export class SaveComponent implements OnInit {
   }
 
   onSubmit() {
+    this.submitted = true;
+
     if (this.form.invalid) {
+      this.form.markAllAsTouched();
       this.messageService.add({
         key: 'msg',
         severity: 'error',
@@ -170,9 +178,17 @@ export class SaveComponent implements OnInit {
     const raw = this.form.value;
     const payload = {
       ...raw,
+      id_offender: raw.id_offender || null,
+      id_staff: raw.id_staff || null,
+      rh_factor: raw.rh_factor ? String(raw.rh_factor).trim() : null,
+      blood_type: raw.blood_type ? String(raw.blood_type).trim() : null,
+      entry_status: raw.entry_status ? String(raw.entry_status).trim() : null,
       weight: raw.weight !== null && raw.weight !== '' ? Number(raw.weight) : null,
-      height: raw.height !== null && raw.height !== '' ? Number(raw.height) : null
+      height: raw.height !== null && raw.height !== '' ? Number(raw.height) : null,
+      dictation: raw.dictation ? String(raw.dictation).trim() : null,
+      observations: raw.observations ? String(raw.observations).trim() : null
     };
+
     this.miscService.startRequest();
 
     if (this.isEditMode && this.id) {
@@ -227,8 +243,18 @@ export class SaveComponent implements OnInit {
     );
   }
 
-  onCancel(event) {
+  onCancel(event: Event) {
     event.preventDefault();
     this.router.navigate(['/medical-reports']);
+  }
+
+  isInvalid(controlName: string): boolean {
+    const control = this.form.get(controlName);
+    return !!control && control.invalid && (control.dirty || control.touched || this.submitted);
+  }
+
+  textLength(controlName: string): number {
+    const value = this.form.get(controlName)?.value;
+    return typeof value === 'string' ? value.length : 0;
   }
 }

@@ -1,11 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { Fluid } from 'primeng/fluid';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputTextarea } from 'primeng/inputtextarea';
 import { MessageModule } from 'primeng/message';
@@ -29,7 +31,9 @@ import { CellStaysService } from '@/modules/cell_stays/module/service';
     Fluid,
     MessageModule,
     CardModule,
-    SelectModule
+    SelectModule,
+    IconFieldModule,
+    InputIconModule
   ],
   providers: [MessageService],
   templateUrl: './template.html'
@@ -44,20 +48,35 @@ export class SaveComponent implements OnInit {
   private readonly cellStaysService = inject(CellStaysService);
 
   form: FormGroup = this.fb.group({
-    id_cell_stay: [null, Validators.required],
-    recipient: [null, [Validators.required, Validators.maxLength(150)]],
-    value: [null, Validators.required],
-    serialNumber: [null, Validators.maxLength(100)],
-    brand: [null, Validators.maxLength(100)],
-    description: [null],
-    quantity: [null, Validators.required],
-    measurementUnit: [null, [Validators.required, Validators.maxLength(50)]],
-    observation: [null]
+    id_cell_stay: [null, [Validators.required]],
+    recipient: [null, [Validators.required, this.trimRequiredValidator(), Validators.maxLength(150)]],
+    value: [null, [Validators.required, Validators.min(0)]],
+    serialNumber: [null, [Validators.maxLength(100)]],
+    brand: [null, [Validators.maxLength(100)]],
+    description: [null, [Validators.maxLength(500)]],
+    quantity: [null, [Validators.required, Validators.min(1)]],
+    measurementUnit: [null, [Validators.required, this.trimRequiredValidator(), Validators.maxLength(50)]],
+    observation: [null, [Validators.maxLength(500)]]
   });
 
   isEditMode = false;
   id: string | null = null;
+  submitted = false;
   cellStayOptions: { label: string; value: string }[] = [];
+
+  private trimRequiredValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (control.value === null || control.value === undefined) {
+        return null;
+      }
+
+      if (typeof control.value !== 'string') {
+        return null;
+      }
+
+      return control.value.trim().length > 0 ? null : { whitespace: true };
+    };
+  }
 
   ngOnInit(): void {
     this.id = this.route.snapshot.params['id'] ?? null;
@@ -118,7 +137,10 @@ export class SaveComponent implements OnInit {
   }
 
   onSubmit() {
+    this.submitted = true;
+
     if (this.form.invalid) {
+      this.form.markAllAsTouched();
       this.messageService.add({
         key: 'msg',
         severity: 'error',
@@ -131,9 +153,16 @@ export class SaveComponent implements OnInit {
     const raw = this.form.value;
     const payload = {
       ...raw,
+      recipient: String(raw.recipient ?? '').trim(),
       value: raw.value !== null && raw.value !== '' ? Number(raw.value) : null,
-      quantity: raw.quantity !== null && raw.quantity !== '' ? Number(raw.quantity) : null
+      serialNumber: raw.serialNumber ? String(raw.serialNumber).trim() : null,
+      brand: raw.brand ? String(raw.brand).trim() : null,
+      description: raw.description ? String(raw.description).trim() : null,
+      quantity: raw.quantity !== null && raw.quantity !== '' ? Number(raw.quantity) : null,
+      measurementUnit: String(raw.measurementUnit ?? '').trim(),
+      observation: raw.observation ? String(raw.observation).trim() : null
     };
+
     this.miscService.startRequest();
 
     if (this.isEditMode && this.id) {
@@ -188,8 +217,18 @@ export class SaveComponent implements OnInit {
     );
   }
 
-  onCancel(event) {
+  onCancel(event: Event) {
     event.preventDefault();
     this.router.navigate(['/belongings']);
+  }
+
+  isInvalid(controlName: string): boolean {
+    const control = this.form.get(controlName);
+    return !!control && control.invalid && (control.dirty || control.touched || this.submitted);
+  }
+
+  textLength(controlName: string): number {
+    const value = this.form.get(controlName)?.value;
+    return typeof value === 'string' ? value.length : 0;
   }
 }
