@@ -29,6 +29,10 @@
             <span class="text-base">{{ medicalReport?.offender?.id || medicalReport?.id_offender || '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">ID infractor</span>
+            <span class="text-base">{{ medicalReport?.id_offender || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
             <span class="text-sm text-slate-500">ID staff</span>
             <span class="text-base">{{ medicalReport?.id_staff || '-' }}</span>
           </div>
@@ -63,6 +67,14 @@
           <div class="flex flex-col gap-1">
             <span class="text-sm text-slate-500">Observaciones</span>
             <span class="text-base whitespace-pre-line">{{ medicalReport?.observations || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Creado</span>
+            <span class="text-base">{{ medicalReport?.createdAt ? (medicalReport?.createdAt | date: 'medium') : '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Actualizado</span>
+            <span class="text-base">{{ medicalReport?.updatedAt ? (medicalReport?.updatedAt | date: 'medium') : '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">
             <span class="text-sm text-slate-500">Activo</span>

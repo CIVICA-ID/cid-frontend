@@ -52,12 +52,6 @@ type DeleteType = 1 | 2;
 export class ListComponent implements OnInit {
   readonly columns: TableColumn[] = [
     {
-      field: 'id',
-      column: 'ID',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
       field: 'staff.full_name',
       column: 'Responsable',
       columnType: 'text',
@@ -74,24 +68,6 @@ export class ListComponent implements OnInit {
       column: 'Fecha dictamen',
       columnType: 'date',
       fieldType: 'date'
-    },
-    {
-      field: 'dictation',
-      column: 'Dictamen',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'observations',
-      column: 'Observaciones',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'active',
-      column: 'Activo',
-      columnType: 'boolean',
-      fieldType: 'boolean'
     }
   ];
 
@@ -100,6 +76,7 @@ export class ListComponent implements OnInit {
   readonly configTable = computed(() => ({
     module: 'Reportes psicosociales',
     route: 'psychosocial-reports',
+    view: true,
     totalRows: this.totalRows()
   }));
 

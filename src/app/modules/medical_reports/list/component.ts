@@ -37,12 +37,6 @@ import { MedicalReportsService } from '../module/service';
 export class ListComponent implements OnInit, OnDestroy {
   columns = [
     {
-      field: 'id',
-      column: 'ID',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
       field: 'staff.full_name',
       column: 'Responsable',
       columnType: 'text',
@@ -55,64 +49,10 @@ export class ListComponent implements OnInit, OnDestroy {
       fieldType: 'text'
     },
     {
-      field: 'blood_type',
-      column: 'Tipo de sangre',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'rh_factor',
-      column: 'RH',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'entry_status',
-      column: 'Estado ingreso',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
       field: 'dictation_date',
       column: 'Fecha dictamen',
       columnType: 'date',
       fieldType: 'date'
-    },
-    {
-      field: 'dictation',
-      column: 'Dictamen',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'observations',
-      column: 'Observaciones',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'weight',
-      column: 'Peso (kg)',
-      columnType: 'numeric',
-      fieldType: 'numeric'
-    },
-    {
-      field: 'height',
-      column: 'Altura (m)',
-      columnType: 'numeric',
-      fieldType: 'numeric'
-    },
-    {
-      field: 'id_staff',
-      column: 'ID staff',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'active',
-      column: 'Activo',
-      columnType: 'boolean',
-      fieldType: 'boolean'
     }
   ];
   totalRows = signal<number>(0);
@@ -120,6 +60,7 @@ export class ListComponent implements OnInit, OnDestroy {
   configTable = computed(() => ({
     module: 'Reportes médicos',
     route: 'medical-reports',
+    view: true,
     totalRows: this.totalRows()
   }));
   limit = 10;

@@ -52,12 +52,6 @@ type DeleteType = 1 | 2;
 export class ListComponent implements OnInit {
   readonly columns: TableColumn[] = [
     {
-      field: 'id',
-      column: 'ID',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
       field: 'cellStay.cellRegister',
       column: 'Registro celda',
       columnType: 'text',
@@ -70,52 +64,10 @@ export class ListComponent implements OnInit {
       fieldType: 'text'
     },
     {
-      field: 'value',
-      column: 'Valor',
-      columnType: 'numeric',
-      fieldType: 'numeric'
-    },
-    {
-      field: 'quantity',
-      column: 'Cantidad',
-      columnType: 'numeric',
-      fieldType: 'numeric'
-    },
-    {
-      field: 'measurementUnit',
-      column: 'Unidad de medida',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'serialNumber',
-      column: 'Número de serie',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'brand',
-      column: 'Marca',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
       field: 'description',
       column: 'Descripción',
       columnType: 'text',
       fieldType: 'text'
-    },
-    {
-      field: 'observation',
-      column: 'Observación',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'active',
-      column: 'Activo',
-      columnType: 'boolean',
-      fieldType: 'boolean'
     }
   ];
 
@@ -124,6 +76,7 @@ export class ListComponent implements OnInit {
   readonly configTable = computed(() => ({
     module: 'Pertenencias',
     route: 'belongings',
+    view: true,
     totalRows: this.totalRows()
   }));
 

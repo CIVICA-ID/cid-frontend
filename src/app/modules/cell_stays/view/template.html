@@ -33,6 +33,22 @@
             <span class="text-base whitespace-pre-line">{{ cellStay?.observations || '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Pertenencias asociadas</span>
+            <span class="text-base whitespace-pre-line">{{ cellStay?.belongings ? (cellStay?.belongings | json) : '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Boletas de libertad asociadas</span>
+            <span class="text-base whitespace-pre-line">{{ cellStay?.freedomTickets ? (cellStay?.freedomTickets | json) : '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Creado</span>
+            <span class="text-base">{{ cellStay?.createdAt ? (cellStay?.createdAt | date: 'medium') : '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Actualizado</span>
+            <span class="text-base">{{ cellStay?.updatedAt ? (cellStay?.updatedAt | date: 'medium') : '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
             <span class="text-sm text-slate-500">Activo</span>
             <span class="text-base">{{ cellStay?.active === true ? 'Sí' : (cellStay?.active === false ? 'No' : '-') }}</span>
           </div>

@@ -52,12 +52,6 @@ type DeleteType = 1 | 2;
 export class ListComponent implements OnInit {
   readonly columns: TableColumn[] = [
     {
-      field: 'id',
-      column: 'ID',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
       field: 'cellRegister',
       column: 'Registro de celda',
       columnType: 'text',
@@ -74,12 +68,6 @@ export class ListComponent implements OnInit {
       column: 'Observaciones',
       columnType: 'text',
       fieldType: 'text'
-    },
-    {
-      field: 'active',
-      column: 'Activo',
-      columnType: 'boolean',
-      fieldType: 'boolean'
     }
   ];
 
@@ -88,6 +76,7 @@ export class ListComponent implements OnInit {
   readonly configTable = computed(() => ({
     module: 'Estadías en celda',
     route: 'cell-stays',
+    view: true,
     totalRows: this.totalRows()
   }));
 

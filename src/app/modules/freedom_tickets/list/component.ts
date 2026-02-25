@@ -52,12 +52,6 @@ type DeleteType = 1 | 2;
 export class ListComponent implements OnInit {
   readonly columns: TableColumn[] = [
     {
-      field: 'id',
-      column: 'ID',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
       field: 'cellStay.cellRegister',
       column: 'Registro celda',
       columnType: 'text',
@@ -70,46 +64,10 @@ export class ListComponent implements OnInit {
       fieldType: 'date'
     },
     {
-      field: 'arrestHours',
-      column: 'Horas de arresto',
-      columnType: 'numeric',
-      fieldType: 'numeric'
-    },
-    {
-      field: 'fineAmount',
-      column: 'Monto multa',
-      columnType: 'numeric',
-      fieldType: 'numeric'
-    },
-    {
       field: 'exitReason',
       column: 'Motivo de salida',
       columnType: 'text',
       fieldType: 'text'
-    },
-    {
-      field: 'paymentTicketFolio',
-      column: 'Folio de pago',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'civilJudge',
-      column: 'Juez cívico',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'custodian',
-      column: 'Custodio',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'active',
-      column: 'Activo',
-      columnType: 'boolean',
-      fieldType: 'boolean'
     }
   ];
 
@@ -118,6 +76,7 @@ export class ListComponent implements OnInit {
   readonly configTable = computed(() => ({
     module: 'Boletas de libertad',
     route: 'freedom-tickets',
+    view: true,
     totalRows: this.totalRows()
   }));
 

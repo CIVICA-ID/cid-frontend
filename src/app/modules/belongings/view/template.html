@@ -25,6 +25,10 @@
             <span class="text-base">{{ belonging?.cellStay?.cellRegister || belonging?.id_cell_stay || '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">ID estadía en celda</span>
+            <span class="text-base">{{ belonging?.id_cell_stay || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
             <span class="text-sm text-slate-500">Receptor</span>
             <span class="text-base">{{ belonging?.recipient || '-' }}</span>
           </div>
@@ -55,6 +59,14 @@
           <div class="flex flex-col gap-1">
             <span class="text-sm text-slate-500">Observación</span>
             <span class="text-base whitespace-pre-line">{{ belonging?.observation || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Creado</span>
+            <span class="text-base">{{ belonging?.createdAt ? (belonging?.createdAt | date: 'medium') : '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Actualizado</span>
+            <span class="text-base">{{ belonging?.updatedAt ? (belonging?.updatedAt | date: 'medium') : '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">
             <span class="text-sm text-slate-500">Activo</span>
