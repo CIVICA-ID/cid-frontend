@@ -1,6 +1,7 @@
 export interface MedicalReport {
   id: string;
   active?: boolean;
+  processed?: boolean;
   createdAt?: Date | string;
   updatedAt?: Date | string;
   id_staff?: string | null;
