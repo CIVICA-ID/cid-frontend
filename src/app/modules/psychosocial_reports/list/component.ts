@@ -58,7 +58,7 @@ export class ListComponent implements OnInit {
       fieldType: 'text'
     },
     {
-      field: 'offender.id',
+      field: 'offender.people.firstName',
       column: 'Infractor',
       columnType: 'text',
       fieldType: 'text'

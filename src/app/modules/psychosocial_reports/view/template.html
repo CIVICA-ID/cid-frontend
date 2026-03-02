@@ -1,64 +1,250 @@
 <p-toast [breakpoints]="{ '920px': { width: '100%', right: '0', left: '0' } }" key="msg" />
-<div class="flex justify-center p-4">
-  <div class="w-full md:max-w-4xl">
-    <div class="card p-6 bg-white shadow-md rounded-lg">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold">Detalle del reporte psicosocial</h2>
-        <div class="flex gap-2">
-          <button pButton pRipple label="Editar" icon="pi pi-pencil" class="p-button-info" (click)="editPsychosocialReport()" [disabled]="!psychosocialReport"></button>
-          <button pButton pRipple label="Regresar" icon="pi pi-arrow-left" class="p-button-outlined" (click)="backToList()"></button>
+<div class="px-4 py-4 md:px-8">
+  <div class="mx-auto w-full max-w-[96rem] flex flex-col gap-5">
+    <div class="card border border-slate-200 shadow-md overflow-hidden">
+      <div class="bg-slate-50 border-b border-slate-200 p-6 md:p-8">
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+          <div class="flex items-center gap-4">
+            <div class="h-16 w-16 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xl font-semibold">
+              {{ getInitials() }}
+            </div>
+            <div>
+              <h2 class="m-0 text-2xl font-semibold leading-tight">{{ getOffenderFullName() }}</h2>
+              <p class="m-0 mt-1 text-sm text-slate-600">Reporte psicosocial: {{ psychosocialReport?.id || 'Sin ID' }}</p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <p-tag [value]="getStatusLabel(psychosocialReport?.active)" [severity]="getStatusSeverity(psychosocialReport?.active)"></p-tag>
+                <p-tag [value]="getProcessedLabel(psychosocialReport?.processed)" [severity]="getProcessedSeverity(psychosocialReport?.processed)"></p-tag>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-2">
+            <button pButton pRipple label="Editar" icon="pi pi-pencil" class="p-button-info" (click)="editPsychosocialReport()" [disabled]="!psychosocialReport"></button>
+            <button pButton pRipple label="Regresar" icon="pi pi-arrow-left" class="p-button-outlined" (click)="backToList()"></button>
+          </div>
         </div>
       </div>
 
       @if (loading) {
-        <div class="py-6 text-center text-slate-600">Cargando...</div>
+        <div class="py-12 text-center text-slate-600">Cargando información del reporte psicosocial...</div>
       } @else if (error) {
-        <div class="py-6 text-center text-red-600">No se pudo cargar la información.</div>
+        <div class="py-12 text-center text-red-600">No se pudo cargar la información.</div>
       } @else {
-        <div class="grid gap-4">
-          <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">ID</span>
-            <span class="text-base">{{ psychosocialReport?.id || '-' }}</span>
+        <div class="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div class="rounded-xl border border-slate-200 p-5 bg-white lg:col-span-2">
+            <h3 class="m-0 text-base font-semibold text-slate-900">Datos psicosociales</h3>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Fecha dictamen</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.dictation_date ? (psychosocialReport?.dictation_date | date: 'mediumDate') : '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1 md:col-span-2">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Dictamen</span>
+                <span class="text-base text-slate-900 whitespace-pre-line">{{ psychosocialReport?.dictation || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1 md:col-span-2">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Observaciones</span>
+                <span class="text-base text-slate-900 whitespace-pre-line">{{ psychosocialReport?.observations || '-' }}</span>
+              </div>
+            </div>
           </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Responsable</span>
-            <span class="text-base">{{ psychosocialReport?.staff?.full_name || '-' }}</span>
+
+          <div class="rounded-xl border border-slate-200 p-5 bg-white">
+            <h3 class="m-0 text-base font-semibold text-slate-900">Relación</h3>
+            <div class="mt-4 flex flex-col gap-4">
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Infractor</span>
+                <span class="text-base text-slate-900">{{ getOffenderFullName() }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">ID infractor</span>
+                <span class="text-base text-slate-900 font-mono break-all">{{ psychosocialReport?.id_offender || psychosocialReport?.offender?.id || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Responsable (staff)</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.staff?.full_name || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">ID staff</span>
+                <span class="text-base text-slate-900 font-mono break-all">{{ psychosocialReport?.id_staff || psychosocialReport?.staff?.id || '-' }}</span>
+              </div>
+            </div>
           </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Infractor</span>
-            <span class="text-base">{{ psychosocialReport?.offender?.id || psychosocialReport?.id_offender || '-' }}</span>
+
+          <div class="rounded-xl border border-slate-200 p-5 bg-white lg:col-span-2">
+            <h3 class="m-0 text-base font-semibold text-slate-900">Infractor (offender)</h3>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex flex-col gap-1 md:col-span-2">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Nombre completo</span>
+                <span class="text-base text-slate-900">{{ getOffenderFullName() }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">UUID offender</span>
+                <span class="text-base text-slate-900 font-mono break-all">{{ psychosocialReport?.offender?.id || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Arrest Type</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.offender?.arrestType || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">ID service</span>
+                <span class="text-base text-slate-900 font-mono break-all">{{ psychosocialReport?.offender?.id_service || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">ID people</span>
+                <span class="text-base text-slate-900 font-mono break-all">{{ psychosocialReport?.offender?.idPeople || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">ID falta administrativa</span>
+                <span class="text-base text-slate-900 font-mono break-all">{{ psychosocialReport?.offender?.id_administrative_fault || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Estado offender</span>
+                <span class="text-base text-slate-900">{{ getStatusLabel(psychosocialReport?.offender?.active) }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Creado offender</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.offender?.createdAt ? (psychosocialReport?.offender?.createdAt | date: 'medium') : '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Actualizado offender</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.offender?.updatedAt ? (psychosocialReport?.offender?.updatedAt | date: 'medium') : '-' }}</span>
+              </div>
+            </div>
           </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">ID infractor</span>
-            <span class="text-base">{{ psychosocialReport?.id_offender || '-' }}</span>
+
+          <div class="rounded-xl border border-slate-200 p-5 bg-white lg:col-span-1">
+            <h3 class="m-0 text-base font-semibold text-slate-900">Staff</h3>
+            <div class="mt-4 flex flex-col gap-4">
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Nombre completo</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.staff?.full_name || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Cédula profesional</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.staff?.professional_license || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Especialidad</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.staff?.specialty || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Teléfono</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.staff?.phone || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Email</span>
+                <span class="text-base text-slate-900 break-all">{{ psychosocialReport?.staff?.email || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">UUID staff</span>
+                <span class="text-base text-slate-900 font-mono break-all">{{ psychosocialReport?.staff?.id || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Procesado staff</span>
+                <span class="text-base text-slate-900">{{ getProcessedLabel(psychosocialReport?.staff?.processed) }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Estado staff</span>
+                <span class="text-base text-slate-900">{{ getStatusLabel(psychosocialReport?.staff?.active) }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Creado staff</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.staff?.createdAt ? (psychosocialReport?.staff?.createdAt | date: 'medium') : '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Actualizado staff</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.staff?.updatedAt ? (psychosocialReport?.staff?.updatedAt | date: 'medium') : '-' }}</span>
+              </div>
+            </div>
           </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">ID staff</span>
-            <span class="text-base">{{ psychosocialReport?.id_staff || '-' }}</span>
+
+          <div class="rounded-xl border border-slate-200 p-5 bg-white lg:col-span-3">
+            <h3 class="m-0 text-base font-semibold text-slate-900">Persona del infractor (people)</h3>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">UUID people</span>
+                <span class="text-base text-slate-900 font-mono break-all">{{ psychosocialReport?.offender?.people?.id || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Nombre(s)</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.offender?.people?.firstName || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Apellido paterno</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.offender?.people?.paternalName || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Apellido materno</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.offender?.people?.maternalName || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Fecha de nacimiento</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.offender?.people?.birthDate ? (psychosocialReport?.offender?.people?.birthDate | date: 'mediumDate') : '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Alias</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.offender?.people?.alias || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">CURP</span>
+                <span class="text-base text-slate-900 font-mono break-all">{{ psychosocialReport?.offender?.people?.curp || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Género</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.offender?.people?.gender || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Estado civil</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.offender?.people?.maritalStatus || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Escolaridad</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.offender?.people?.educationLevel || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Ocupación</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.offender?.people?.occupation || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Estado people</span>
+                <span class="text-base text-slate-900">{{ getStatusLabel(psychosocialReport?.offender?.people?.active) }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Creado people</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.offender?.people?.createdAt ? (psychosocialReport?.offender?.people?.createdAt | date: 'medium') : '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Actualizado people</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.offender?.people?.updatedAt ? (psychosocialReport?.offender?.people?.updatedAt | date: 'medium') : '-' }}</span>
+              </div>
+            </div>
           </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Fecha dictamen</span>
-            <span class="text-base">{{ psychosocialReport?.dictation_date ? (psychosocialReport?.dictation_date | date: 'mediumDate') : '-' }}</span>
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Dictamen</span>
-            <span class="text-base whitespace-pre-line">{{ psychosocialReport?.dictation || '-' }}</span>
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Observaciones</span>
-            <span class="text-base whitespace-pre-line">{{ psychosocialReport?.observations || '-' }}</span>
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Creado</span>
-            <span class="text-base">{{ psychosocialReport?.createdAt ? (psychosocialReport?.createdAt | date: 'medium') : '-' }}</span>
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Actualizado</span>
-            <span class="text-base">{{ psychosocialReport?.updatedAt ? (psychosocialReport?.updatedAt | date: 'medium') : '-' }}</span>
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Activo</span>
-            <span class="text-base">{{ psychosocialReport?.active === true ? 'Sí' : (psychosocialReport?.active === false ? 'No' : '-') }}</span>
+
+          <div class="rounded-xl border border-slate-200 p-5 bg-white lg:col-span-3">
+            <h3 class="m-0 text-base font-semibold text-slate-900">Metadatos del reporte</h3>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="flex flex-col gap-1 lg:col-span-2">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">UUID reporte</span>
+                <span class="text-base text-slate-900 font-mono break-all">{{ psychosocialReport?.id || '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Estado</span>
+                <span class="text-base text-slate-900">{{ getStatusLabel(psychosocialReport?.active) }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Procesado</span>
+                <span class="text-base text-slate-900">{{ getProcessedLabel(psychosocialReport?.processed) }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Creado</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.createdAt ? (psychosocialReport?.createdAt | date: 'medium') : '-' }}</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Actualizado</span>
+                <span class="text-base text-slate-900">{{ psychosocialReport?.updatedAt ? (psychosocialReport?.updatedAt | date: 'medium') : '-' }}</span>
+              </div>
+            </div>
           </div>
         </div>
       }
