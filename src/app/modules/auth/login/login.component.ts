@@ -4,15 +4,12 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router, RouterLink } from '@angular/router';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
-import { AppleWidget } from '@/pages/auth/components/applewidget';
-import { GoogleWidget } from '@/pages/auth/components/googlewidget';
 import { LazyImageWidget } from '@/pages/landing/components/lazyimagewidget';
 import { LogoWidget } from '@/pages/landing/components/logowidget';
 import { Toast } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { UserBranchsService } from '@/services/user-branchs.service';
 import { UserService } from '@/services/user.service';
-import { data } from 'autoprefixer';
 import { User } from '@/api/user';
 import { Branch } from '@/api/branch';
 import { Select } from 'primeng/select';
