@@ -4,8 +4,9 @@ import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { Offender } from '@/api/offender';
 
+
 @Injectable({
-    providedIn: 'root'
+  providedIn: 'root'
 })
 export class OffendersService {
     url: string = `${environment.apiUrl}offenders`;

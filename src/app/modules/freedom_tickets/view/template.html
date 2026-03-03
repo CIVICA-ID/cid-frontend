@@ -1,0 +1,79 @@
+<p-toast [breakpoints]="{ '920px': { width: '100%', right: '0', left: '0' } }" key="msg" />
+<div class="flex justify-center p-4">
+  <div class="w-full md:max-w-4xl">
+    <div class="card p-6 bg-white shadow-md rounded-lg">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-semibold">Detalle de boleta de libertad</h2>
+        <div class="flex gap-2">
+          <button pButton pRipple label="Editar" icon="pi pi-pencil" class="p-button-info" (click)="editFreedomTicket()" [disabled]="!freedomTicket"></button>
+          <button pButton pRipple label="Regresar" icon="pi pi-arrow-left" class="p-button-outlined" (click)="backToList()"></button>
+        </div>
+      </div>
+
+      @if (loading) {
+        <div class="py-6 text-center text-slate-600">Cargando...</div>
+      } @else if (error) {
+        <div class="py-6 text-center text-red-600">No se pudo cargar la información.</div>
+      } @else {
+        <div class="grid gap-4">
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">ID</span>
+            <span class="text-base">{{ freedomTicket?.id || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Estadía en celda</span>
+            <span class="text-base">{{ freedomTicket?.cellStay?.cellRegister || freedomTicket?.idCellStay || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">ID estadía en celda</span>
+            <span class="text-base">{{ freedomTicket?.idCellStay || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Fecha de liberación</span>
+            <span class="text-base">{{ freedomTicket?.releaseDate ? (freedomTicket?.releaseDate | date: 'mediumDate') : '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Horas de arresto</span>
+            <span class="text-base">{{ freedomTicket?.arrestHours ?? '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Monto de multa</span>
+            <span class="text-base">{{ freedomTicket?.fineAmount ?? '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Motivo de salida</span>
+            <span class="text-base">{{ freedomTicket?.exitReason || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Folio de pago</span>
+            <span class="text-base">{{ freedomTicket?.paymentTicketFolio || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Juez cívico</span>
+            <span class="text-base">{{ freedomTicket?.civilJudge || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Custodio</span>
+            <span class="text-base">{{ freedomTicket?.custodian || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Observaciones</span>
+            <span class="text-base whitespace-pre-line">{{ freedomTicket?.observations || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Creado</span>
+            <span class="text-base">{{ freedomTicket?.createdAt ? (freedomTicket?.createdAt | date: 'medium') : '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Actualizado</span>
+            <span class="text-base">{{ freedomTicket?.updatedAt ? (freedomTicket?.updatedAt | date: 'medium') : '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Activo</span>
+            <span class="text-base">{{ freedomTicket?.active === true ? 'Sí' : (freedomTicket?.active === false ? 'No' : '-') }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

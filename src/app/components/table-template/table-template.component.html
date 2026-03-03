@@ -22,6 +22,7 @@
     [responsive]="true"
     [rowHover]="true"
     responsiveLayout="scroll"
+    [loading]="loading"
 >
     <ng-template pTemplate="header" let-columns>
         <tr>
@@ -80,6 +81,11 @@
                 <ng-container *ngIf="col.fieldType === 'text'">
                     <span>{{ getDeepValue(rowData, col.field) ? getDeepValue(rowData, col.field) : '-' }}</span>
                 </ng-container>
+                <ng-container *ngIf="col.fieldType === 'uuid'">
+                    <span [title]="getDeepValue(rowData, col.field) ? getDeepValue(rowData, col.field) : '-'">
+                        {{ getDeepValue(rowData, col.field) ? formatUuid(getDeepValue(rowData, col.field)) : '-' }}
+                    </span>
+                </ng-container>
                 <ng-container *ngIf="col.fieldType === 'numeric'">
                     <span [ngStyle]="{ display: 'block', 'text-align': 'center' }">{{ getDeepValue(rowData, col.field) ? getDeepValue(rowData, col.field) : '-' }}</span>
                 </ng-container>
@@ -103,6 +109,9 @@
             <td>
 <!--                //es para las tablas que añadirán información sobre un registro-->
                 <div class="flex">
+                    @if(configTable.view){
+                        <button pTooltip="Ver {{ configTable.module }}" pButton pRipple icon="pi pi-eye" class="p-button-rounded p-button-secondary p-button-text" [routerLink]="['/' + configTable.route + '/view', rowData.id]"></button>
+                    }
                     @if(configTable.add && rowData.processed){
                         <button pTooltip="Editar {{ configTable.module }}" pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-info p-button-text" [routerLink]="['/' + configTable.route + '/edit', rowData.id]"></button>
                     }

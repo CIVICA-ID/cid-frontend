@@ -1,0 +1,25 @@
+<p-toast [breakpoints]="{ '920px': { width: '100%', right: '0', left: '0' } }" key="message" />
+<p-confirmDialog [style]="{ width: '50vw' }" rejectButtonStyleClass="p-button-outlined"></p-confirmDialog>
+<div class="grid">
+  <div class="col-12">
+    <div class="card px-6">
+      <p-toolbar styleClass="pb-4">
+        <ng-template pTemplate="left">
+          <button pButton label="Agregar" icon="pi pi-plus" class="p-button-success mr-2" [routerLink]="['/freedom-tickets/add']"></button>
+          <button pButton label="Eliminar" [disabled]="!ids().length" icon="pi pi-trash" class="p-button-danger mr-2" (click)="delete(null, 1)"></button>
+        </ng-template>
+      </p-toolbar>
+      <div class="pt-3">
+        <app-table-template
+          [columns]="columns"
+          [data]="data()"
+          [configTable]="configTable()"
+          [loading]="isLoading()"
+          (idDelete)="delete($event, 2)"
+          (idsDelete)="getIdsDeleted($event)"
+          (paramsListChange)="handleParamsList($event)"
+        ></app-table-template>
+      </div>
+    </div>
+  </div>
+</div>

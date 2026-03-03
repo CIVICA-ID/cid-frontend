@@ -1,0 +1,221 @@
+<p-toast [breakpoints]="{ '920px': { width: '100%', right: '0', left: '0' } }" key="msg" />
+<div class="px-4 py-4 md:px-8">
+  <div class="mx-auto w-full max-w-[96rem] flex flex-col gap-5">
+    <div class="card overflow-hidden border border-slate-200 shadow-md">
+      <div class="bg-slate-50 px-6 py-5 md:px-8 border-b border-slate-200">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h2 class="text-2xl font-semibold leading-tight m-0">{{ isEditMode ? 'Actualizar Pertenencia' : 'Alta de Pertenencia' }}</h2>
+            <p class="text-sm text-slate-600 mt-2 mb-0">Captura pertenencias asociadas a la estadía para control, inventario y trazabilidad.</p>
+          </div>
+          <span class="inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+            {{ isEditMode ? 'Edición' : 'Nuevo' }}
+          </span>
+        </div>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="p-6 md:p-8">
+        <p-fluid>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="flex flex-col gap-2 md:col-span-2">
+              <label for="id_cell_stay" class="font-semibold">Estadía en celda</label>
+              <p-select
+                [options]="cellStayOptions"
+                formControlName="id_cell_stay"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar estadía"
+                [filter]="true"
+                [showClear]="true"
+                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('id_cell_stay') }"
+              ></p-select>
+              <small class="text-slate-500 text-xs">Relaciona la pertenencia con el registro de estadía correspondiente.</small>
+              @if (isInvalid('id_cell_stay') && form.get('id_cell_stay')?.hasError('required')) {
+                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="recipient" class="font-semibold">Receptor</label>
+              <p-iconfield>
+                <p-inputicon class="pi pi-user" />
+                <input
+                  pInputText
+                  id="recipient"
+                  formControlName="recipient"
+                  placeholder="Ej. Juan Pérez"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('recipient') }"
+                />
+              </p-iconfield>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Persona que recibe o resguarda la pertenencia.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('recipient') }}/150</small>
+              </div>
+              @if (isInvalid('recipient') && (form.get('recipient')?.hasError('required') || form.get('recipient')?.hasError('whitespace'))) {
+                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+              }
+              @if (isInvalid('recipient') && form.get('recipient')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 150 caracteres</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="measurementUnit" class="font-semibold">Unidad de medida</label>
+              <p-iconfield>
+                <p-inputicon class="pi pi-sliders-h" />
+                <input
+                  pInputText
+                  id="measurementUnit"
+                  formControlName="measurementUnit"
+                  placeholder="Ej. pieza, caja, par"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('measurementUnit') }"
+                />
+              </p-iconfield>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Unidad para cuantificar el bien.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('measurementUnit') }}/50</small>
+              </div>
+              @if (isInvalid('measurementUnit') && (form.get('measurementUnit')?.hasError('required') || form.get('measurementUnit')?.hasError('whitespace'))) {
+                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+              }
+              @if (isInvalid('measurementUnit') && form.get('measurementUnit')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 50 caracteres</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="value" class="font-semibold">Valor</label>
+              <p-iconfield>
+                <p-inputicon class="pi pi-dollar" />
+                <input
+                  pInputText
+                  id="value"
+                  type="number"
+                  step="0.01"
+                  formControlName="value"
+                  placeholder="0.00"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('value') }"
+                />
+              </p-iconfield>
+              <small class="text-slate-500 text-xs">Monto estimado o declarado del bien.</small>
+              @if (isInvalid('value') && form.get('value')?.hasError('required')) {
+                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+              }
+              @if (isInvalid('value') && form.get('value')?.hasError('min')) {
+                <small class="text-red-600 text-right block text-xs">*Debe ser mayor o igual a 0</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="quantity" class="font-semibold">Cantidad</label>
+              <p-iconfield>
+                <p-inputicon class="pi pi-hashtag" />
+                <input
+                  pInputText
+                  id="quantity"
+                  type="number"
+                  step="1"
+                  formControlName="quantity"
+                  placeholder="Ej. 1"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('quantity') }"
+                />
+              </p-iconfield>
+              <small class="text-slate-500 text-xs">Número de unidades resguardadas.</small>
+              @if (isInvalid('quantity') && form.get('quantity')?.hasError('required')) {
+                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+              }
+              @if (isInvalid('quantity') && form.get('quantity')?.hasError('min')) {
+                <small class="text-red-600 text-right block text-xs">*Debe ser mayor o igual a 1</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="serialNumber" class="font-semibold">Número de serie</label>
+              <p-iconfield>
+                <p-inputicon class="pi pi-barcode" />
+                <input
+                  pInputText
+                  id="serialNumber"
+                  formControlName="serialNumber"
+                  placeholder="Ej. SN-000123"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('serialNumber') }"
+                />
+              </p-iconfield>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Opcional para equipo identificable.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('serialNumber') }}/100</small>
+              </div>
+              @if (isInvalid('serialNumber') && form.get('serialNumber')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 100 caracteres</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="brand" class="font-semibold">Marca</label>
+              <p-iconfield>
+                <p-inputicon class="pi pi-tag" />
+                <input
+                  pInputText
+                  id="brand"
+                  formControlName="brand"
+                  placeholder="Ej. Samsung, Nike"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('brand') }"
+                />
+              </p-iconfield>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Dato opcional para clasificación del artículo.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('brand') }}/100</small>
+              </div>
+              @if (isInvalid('brand') && form.get('brand')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 100 caracteres</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2 md:col-span-2">
+              <label for="description" class="font-semibold">Descripción</label>
+              <textarea
+                pInputTextarea
+                id="description"
+                formControlName="description"
+                rows="4"
+                placeholder="Características relevantes del bien: color, estado, detalles distintivos."
+                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('description') }"
+              ></textarea>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Información descriptiva para identificar la pertenencia.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('description') }}/500</small>
+              </div>
+              @if (isInvalid('description') && form.get('description')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 500 caracteres</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2 md:col-span-2">
+              <label for="observation" class="font-semibold">Observación</label>
+              <textarea
+                pInputTextarea
+                id="observation"
+                formControlName="observation"
+                rows="4"
+                placeholder="Anota incidencias, estado de entrega o notas administrativas."
+                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('observation') }"
+              ></textarea>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Campo opcional para control operativo.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('observation') }}/500</small>
+              </div>
+              @if (isInvalid('observation') && form.get('observation')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 500 caracteres</small>
+              }
+            </div>
+          </div>
+        </p-fluid>
+
+        <div class="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+          <button pButton pRipple label="Cancelar" (click)="onCancel($event)" class="p-button-outlined sm:!w-32"></button>
+          <button pButton pRipple type="submit" [label]="isEditMode ? 'Actualizar' : 'Guardar'" class="sm:!w-32"></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
