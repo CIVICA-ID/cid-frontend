@@ -52,6 +52,12 @@ type DeleteType = 1 | 2;
 export class ListComponent implements OnInit {
   readonly columns: TableColumn[] = [
     {
+      field: 'id_offender',
+      column: 'Infractor',
+      columnType: 'uuid',
+      fieldType: 'uuid'
+    },
+    {
       field: 'cellRegister',
       column: 'Registro de celda',
       columnType: 'text',

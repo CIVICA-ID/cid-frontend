@@ -6,6 +6,8 @@ export interface CellStay {
   cellRegister: string;
   entryDate?: Date | string | null;
   observations?: string | null;
+  id_offender?: string | null;
+  offender?: any;
   belongings?: any[];
   freedomTickets?: any;
 }
