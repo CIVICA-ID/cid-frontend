@@ -54,6 +54,16 @@ export class ViewComponent implements OnInit {
     });
   }
 
+  get offenderName(): string {
+    const people = (this.cellStay as any)?.offender?.people;
+    if (people) {
+      return [people.paternalName, people.maternalName, people.firstName]
+        .filter(Boolean)
+        .join(' ') || '-';
+    }
+    return (this.cellStay as any)?.id_offender ?? '-';
+  }
+
   editCellStay() {
     if (this.cellStay?.id) {
       this.router.navigate(['/cell-stays/edit', this.cellStay.id]);

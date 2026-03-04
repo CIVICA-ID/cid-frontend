@@ -11,8 +11,10 @@ import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputTextarea } from 'primeng/inputtextarea';
 import { MessageModule } from 'primeng/message';
+import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
 import { MiscService } from '@/services/misc.service';
+import { OffendersService } from '@/services/offenders.service';
 import { CellStaysService } from '../module/service';
 
 @Component({
@@ -29,6 +31,7 @@ import { CellStaysService } from '../module/service';
     Fluid,
     MessageModule,
     CardModule,
+    SelectModule,
     IconFieldModule,
     InputIconModule
   ],
@@ -42,8 +45,10 @@ export class SaveComponent implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly miscService = inject(MiscService);
   private readonly cellStaysService = inject(CellStaysService);
+  private readonly offendersService = inject(OffendersService);
 
   form: FormGroup = this.fb.group({
+    id_offender: [null],
     cellRegister: [null, [Validators.required, this.trimRequiredValidator(), Validators.maxLength(50)]],
     entryDate: [null],
     observations: [null, [Validators.maxLength(500)]]
@@ -52,6 +57,7 @@ export class SaveComponent implements OnInit {
   isEditMode = false;
   id: string | null = null;
   submitted = false;
+  offenderOptions: { label: string; value: string }[] = [];
 
   private trimRequiredValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
@@ -71,9 +77,29 @@ export class SaveComponent implements OnInit {
     this.id = this.route.snapshot.params['id'] ?? null;
     this.isEditMode = !!this.id;
 
+    this.loadOffenders();
+
     if (this.isEditMode && this.id) {
       this.loadCellStay(this.id);
     }
+  }
+
+  loadOffenders() {
+    this.offendersService.getList(100, 1, [], {}).subscribe({
+      next: (data) => {
+        const rows = data?.data ?? data ?? [];
+        this.offenderOptions = rows.map((item: any) => {
+          const people = item.people;
+          const name = people
+            ? `${people.paternalName ?? ''} ${people.maternalName ?? ''} ${people.firstName ?? ''}`.replace(/\s+/g, ' ').trim()
+            : '';
+          return { label: name || item.id, value: item.id };
+        });
+      },
+      error: () => {
+        this.offenderOptions = [];
+      }
+    });
   }
 
   loadCellStay(id: string) {
@@ -82,6 +108,7 @@ export class SaveComponent implements OnInit {
       next: (data) => {
         if (data) {
           this.form.patchValue({
+            id_offender: (data as any).offender?.id ?? (data as any).id_offender ?? null,
             cellRegister: (data as any).cellRegister ?? null,
             entryDate: (data as any).entryDate ? String((data as any).entryDate).slice(0, 10) : null,
             observations: (data as any).observations ?? null
@@ -112,10 +139,12 @@ export class SaveComponent implements OnInit {
       return;
     }
 
+    const raw = this.form.value;
     const payload = {
-      ...this.form.value,
-      cellRegister: String(this.form.value.cellRegister ?? '').trim(),
-      observations: this.form.value.observations ? String(this.form.value.observations).trim() : null
+      ...raw,
+      id_offender: raw.id_offender || null,
+      cellRegister: String(raw.cellRegister ?? '').trim(),
+      observations: raw.observations ? String(raw.observations).trim() : null
     };
 
     this.miscService.startRequest();

@@ -17,6 +17,21 @@
       <form [formGroup]="form" (ngSubmit)="onSubmit()" class="p-6 md:p-8">
         <p-fluid>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="flex flex-col gap-2 md:col-span-2">
+              <label for="id_offender" class="font-semibold">Infractor</label>
+              <p-select
+                [options]="offenderOptions"
+                formControlName="id_offender"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar infractor"
+                [filter]="true"
+                [showClear]="true"
+                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('id_offender') }"
+              ></p-select>
+              <small class="text-slate-500 text-xs">Vincula la estadía al expediente del infractor correspondiente.</small>
+            </div>
+
             <div class="flex flex-col gap-2">
               <label for="cellRegister" class="font-semibold">Registro de celda</label>
               <p-iconfield>
