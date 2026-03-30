@@ -9,7 +9,7 @@
               {{ getInitials() }}
             </div>
             <div>
-              <h2 class="m-0 text-2xl font-semibold leading-tight">{{ staff?.full_name || 'Detalle de staff' }}</h2>
+              <h2 class="m-0 text-2xl font-semibold leading-tight">{{ staff?.full_name || 'Detalle de Cédula' }}</h2>
               <p class="m-0 mt-1 text-sm text-slate-600">{{ staff?.specialty || 'Especialidad no capturada' }}</p>
               <div class="mt-3">
                 <p-tag [value]="getStatusLabel(staff?.active)" [severity]="getStatusSeverity(staff?.active)"></p-tag>

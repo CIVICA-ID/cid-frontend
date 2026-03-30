@@ -36,7 +36,7 @@ export class AppMenu {
                     routerLink: ['/users']
                 },
                 {
-                    label: 'Staff',
+                    label: 'Cédulas',
                     icon: 'pi pi-id-card',
                     routerLink: ['/staff']
                 },
