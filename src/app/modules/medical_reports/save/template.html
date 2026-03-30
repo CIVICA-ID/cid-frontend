@@ -33,13 +33,13 @@
             </div>
 
             <div class="flex flex-col gap-2">
-              <label for="id_staff" class="font-semibold">Staff responsable</label>
+              <label for="id_staff" class="font-semibold">Profesional responsable</label>
               <p-select
                 [options]="staffOptions"
                 formControlName="id_staff"
                 optionLabel="label"
                 optionValue="value"
-                placeholder="Seleccionar staff"
+                placeholder="Seleccionar Profesional"
                 [filter]="true"
                 [showClear]="true"
                 [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('id_staff') }"
@@ -49,111 +49,103 @@
 
             <div class="flex flex-col gap-2">
               <label for="dictation_date" class="font-semibold">Fecha de dictamen</label>
-              <p-iconfield>
-                <p-inputicon class="pi pi-calendar" />
-                <input
-                  pInputText
-                  id="dictation_date"
-                  type="date"
-                  formControlName="dictation_date"
-                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('dictation_date') }"
+               <p-datepicker 
+                  inputId="dictation_date" \
+                  formControlName="dictation_date" 
+                  [showTime]="true" 
+                  [hourFormat]="'24'" 
+                  [showIcon]="true" 
                 />
-              </p-iconfield>
-              <small class="text-slate-500 text-xs">Fecha en la que se realizó la valoración.</small>
+                <div class="h-4">
+                    @if (form.get('dictation_date')?.invalid) {
+                        <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                    }
+                </div>
             </div>
 
             <div class="flex flex-col gap-2">
               <label for="entry_status" class="font-semibold">Estado de ingreso</label>
-              <p-iconfield>
-                <p-inputicon class="pi pi-heart" />
-                <input
-                  pInputText
-                  id="entry_status"
-                  formControlName="entry_status"
-                  placeholder="Ej. Estable, con lesiones leves"
-                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('entry_status') }"
-                />
-              </p-iconfield>
-              <div class="flex items-center justify-between gap-2">
-                <small class="text-slate-500 text-xs">Condición general al ingreso.</small>
-                <small class="text-slate-500 text-xs">{{ textLength('entry_status') }}/50</small>
-              </div>
-              @if (isInvalid('entry_status') && form.get('entry_status')?.hasError('maxlength')) {
-                <small class="text-red-600 text-right block text-xs">*Máximo 50 caracteres</small>
-              }
-            </div>
-
-            <div class="flex flex-col gap-2">
-              <label for="blood_type" class="font-semibold">Tipo de sangre</label>
-              <p-select
-                [options]="bloodTypeOptions"
-                formControlName="blood_type"
+               <p-select
+                [options]="admissionConditions()"
+                formControlName="entry_status"
                 optionLabel="label"
                 optionValue="value"
-                placeholder="Seleccionar"
+                placeholder="Seleccionar condición de ingreso" 
+                [filter]="true"
                 [showClear]="true"
-                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('blood_type') }"
+                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('entry_status') }"
               ></p-select>
-              <small class="text-slate-500 text-xs">Dato clínico opcional, útil para urgencias.</small>
+              <small class="text-slate-500 text-xs">Condición general al ingreso.</small>
             </div>
 
-            <div class="flex flex-col gap-2">
-              <label for="rh_factor" class="font-semibold">Factor RH</label>
-              <p-iconfield>
-                <p-inputicon class="pi pi-plus-circle" />
-                <input
-                  pInputText
-                  id="rh_factor"
-                  formControlName="rh_factor"
-                  placeholder="Ej. + / -"
-                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('rh_factor') }"
-                />
-              </p-iconfield>
-              <div class="flex items-center justify-between gap-2">
-                <small class="text-slate-500 text-xs">Captura abreviada del RH.</small>
-                <small class="text-slate-500 text-xs">{{ textLength('rh_factor') }}/5</small>
+            <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-4 gap-5">
+              <div class="flex flex-col gap-2">
+                <label for="blood_type" class="font-semibold">Tipo de sangre</label>
+                <p-select
+                  [options]="bloodTypeOptions"
+                  formControlName="blood_type"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Seleccionar"
+                  [showClear]="true"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('blood_type') }"
+                ></p-select>
+                <small class="text-slate-500 text-xs">Dato clínico opcional, útil para urgencias.</small>
               </div>
-              @if (isInvalid('rh_factor') && form.get('rh_factor')?.hasError('maxlength')) {
-                <small class="text-red-600 text-right block text-xs">*Máximo 5 caracteres</small>
-              }
-            </div>
 
-            <div class="flex flex-col gap-2">
-              <label for="weight" class="font-semibold">Peso (kg)</label>
-              <p-iconfield>
-                <p-inputicon class="pi pi-chart-line" />
-                <input
-                  pInputText
-                  id="weight"
-                  type="number"
-                  step="0.01"
-                  formControlName="weight"
-                  placeholder="Ej. 72.40"
-                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('weight') }"
-                />
-              </p-iconfield>
-              @if (isInvalid('weight') && form.get('weight')?.hasError('min')) {
-                <small class="text-red-600 text-right block text-xs">*Debe ser mayor o igual a 0</small>
-              }
-            </div>
+              <div class="flex flex-col gap-2">
+                <label for="rh_factor" class="font-semibold">Factor RH</label>
+                 <p-select
+                  [options]="factorRhOptions()"
+                  formControlName="rh_factor"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Seleccionar"
+                  [showClear]="true"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('rh_factor') }"
+                ></p-select>
+                <small class="text-slate-500 text-xs">Dato clínico opcional, útil para urgencias.</small>
+              </div>
 
-            <div class="flex flex-col gap-2">
-              <label for="height" class="font-semibold">Altura (m)</label>
-              <p-iconfield>
-                <p-inputicon class="pi pi-arrows-v" />
-                <input
-                  pInputText
-                  id="height"
-                  type="number"
-                  step="0.01"
-                  formControlName="height"
-                  placeholder="Ej. 1.70"
-                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('height') }"
-                />
-              </p-iconfield>
-              @if (isInvalid('height') && form.get('height')?.hasError('min')) {
-                <small class="text-red-600 text-right block text-xs">*Debe ser mayor o igual a 0</small>
-              }
+              <div class="flex flex-col gap-2">
+                <label for="weight" class="font-semibold">Peso (kg)</label>
+                <p-iconfield>
+                  <p-inputicon class="pi pi-chart-line" />
+                  <input
+                    pInputText
+                    id="weight"
+                    type="number"
+                    step="0.01"
+                    formControlName="weight"
+                    placeholder="Ej. 72.40"
+                    [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('weight') }"
+                  />
+                </p-iconfield>
+                @if (isInvalid('weight') && form.get('weight')?.hasError('min')) {
+                  <small class="text-red-600 text-right block text-xs">*Debe ser mayor o igual a 0</small>
+                }
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label for="height" class="font-semibold">Altura (cm)</label>
+                <p-iconfield>
+                  <p-inputicon class="pi pi-arrows-v" />
+                  <input
+                    pInputText
+                    id="height"
+                    type="number"
+                    step="0.01"
+                    formControlName="height"
+                    placeholder="Ej. 175"
+                    [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('height') }"
+                  />
+                </p-iconfield>
+                @if (isInvalid('height') && form.get('height')?.hasError('min')) {
+                  <small class="text-red-600 text-right block text-xs">*Debe ser mayor o igual a 0</small>
+                }
+              </div>
+
+
             </div>
 
             <div class="flex flex-col gap-2 md:col-span-2">
