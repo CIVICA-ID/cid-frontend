@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -17,6 +17,7 @@ import { MiscService } from '@/services/misc.service';
 import { MedicalReportsService } from '../module/service';
 import { OffendersService } from '@/services/offenders.service';
 import { StaffService } from '@/modules/staff/module/service';
+import { DatePicker } from 'primeng/datepicker';
 
 @Component({
   selector: 'app-medical-reports-save',
@@ -26,6 +27,7 @@ import { StaffService } from '@/modules/staff/module/service';
     ButtonModule,
     InputTextModule,
     InputTextarea,
+    DatePicker,
     ToastModule,
     ReactiveFormsModule,
     FormsModule,
@@ -53,7 +55,7 @@ export class SaveComponent implements OnInit {
     id_offender: [null],
     id_staff: [null],
     dictation_date: [null],
-    rh_factor: [null, [Validators.maxLength(5)]],
+    rh_factor: [null],
     blood_type: [null],
     entry_status: [null, [Validators.maxLength(50)]],
     weight: [null, [Validators.min(0)]],
@@ -69,15 +71,26 @@ export class SaveComponent implements OnInit {
   staffOptions: { label: string; value: string }[] = [];
 
   bloodTypeOptions = [
-    { label: 'A+', value: 'A+' },
-    { label: 'A-', value: 'A-' },
-    { label: 'B+', value: 'B+' },
-    { label: 'B-', value: 'B-' },
-    { label: 'AB+', value: 'AB+' },
-    { label: 'AB-', value: 'AB-' },
-    { label: 'O+', value: 'O+' },
-    { label: 'O-', value: 'O-' }
+    { label: 'A', value: 'A' },
+    { label: 'B', value: 'B' },
+    { label: 'AB', value: 'AB' },
+    { label: 'O', value: 'O' },
   ];
+
+  public admissionConditions =  signal([
+    { label: 'SOBRIO', value: 'SOBRIO' },
+    { label: 'ALIENTO ALCOHOLICO', value: 'ALIENTO ALCOHOLICO' },
+    { label: 'EBRIO', value: 'EBRIO' },
+    { label: 'BAJO EFECTOS DE ESTUPEFACIENTES', value: 'BAJO EFECTOS DE ESTUPEFACIENTES' },
+    { label: 'BAJO EFECTOS DE INHALANTES', value: 'BAJO EFECTOS DE INHALANTES' },
+    { label: 'BAJO EFECTOS DE PSICOTROPICOS', value: 'BAJO EFECTOS DE PSICOTROPICOS' },
+    { label: 'BAJO EFECTOS DE TOXICOS', value: 'BAJO EFECTOS DE TOXICOS' }
+  ]);
+
+  public factorRhOptions = signal([
+    { label: 'RH +', value: '+' },
+    { label: 'RH -', value: '-' }
+  ]);
 
   ngOnInit(): void {
     this.id = this.route.snapshot.params['id'] ?? null;
@@ -140,7 +153,7 @@ export class SaveComponent implements OnInit {
           this.form.patchValue({
             id_offender: (data as any).offender?.id ?? (data as any).id_offender ?? null,
             id_staff: (data as any).staff?.id ?? (data as any).id_staff ?? null,
-            dictation_date: (data as any).dictation_date ? String((data as any).dictation_date).slice(0, 10) : null,
+            dictation_date: (data as any).dictation_date ? new Date((data as any).dictation_date) : null,
             rh_factor: (data as any).rh_factor ?? null,
             blood_type: (data as any).blood_type ?? null,
             entry_status: (data as any).entry_status ?? null,
@@ -180,6 +193,12 @@ export class SaveComponent implements OnInit {
       ...raw,
       id_offender: raw.id_offender || null,
       id_staff: raw.id_staff || null,
+      dictation_date:
+        raw.dictation_date instanceof Date
+          ? raw.dictation_date.toISOString()
+          : raw.dictation_date
+            ? String(raw.dictation_date).trim()
+            : null,
       rh_factor: raw.rh_factor ? String(raw.rh_factor).trim() : null,
       blood_type: raw.blood_type ? String(raw.blood_type).trim() : null,
       entry_status: raw.entry_status ? String(raw.entry_status).trim() : null,
