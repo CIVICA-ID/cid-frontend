@@ -52,7 +52,7 @@ export class ListComponent implements OnInit, OnDestroy {
       field: 'dictation_date',
       column: 'Fecha dictamen',
       columnType: 'date',
-      fieldType: 'date'
+      fieldType: 'datetime'
     }
   ];
   totalRows = signal<number>(0);

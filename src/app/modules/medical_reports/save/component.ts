@@ -193,12 +193,7 @@ export class SaveComponent implements OnInit {
       ...raw,
       id_offender: raw.id_offender || null,
       id_staff: raw.id_staff || null,
-      dictation_date:
-        raw.dictation_date instanceof Date
-          ? raw.dictation_date.toISOString()
-          : raw.dictation_date
-            ? String(raw.dictation_date).trim()
-            : null,
+      dictation_date: this.serializeDateTimeForApi(raw.dictation_date),
       rh_factor: raw.rh_factor ? String(raw.rh_factor).trim() : null,
       blood_type: raw.blood_type ? String(raw.blood_type).trim() : null,
       entry_status: raw.entry_status ? String(raw.entry_status).trim() : null,
@@ -275,5 +270,29 @@ export class SaveComponent implements OnInit {
   textLength(controlName: string): number {
     const value = this.form.get(controlName)?.value;
     return typeof value === 'string' ? value.length : 0;
+  }
+
+  private serializeDateTimeForApi(value: unknown): string | null {
+    if (value instanceof Date) {
+      return this.toIsoStringWithOffset(value);
+    }
+
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    const normalizedValue = String(value).trim();
+    return normalizedValue.length ? normalizedValue : null;
+  }
+
+  private toIsoStringWithOffset(date: Date): string {
+    const pad = (value: number): string => String(Math.trunc(Math.abs(value))).padStart(2, '0');
+    const offsetMinutes = -date.getTimezoneOffset();
+    const sign = offsetMinutes >= 0 ? '+' : '-';
+    const absoluteOffsetMinutes = Math.abs(offsetMinutes);
+    const offsetHours = Math.floor(absoluteOffsetMinutes / 60);
+    const remainingOffsetMinutes = absoluteOffsetMinutes % 60;
+
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}${sign}${pad(offsetHours)}:${pad(remainingOffsetMinutes)}`;
   }
 }
