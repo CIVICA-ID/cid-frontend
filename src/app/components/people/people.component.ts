@@ -26,6 +26,48 @@ import { DatePicker } from 'primeng/datepicker';
 import { SelectModule } from 'primeng/select';
 import { AddressesComponent } from '../addresses/addresses.component';
 import { Address } from '@/api/address';
+import { Segment, SegmentedFinger } from '@/api/realscan';
+import { MatchResult, SearchFingerType } from '@/services/fingerprint.service';
+import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
+import { FingerprintService } from '../../services/fingerprint.service';
+import { RealScanService } from '@/services/realscan.service';
+
+export interface TenFingerCapture{
+    leftThumb?: string;
+    leftIndex?: string;
+    leftMiddle?: string;
+    leftRing?: string;
+    leftLittle?: string;
+    rightThumb?: string;
+    rightIndex?: string;
+    rightMiddle?: string;
+    rightRing?: string;
+    rightLittle?: string;
+}
+
+export type FingerKey = keyof TenFingerCapture;
+
+export interface FingerDef {
+    key: FingerKey;
+    label: string;
+    hand: 'left' | 'right';
+}
+
+export type EnrollMode = 'select' | 'full' | 'custom';
+interface CaptureQueueItem {
+    finger: FingerDef;
+    captured?: SegmentedFinger
+}
+
+export const All_FINGERS: FingerDef[] = [
+    {key: 'leftThumb', label: 'Pulgar Izquierdo', hand: 'left'}, {key: 'rightThumb', label: 'Pulgar derecho', hand: 'right'},
+    {key: 'leftIndex', label: 'Indice izquierdo', hand: 'left'}, {key: 'rightIndex', label: 'Indice derecho', hand: 'right'},
+    {key: 'leftMiddle', label: 'Medio Izquierdo', hand: 'left'}, {key: 'rightMiddle', label: 'Medio derecho', hand: 'right'},
+    {key: 'leftRing', label: 'Anular Izquierdo', hand: 'left'}, {key: 'rightRing', label: 'Anular derecho', hand: 'right'},
+    {key: 'leftLittle', label: 'Meñique Izquierdo', hand: 'left'}, {key: 'rightLittle', label: 'Meñique derecho', hand: 'right'}
+];
+
+const FINGER_OPTIONS = All_FINGERS.map(f => ({ key: f.key as SearchFingerType, label: f.label, hand: f.hand}));
 
 @Component({
     selector: 'app-people',
@@ -53,7 +95,12 @@ import { Address } from '@/api/address';
         InputMaskModule,
         DatePicker,
         SelectModule,
-        AddressesComponent
+        AddressesComponent,
+        Tabs,
+        TabList,
+        Tab,
+        TabPanels,
+        TabPanel
     ],
     standalone: true
 })
@@ -87,7 +134,11 @@ export class PeopleComponent implements OnInit {
         this.formOptions
     );
     newAddress: null | Address[];
+
     private peopleService = inject(PeopleService);
+    private fingerprintService = inject(FingerprintService);
+    private realScanService = inject(RealScanService);
+
     @Input() set newPeople(value: any) {
         if (value) {
             this.peopleService.getById(value).subscribe(
@@ -125,20 +176,69 @@ export class PeopleComponent implements OnInit {
     }
 
     visibleDialog: boolean = false;
-    visibleSearchForm: boolean = true; //true
-    visibleAddForm: boolean = false;
-    visibleList: boolean = false;
+    // visibleSearchForm: boolean = true; //true
+    // visibleAddForm: boolean = false;
+    // visibleList: boolean = false;
 
     @Output()
     sendPeople = new EventEmitter<People | null>();
-    currentStep: number = 1;
-    steps = 3;
-
+    // currentStep: number = 1;
+    // steps = 3;
+    activeTabValue: string = '0';
+    // Tab 1 Busqueda por datos
+    dataStep: number = 1;
     page: number = 1;
     limit: number = 10;
     sortBy: [[string, string]] = [['createdAt', 'DESC']];
     totalRows: number = 0;
     listPerson: People[] = [];
+    // Tab 2 Busqueda por huellas dactilares
+    fpStep: number = 1;
+    selectedFinger: SearchFingerType | null = null;
+    selectedFingerLabel: string | null = null;
+    previewUrl: string | null = null;
+    capturedImageBase64: string | null = null;
+    isLiveCaptured: boolean = false;
+    fpLoading: boolean = false;
+    fpSearchResult: MatchResult | null = null;
+    fpErrorMessage: string = '';
+    fpWaitingConfirmation: boolean = false;
+    fpCurrentSessionId: string | null = null;
+    fpThreshold: number = 40;
+    fpHighConfidenceThreshold: number = 100;
+    fpNoMatchFound: boolean = false;
+    //Dialog para captura en busqueda
+    captureDialogVisible: boolean = false;
+    capturedFinger: SegmentedFinger | null = null;
+    captureImageFormat: string = 'bmp';
+    //Enrolamiento
+    enrollDialogVisible: boolean = false
+    enrollMode: EnrollMode = 'select';
+    fpEnrollfingers: TenFingerCapture = {};
+    enrollFingerCount: number = 0;
+    fullStep: 'left-four' | 'left-thumb' | 'right-four' | 'right-thumb' = 'left-four';
+    leftFourFingers: SegmentedFinger[] = [];
+    leftThumb: SegmentedFinger | null = null;
+    rightfourFingers: SegmentedFinger[] = [];
+    rightThumb: SegmentedFinger | null = null;
+    leftThumbFormat: string = 'bmp';
+    rightThumbFormat: string = 'bmp';
+    selectedKeys: Set<FingerKey> = new Set();
+    captureQueue: CaptureQueueItem[] = [];
+    currentQueueIndex: number = 0;
+    customImageFormat: string = 'bmp';
+
+    readonly fullStepItems = [
+        {step: 'left-four' as const, label: '4 izquierdos'},
+        {step: 'left-thumb' as const, label: 'Pulgar izquierdo'},
+        {step: 'right-four' as const, label: '4 derechos'},
+        {step: 'right-thumb' as const, label: 'Pulgar derecho'}
+    ];
+    readonly leftFingerNames = ['Indice', 'Medio', 'Anular', 'Meñique'];
+    readonly rightFingerNames = ['Meñique', 'Anular', 'Medio', 'Indice'];
+    readonly leftFingerDefs = All_FINGERS.filter(f => f.hand === 'left');
+    readonly rightFingerDefs = All_FINGERS.filter(f => f.hand === 'right');
+
     listGender: any[] = [
         { label: 'Femenino', value: 'femenino' },
         { label: 'Masculino', value: 'masculino' }
@@ -192,6 +292,26 @@ export class PeopleComponent implements OnInit {
         { id: 'curp', controlName: 'curp', label: 'CURP', maxLength: 18, type: 'text' }
     ];
 
+    readonly fingerOptions = FINGER_OPTIONS;
+    readonly leftFingerOptions = FINGER_OPTIONS.filter(f => f.hand === 'left');
+    readonly rightFingerOptions = FINGER_OPTIONS.filter(f => f.hand === 'right');
+    readonly leftFingerItems: {key: FingerKey, label: string}[] =
+    [
+        {key: 'leftThumb', label: 'Pulgar'},
+        {key: 'leftIndex', label: 'Indice'},
+        {key: 'leftMiddle', label: 'Medio'},
+        {key: 'leftRing', label: 'Anular'},
+        {key: 'leftLittle', label: 'Meñique'}
+    ];
+    readonly rightFingerItems: {key: FingerKey, label: string}[] =
+    [
+        {key: 'rightThumb', label: 'Pulgar'},
+        {key: 'rightIndex', label: 'Indice'},
+        {key: 'rightMiddle', label: 'Medio'},
+        {key: 'rightRing', label: 'Anular'},
+        {key: 'rightLittle', label: 'Meñique'}
+    ];
+
     constructor(
         private messageService: MessageService,
         private miscService: MiscService,
@@ -227,6 +347,7 @@ export class PeopleComponent implements OnInit {
             }
         ];
     }
+    //Tab 1
     newPeopleAddress() {
         return this.formBuilder.group({
             address: [null, Validators.required],
@@ -404,6 +525,7 @@ export class PeopleComponent implements OnInit {
             }
         );
     }
+    // Tab
     getPageRange(page, limit, totalRows) {
         var startIndex = 0;
         var endIndex = 0;
@@ -412,5 +534,36 @@ export class PeopleComponent implements OnInit {
             endIndex = Math.min(startIndex + limit - 1, totalRows);
         }
         return `Mostrando del ${startIndex} al ${endIndex} de ${totalRows} registros`;
+    }
+
+    private resetAllState(): void {
+        // Tab 1
+        this.dataStep = 1;
+        this.filter = {},
+        this.listPerson = [];
+        this.totalRows = 0;
+        // Tab 2
+        this.fpStep = 1;
+        this.selectedFinger = null;
+        this.selectedFingerLabel = null,
+        this.previewUrl = null;
+        this.capturedImageBase64 = null;
+        this.isLiveCaptured = false;
+        this.fpLoading = false;
+        this.fpSearchResult = null,
+        this.fpErrorMessage = '';
+        this.fpWaitingConfirmation = false;
+        this.fpCurrentSessionId = null;
+        this.fpNoMatchFound = false;
+        //Enrolamiento completo
+        this.fpEnrollfingers = {};
+        this.enrollFingerCount = 0;
+        // this.resetEnrollState();
+        //Formularios
+        this.form.reset();
+        this.formSearch.reset();
+        //Limpiar FormArray de direcciones
+        const arr = this.getPeopleAddressArray();
+        while(arr.length > 0) arr.removeAt(0);
     }
 }
