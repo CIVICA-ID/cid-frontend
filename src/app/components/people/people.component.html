@@ -13,7 +13,7 @@
                 (click)="openDialog()"
             ></button>
             @if (people) {
-                <button pButton pRipple icon="pi pi-times" class="p-button-danger p-button-text border-none bg-gray-50" (click)="deletePeople()" type="button" pTooltip="Quitar selección"></button>
+                <button pButton pRipple icon="pi pi-times" class="p-button-danger p-button-text border-none bg-gray-50" (click)="deletePeople()" type="button" pTooltip="Quitar seleccion"></button>
             }
         </div>
     </div>
@@ -54,153 +54,1017 @@
         </div>
     }
 </div>
+
 <p-dialog [(visible)]="visibleDialog" [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }" [modal]="true" [style]="{ width: '55vw' }" [draggable]="false" [resizable]="false" [header]="getDialogHeader()">
-    <div class="flex justify-between items-center mb-6">
-        <div class="flex items-center gap-2">
-            <button pButton type="button" pRipple icon="pi pi-arrow-left" class="p-button-outlined" (click)="previousStep()" [disabled]="currentStep === 1"></button>
-            <span class="text-sm font-medium text-gray-700"> {{ currentStep }} de {{ steps }} </span>
-        </div>
-    </div>
-    @switch (currentStep) {
-        @case (1) {
-            <form [formGroup]="formSearch" class="flex flex-col gap-y-5">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                    @for (field of searchFields; track field.controlName) {
-                        <div class="flex flex-col gap-1.5">
-                            <label [for]="field.id" class="font-semibold ">
-                                {{ field.label }}
-                            </label>
-                            <input pInputText [id]="field.id" [formControlName]="field.controlName" class="w-full" [class.uppercase]="field.controlName === 'curp'" />
-                            <div class="min-h-5">
-                                @if (formSearch.get(field.controlName)?.hasError('required')) {
-                                    <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
-                                } @else if (formSearch.get(field.controlName)?.hasError('maxlength')) {
-                                    <small class="text-red-600 text-right block text-xs">*Longitud máxima {{ field.maxLength }}</small>
+    <p-tabs [value]="activeTabValue" (valueChange)="onTabChange($event)">
+        <p-tablist>
+            <p-tab value="0"><i class="pi pi-search mr-2"></i>Busqueda por Datos</p-tab>
+            <p-tab value="1"><i class="pi pi-thumbs-up mr-2"></i>Busqueda por Huellas Dactilares</p-tab>
+            <p-tab value="2"><i class="pi pi-face-smile mr-2"></i>Busqueda por Reconocimiento Facial</p-tab>
+        </p-tablist>
+        <p-tabpanels>
+            <!-- Tab 1 -->
+             <p-tabpanel value="0">
+                <div class="pt-4">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-2">
+                            <button pButton type="button" pRipple icon="pi pi arrow-left" class="p-button-outlined" (click)="dataPreviousStep()" [disabled]="dataStep === 1"></button>
+                            <span class="text-sm font-medium text-gray-700">{{dataStep}} de 3</span>
+                        </div>
+                    </div>
+                    @if(dataStep === 1){
+                        <form [formGroup]="formSearch" class="flex flex-col gap-y-5">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                                @for (field of searchFields; track field.controlName) {
+                                    <div class="flex flex-col gap-1.5">
+                                        <label [for]="field.id" class="font-semibold ">
+                                            {{ field.label }}
+                                        </label>
+                                        <input pInputText [id]="field.id" [formControlName]="field.controlName" class="w-full" [class.uppercase]="field.controlName === 'curp'" />
+                                        <div class="min-h-5">
+                                            @if (formSearch.get(field.controlName)?.hasError('required')) {
+                                                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                            } @else if (formSearch.get(field.controlName)?.hasError('maxlength')) {
+                                                <small class="text-red-600 text-right block text-xs">*Longitud máxima {{ field.maxLength }}</small>
+                                            }
+                                        </div>
+                                    </div>
                                 }
+                            </div>
+                            <div class="flex justify-end">
+                                <button pButton pRipple type="button" label="Buscar" (click)="searchPerson()" class="!w-32"></button>
+                            </div>
+                        </form>
+                    }
+                    @if(dataStep === 2){
+                        <div class="flex flex-col gap-4">
+                            <div class="flex justify-end">
+                                <button pButton type="button" pRipple label="Agregar" type="button" icon="pi pi-plus" (click)="addPerson()" class="p-button-outlined !w-32"></button>
+                            </div>
+                            <div class="mt-2 card">
+                                <p-table
+                                    #dt
+                                    [value]="listPerson"
+                                    [lazy]="true"
+                                    [resetPageOnSort]="false"
+                                    dataKey="id"
+                                    [rows]="limit"
+                                    [paginator]="true"
+                                    (onLazyLoad)="loadTable($event)"
+                                    [lazyLoadOnInit]="true"
+                                    [totalRecords]="totalRows"
+                                    [rowsPerPageOptions]="[10, 25, 50]"
+                                    [showCurrentPageReport]="true"
+                                    currentPageReportTemplate="{{ getPageRange(page, limit, totalRows) }}"
+                                    [responsive]="true"
+                                    [rowHover]="true"
+                                    responsiveLayout="scroll"
+                                >
+                                    <ng-template pTemplate="header">
+                                        <tr>
+                                            @for (field of searchFields; track field.controlName) {
+                                                <th class="px-2 py-1">{{ field.label }}</th>
+                                            }
+                                            <th></th>
+                                        </tr>
+                                    </ng-template>
+                                    <ng-template pTemplate="body" let-person>
+                                        <tr class="hover:bg-gray-50">
+                                            @for (field of searchFields; track field.controlName) {
+                                                @if (field.controlName == 'curp') {
+                                                    <td class="px-2 py-1">{{ person[field.controlName] | uppercase }}</td>
+                                                } @else {
+                                                    @if (person[field.controlName] != null && person[field.controlName]) {
+                                                        <td class="px-2 py-1">{{ person[field.controlName] }}</td>
+                                                    } @else {
+                                                        <td class="px-2 py-1">-</td>
+                                                    }
+                                                }
+                                            }
+                                            <td class="px-2 py-1 text-center">
+                                                <button pButton pRipple icon="pi pi-check" class="p-button-rounded p-button-info" (click)="selectPerson(person)"></button>
+                                            </td>
+                                        </tr>
+                                    </ng-template>
+                                </p-table>
                             </div>
                         </div>
                     }
+                    @if(dataStep === 3){
+                        <ng-container *ngTemplateOutlet="addPersonFormTpl"></ng-container>
+                    }
                 </div>
-                <div class="flex justify-end">
-                    <button pButton pRipple type="button" [label]="getNextButtonLabel()" (click)="searchPerson()" class="!w-32"></button>
-                </div>
-            </form>
-        }
-        @case (2) {
-            <div class="flex flex-col gap-4">
-                <div class="flex justify-end">
-                    <button pButton type="button" pRipple [label]="getNextButtonLabel()" type="button" icon="pi pi-plus" (click)="addPerson()" class="p-button-outlined !w-32"></button>
-                </div>
-                <div class="mt-2 card">
-                    <p-table
-                        #dt
-                        [value]="listPerson"
-                        [lazy]="true"
-                        [resetPageOnSort]="false"
-                        dataKey="id"
-                        [rows]="limit"
-                        [paginator]="true"
-                        (onLazyLoad)="loadTable($event)"
-                        [lazyLoadOnInit]="true"
-                        [totalRecords]="totalRows"
-                        [rowsPerPageOptions]="[10, 25, 50]"
-                        [showCurrentPageReport]="true"
-                        currentPageReportTemplate="{{ getPageRange(page, limit, totalRows) }}"
-                        [responsive]="true"
-                        [rowHover]="true"
-                        responsiveLayout="scroll"
-                    >
-                        <ng-template pTemplate="header">
-                            <tr>
-                                @for (field of searchFields; track field.controlName) {
-                                    <th class="px-2 py-1">{{ field.label }}</th>
-                                }
-                                <th></th>
-                            </tr>
-                        </ng-template>
-                        <ng-template pTemplate="body" let-person>
-                            <tr class="hover:bg-gray-50">
-                                @for (field of searchFields; track field.controlName) {
-                                    @if (field.controlName == 'curp') {
-                                        <td class="px-2 py-1">{{ person[field.controlName] | uppercase }}</td>
-                                    } @else {
-                                        @if (person[field.controlName] != null && person[field.controlName]) {
-                                            <td class="px-2 py-1">{{ person[field.controlName] }}</td>
-                                        } @else {
-                                            <td class="px-2 py-1">-</td>
+             </p-tabpanel>
+             <!-- Tab 2 -->
+            <p-tabpanel value="1">
+                <div class="pt-4">
+                    <!-- Seleccionar dedo y buscar -->
+                    @if (fpStep === 1) {
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="text-sm font-medium text-gray-700">
+                                Busqueda por huella dactilar
+                            </span>
+                        </div>
+                        <!-- Seleccion de dedo -->
+                        <div class="mb-5">
+                            <p class="text-sm font-semibold text-gray-700 mb-3">
+                                Seleccione el dedo a buscar:
+                            </p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <!-- Mano izquierda -->
+                                <div>
+                                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-center">
+                                        Mano Izquierda
+                                    </p>
+                                    <div class="flex flex-col gap-1.5">
+                                        @for (f of leftFingerOptions; track f.key) {
+                                            <button pButton pRipple type="button"
+                                                [label]="f.label"
+                                                [class]="selectedFinger === f.key
+                                                    ? 'p-button-success'
+                                                    : 'p-button-outlined p-button-secondary'"
+                                                class="w-full text-sm"
+                                                (click)="selectFinger(f.key)"
+                                                [icon]="selectedFinger === f.key ? 'pi pi-check' : 'pi pi-circle'">
+                                            </button>
                                         }
+                                    </div>
+                                </div>
+                                <!-- Mano derecha -->
+                                <div>
+                                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-center">
+                                        Mano Derecha
+                                    </p>
+                                    <div class="flex flex-col gap-1.5">
+                                        @for (f of rightFingerOptions; track f.key) {
+                                            <button pButton pRipple type="button"
+                                                [label]="f.label"
+                                                [class]="selectedFinger === f.key
+                                                    ? 'p-button-success'
+                                                    : 'p-button-outlined p-button-secondary'"
+                                                class="w-full text-sm"
+                                                (click)="selectFinger(f.key)"
+                                                [icon]="selectedFinger === f.key ? 'pi pi-check' : 'pi pi-circle'">
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Captura de huella para busqueda -->
+                        @if (selectedFinger) {
+                            <div class="border-t border-gray-200 pt-4 mb-4">
+                                <p class="text-sm font-semibold text-gray-700 mb-3">
+                                    Capturar huella de:
+                                    <strong class="text-blue-600">{{ selectedFingerLabel }}</strong>
+                                </p>
+
+                                <div class="flex gap-3 mb-3">
+                                    <button pButton pRipple type="button"
+                                        label="Capturar con Lector"
+                                        icon="pi pi-camera"
+                                        class="p-button-outlined"
+                                        (click)="openCaptureDialog()">
+                                    </button>
+                                    <div class="relative">
+                                        <input type="file"
+                                            accept="image/png,image/jpeg,image/bmp"
+                                            (change)="onFpFileSelected($event)"
+                                            class="hidden"
+                                            #fpFileInput />
+                                        <button pButton pRipple type="button"
+                                            label="Subir Imagen"
+                                            icon="pi pi-upload"
+                                            class="p-button-outlined p-button-secondary"
+                                            (click)="fpFileInput.click()">
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Preview de la huella capturada -->
+                                @if (previewUrl) {
+                                    <div class="border-2 border-green-300 rounded-lg p-3 bg-green-50 text-center mb-4">
+                                        <img [src]="previewUrl"
+                                            alt="Huella"
+                                            class="mx-auto max-h-40 object-contain bg-white p-1 rounded shadow" />
+                                        <p class="text-sm text-green-700 mt-2 font-semibold">
+                                            <i class="pi pi-check-circle mr-1"></i> Huella capturada
+                                        </p>
+                                    </div>
+                                }
+                                <!-- Boton buscar -->
+                                <button pButton pRipple type="button" label="Buscar Huella" icon="pi pi-search" class="w-full" [disabled]="!previewUrl || fpLoading" [loading]="fpLoading" (click)="searchFingerprint()"></button>
+                            </div>
+                        }
+                        <!-- Resultados de la busqueda -->
+                        @if (fpSearchResult) {
+                            <div class="border-t border-gray-200 pt-4 mt-4">
+                                <!-- Coincidencia encontrada, se pide confirmacion -->
+                                @if (fpSearchResult.isMatch && fpWaitingConfirmation) {
+                                    <div class="border-2 border-blue-300 rounded-lg p-4 bg-blue-50 mb-4">
+                                        <div class="flex items-center gap-2 mb-3">
+                                            <i class="pi pi-user text-blue-600 text-xl"></i>
+                                            <span class="font-bold text-blue-800 text-lg">
+                                                Coincidencia encontrada
+                                            </span>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-3 text-sm mb-3">
+                                            <div>
+                                                <span class="text-gray-500">Nombre:</span>
+                                                <span class="font-semibold ml-1">
+                                                    {{ fpSearchResult.firstName }}
+                                                    {{ fpSearchResult.paternalName }}
+                                                    {{ fpSearchResult.maternalName }}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span class="text-gray-500">CURP:</span>
+                                                <span class="font-mono font-semibold ml-1 uppercase">
+                                                    {{ fpSearchResult.curp || 'N/A' }}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span class="text-gray-500">Score:</span>
+                                                <span class="font-bold ml-1"
+                                                    [class]="getScoreColor(fpSearchResult.score)">
+                                                    {{ fpSearchResult.score | number:'1.1-1' }}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span class="text-gray-500">Procesados:</span>
+                                                <span class="font-semibold ml-1">
+                                                    {{ fpSearchResult.processedRecords }}/{{ fpSearchResult.totalRecords }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <p class="text-sm text-blue-700 mb-4 font-medium">
+                                            ¿Es la persona que busca?
+                                        </p>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <button pButton pRipple type="button"
+                                                label="Sí, es correcta"
+                                                icon="pi pi-check"
+                                                class="p-button-success"
+                                                [disabled]="fpLoading"
+                                                [loading]="fpLoading"
+                                                (click)="confirmFpMatch(true)">
+                                            </button>
+                                            <button pButton pRipple type="button"
+                                                label="No, seguir buscando"
+                                                icon="pi pi-times"
+                                                class="p-button-danger p-button-outlined"
+                                                [disabled]="fpLoading"
+                                                [loading]="fpLoading"
+                                                (click)="confirmFpMatch(false)">
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                <!-- Match confirmado -->
+                                @if (fpSearchResult.isMatch && !fpWaitingConfirmation && !fpSearchResult.requiresConfirmation) {
+                                    <div class="border-2 border-green-300 rounded-lg p-4 bg-green-50">
+                                        <div class="flex items-center gap-2">
+                                            <i class="pi pi-check-circle text-green-600 text-xl"></i>
+                                            <span class="font-bold text-green-800">
+                                                Persona seleccionada correctamente
+                                            </span>
+                                        </div>
+                                    </div>
+                                }
+                                <!-- Sin coincidencias -->
+                                @if (!fpSearchResult.isMatch && fpNoMatchFound) {
+                                    <div class="border-2 border-yellow-300 rounded-lg p-4 bg-yellow-50 mb-4">
+                                        <div class="flex items-center gap-2 mb-3">
+                                            <i class="pi pi-exclamation-triangle text-yellow-600 text-xl"></i>
+                                            <span class="font-bold text-yellow-800">
+                                                No se encontraron coincidencias
+                                            </span>
+                                        </div>
+                                        <p class="text-sm text-yellow-700 mb-3">
+                                            Se revisaron {{ fpSearchResult.totalRecords }} registros
+                                            @if (fpSearchResult.elapsedMs) {
+                                                <span class="text-gray-500">
+                                                    ({{ formatTime(fpSearchResult.elapsedMs) }})
+                                                </span>
+                                            }
+                                        </p>
+                                        <button pButton pRipple type="button"
+                                            label="Agregar Persona"
+                                            icon="pi pi-user-plus"
+                                            class="p-button-warning w-full"
+                                            (click)="goToFpAddPerson()">
+                                        </button>
+                                    </div>
+                                }
+
+                            </div>
+                        }
+                        <!-- Error -->
+                        @if (fpErrorMessage) {
+                            <div class="mt-3 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm flex items-start">
+                                <i class="pi pi-exclamation-circle mr-2 mt-0.5"></i>
+                                {{ fpErrorMessage }}
+                            </div>
+                        }
+
+                    }
+                    <!-- Agregar persona con huellas -->
+                    @if (fpStep === 3) {
+                        <div class="flex items-center gap-2 mb-4">
+                            <button pButton type="button" pRipple
+                                icon="pi pi-arrow-left"
+                                class="p-button-outlined p-button-sm"
+                                (click)="fpGoBack()">
+                            </button>
+                            <span class="text-sm font-medium text-gray-700">
+                                Agregar nueva persona con huellas
+                            </span>
+                        </div>
+                        <ng-container *ngTemplateOutlet="addPersonFormTpl; context: { fromFingerprint: true }"></ng-container>
+                    }
+                </div>
+            </p-tabpanel>
+            <!-- Tab 3 -->
+            <p-tabpanel value="2">
+                <div class="pt-4">
+                    <div class="flex flex-col items-center justify-center py-12 text-gray-400">
+                        <i class="pi pi-camera text-5xl mb-4"></i>
+                        <p class="text-lg font-semibold">Pendiente</p>
+                        <p class="text-sm">
+                            Apartado de Busqueda Facial
+                        </p>
+                    </div>
+                </div>
+            </p-tabpanel>
+        </p-tabpanels>
+    </p-tabs>
+</p-dialog>
+
+<ng-template #addPersonFormTpl let-fromFingerprint="fromFingerprint">
+    <form [formGroup]="form" class="flex flex-col gap-y-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+            @for (field of addFields; track field.controlName) {
+                <div class="flex flex-col gap-1.5">
+                    <label [for]="field.id" class="font-semibold ">
+                        {{ field.label }}
+                    </label>
+                    @if (field.type == 'text') {
+                        <input pInputText [id]="field.id" [formControlName]="field.controlName" [fluid]="true" [class.uppercase]="field.controlName === 'curp'" />
+                    } @else if (field.type == 'date') {
+                        <p-datepicker [inputId]="field.id" [formControlName]="field.controlName" [fluid]="true" [showTime]="false" [showIcon]="true" />
+                    }
+                    @else if (field.type == 'list') {
+                        <p-select [formControlName]="field.controlName" [options]="field.options" optionLabel="label" optionValue="value" placeholder="Seleccionar uno" [showClear]="true" [group]="field.group" />
+                    }
+                    <div class="min-h-5">
+                        @if (form.get(field.controlName)?.hasError('required')) {
+                            <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                        } @else if (form.get(field.controlName)?.hasError('maxlength')) {
+                            <small class="text-red-600 text-right block text-xs">*Longitud maxima {{ field.maxLength }}</small>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+        <div formArrayName="peopleAddresses">
+            <div class="flex flex-col ">
+                @if (form.get('peopleAddresses')?.hasError('required')) {
+                    <p-message severity="warn" text="Debe agregar al menos un domicilio."></p-message>
+                }
+            </div>
+            <div class="flex flex-col ">
+                @for (elementGroup of getPeopleAddressArray().controls; track elementGroup; let i = $index) {
+                    <p-card [formGroupName]="i" class="mt-6">
+                        <ng-template pTemplate="title">
+                            <div class="flex justify-content-between align-items-center">
+                                <div class="flex align-items-center gap-2">
+                                    <i class="pi pi-map-marker text-primary"></i>
+                                    <span class="text-xl font-bold">Domicilio #{{ i + 1 }}</span>
+                                </div>
+                                <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="removeRow(getPeopleAddressArray(), i)" pTooltip="Eliminar este domicilio"></button>
+                            </div>
+                        </ng-template>
+                        <app-addresses (sendAddress)="getAddresses($event, $index, getPeopleAddressArray())" [newAddress]="elementGroup.get('address_data')?.value"></app-addresses>
+                        <div class="mt-2">
+                            @if (elementGroup.get('address')?.invalid) {
+                                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                            }
+                        </div>
+                    </p-card>
+                }
+            </div>
+            <div class="mt-4 flex justify-content-center ">
+                <button pButton type="button" label="Añadir Domicilio" icon="pi pi-plus-circle" class="p-button-raised p-button-secondary w-full" (click)="addRow(getPeopleAddressArray(), newPeopleAddress())"></button>
+            </div>
+        </div>
+        @if(fromFingerprint){
+            <div class="mt-4">
+                <!-- Boton añadir huellas -->
+                <button pButton type="button"
+                    label="Añadir Huellas Dactilares"
+                    icon="pi pi-plus-circle"
+                    class="p-button-raised p-button-secondary w-full"
+                    (click)="openEnrollDialog()">
+                </button>
+                <!-- Preview de huellas ya capturadas -->
+                @if (enrollFingersCount > 0) {
+                    <div class="mt-4 p-4 border-2 border-blue-300 rounded-lg bg-blue-50">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center text-blue-700">
+                                <i class="pi pi-check-circle mr-2"></i>
+                                <span class="font-semibold">
+                                    {{ enrollFingersCount }} Dedo(s) Capturados
+                                </span>
+                            </div>
+                        </div>
+                        <!-- Mano izquierda -->
+                        @if (getFingerImage('leftThumb') || getFingerImage('leftIndex') || getFingerImage('leftMiddle') || getFingerImage('leftRing') || getFingerImage('leftLittle')) {
+                            <p class="text-xs font-semibold text-green-700 mb-1">Mano Izquierda</p>
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                @for (item of leftFingerItems; track item.key) {
+                                    @if (getFingerImage(item.key)) {
+                                        <div class="text-center">
+                                            <img [src]="'data:image/bmp;base64,' + getFingerImage(item.key)"
+                                                [alt]="item.label"
+                                                class="w-16 max-h-20 object-contain bg-white rounded shadow border border-green-200" />
+                                            <p class="text-xs text-green-600 mt-0.5 font-medium">
+                                                {{ item.label }}
+                                            </p>
+                                        </div>
                                     }
                                 }
-                                <td class="px-2 py-1 text-center">
-                                    <button pButton pRipple icon="pi pi-check" class="p-button-rounded p-button-info" (click)="selectPerson(person)"></button>
-                                </td>
-                            </tr>
-                        </ng-template>
-                    </p-table>
-                </div>
+                            </div>
+                        }
+                        <!-- Mano derecha -->
+                        @if (getFingerImage('rightThumb') || getFingerImage('rightIndex') || getFingerImage('rightMiddle') || getFingerImage('rightRing') || getFingerImage('rightLittle')) {
+                            <p class="text-xs font-semibold text-blue-700 mb-1">Mano Derecha</p>
+                            <div class="flex flex-wrap gap-2">
+                                @for (item of rightFingerItems; track item.key) {
+                                    @if (getFingerImage(item.key)) {
+                                        <div class="text-center">
+                                            <img [src]="'data:image/bmp;base64,' + getFingerImage(item.key)"
+                                                [alt]="item.label"
+                                                class="w-16 max-h-20 object-contain bg-white rounded shadow border border-blue-200" />
+                                            <p class="text-xs text-blue-600 mt-0.5 font-medium">
+                                                {{ item.label }}
+                                            </p>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         }
-        @case (3) {
-            <form [formGroup]="form" class="flex flex-col gap-y-5">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                    @for (field of addFields; track field.controlName) {
-                        <div class="flex flex-col gap-1.5">
-                            <label [for]="field.id" class="font-semibold ">
-                                {{ field.label }}
-                            </label>
-                            @if (field.type == 'text') {
-                                <input pInputText [id]="field.id" [formControlName]="field.controlName" [fluid]="true" [class.uppercase]="field.controlName === 'curp'" />
-                            } @else if (field.type == 'date') {
-                                <p-datepicker [inputId]="field.id" [formControlName]="field.controlName" [fluid]="true" [showTime]="false" [showIcon]="true" />
-                            }
-                            @else if (field.type == 'list') {
-                                <p-select [formControlName]="field.controlName" [options]="field.options" optionLabel="label" optionValue="value" placeholder="Seleccionar uno" [showClear]="true" [group]="field.group" />
-                            }
-                            <div class="min-h-5">
-                                @if (form.get(field.controlName)?.hasError('required')) {
-                                    <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
-                                } @else if (form.get(field.controlName)?.hasError('maxlength')) {
-                                    <small class="text-red-600 text-right block text-xs">*Longitud máxima {{ field.maxLength }}</small>
-                                }
-                            </div>
-                        </div>
-                    }
-                </div>
-                <div formArrayName="peopleAddresses">
-                    <div class="flex flex-col ">
-                        @if (form.get('peopleAddresses')?.hasError('required')) {
-                            <p-message severity="warn" text="Debe agregar al menos un domicilio."></p-message>
-                        }
-                    </div>
-                    <div class="flex flex-col ">
-                        @for (elementGroup of getPeopleAddressArray().controls; track elementGroup; let i = $index) {
-                            <p-card [formGroupName]="i" class="mt-6">
-                                <ng-template pTemplate="title">
-                                    <div class="flex justify-content-between align-items-center">
-                                        <div class="flex align-items-center gap-2">
-                                            <i class="pi pi-map-marker text-primary"></i>
-                                            <span class="text-xl font-bold">Domicilio #{{ i + 1 }}</span>
-                                        </div>
-                                        <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="removeRow(getPeopleAddressArray(), i)" pTooltip="Eliminar este domicilio"></button>
-                                    </div>
-                                </ng-template>
-                                <app-addresses (sendAddress)="getAddresses($event, $index, getPeopleAddressArray())" [newAddress]="elementGroup.get('address_data')?.value"></app-addresses>
-                                <div class="mt-2">
-                                    @if (elementGroup.get('address')?.invalid) {
-                                        <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
-                                    }
-                                </div>
-                            </p-card>
-                        }
-                    </div>
-                    <div class="mt-4 flex justify-content-center ">
-                        <button pButton type="button" label="Añadir Domicilio" icon="pi pi-plus-circle" class="p-button-raised p-button-secondary w-full" (click)="addRow(getPeopleAddressArray(), newPeopleAddress())"></button>
-                    </div>
-                </div>
-                <div class="flex justify-end">
-                    <button pButton pRipple type="button" [label]="getNextButtonLabel()" (click)="saveForm()" class="!w-32"></button>
-                </div>
-            </form>
+        <div class="flex justify-end mt-4">
+            @if(fromFingerprint){
+                <button pButton pRipple type="button" label="Guardar Persona y Huellas" icon="pi pi-save" (click)="saveFpForm()" class="!w-64"></button>
+            }@else {
+                <button pButton pRipple type="button" label="Guardar" (click)="saveForm()" class="!w-32"></button>
+            }
+        </div>
+    </form>
+</ng-template>
+<!-- Captura de huella para busqueda -->
+<p-dialog [(visible)]="captureDialogVisible" [modal]="true" [style]="{ width: '28rem' }" [draggable]="false" [resizable]="false" header="Captura para Busqueda" (onHide)="closeCaptureDialog()">
+    <!-- Info del dedo seleccionado -->
+    @if (selectedFingerLabel) {
+        <div class="mb-4 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700 flex items-center">
+            <i class="pi pi-tag mr-2"></i>
+            Buscando: <strong class="ml-1">{{ selectedFingerLabel }}</strong>
+        </div>
+    }
+    <!-- Estado del lector -->
+    <div class="mb-4 flex items-center p-3 rounded-lg text-sm" [ngClass]="getCaptureStateClass()">
+        <div class="w-2.5 h-2.5 rounded-full mr-2 flex-shrink-0"
+            [ngClass]="{
+                'bg-yellow-500 animate-pulse': realScanService.isCapturing(),
+                'bg-green-500': capturedFinger || realScanService.isDeviceReady(),
+                'bg-blue-500': !capturedFinger && !realScanService.isDeviceReady() && realScanService.sdkInitialized(),
+                'bg-gray-400': !realScanService.sdkInitialized()
+            }">
+        </div>
+        <span class="font-medium">{{ getCaptureStateText() }}</span>
+        @if (realScanService.loading()) {
+            <i class="pi pi-spin pi-spinner ml-auto"></i>
         }
+    </div>
+    <!-- Boton inicializar SDK -->
+    @if (!realScanService.sdkInitialized()) {
+        <button pButton pRipple type="button"
+            label="Inicializar SDK"
+            icon="pi pi-bolt"
+            class="w-full mb-3"
+            [disabled]="realScanService.loading()"
+            [loading]="realScanService.loading()"
+            (click)="initSDK()">
+        </button>
+    }
+    <!-- Boton inicializar dispositivo -->
+    @if (realScanService.sdkInitialized() && !realScanService.deviceHandle()) {
+        <button pButton pRipple type="button"
+            label="Inicializar Dispositivo"
+            icon="pi pi-desktop"
+            class="p-button-success w-full mb-3"
+            [disabled]="realScanService.loading()"
+            [loading]="realScanService.loading()"
+            (click)="initDevice()">
+        </button>
+    }
+    <!-- Preview de la huella capturada -->
+    @if (capturedFinger) {
+        <div class="mb-4 border-2 border-green-300 rounded-lg p-3 bg-green-50 text-center">
+            <img [src]="getCaptureImageUrl()"
+                (error)="onCaptureImgError()"
+                alt="Huella"
+                class="mx-auto max-h-48 object-contain bg-white p-1 rounded shadow" />
+            <p class="text-sm text-green-700 mt-2 font-semibold">
+                <i class="pi pi-check-circle mr-1"></i> Huella capturada
+            </p>
+            <p class="text-xs text-gray-500">
+                {{ capturedFinger.width }}×{{ capturedFinger.height }} px
+            </p>
+        </div>
+    }
+    <!-- Botones de accion -->
+    <div class="flex flex-col gap-2">
+        @if (!capturedFinger) {
+            <button pButton pRipple type="button"
+                [label]="realScanService.isCapturing() ? 'Capturando...' : 'Capturar Huella'"
+                [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-camera'"
+                class="w-full"
+                [disabled]="!realScanService.isDeviceReady() || realScanService.loading() || realScanService.isCapturing()"
+                (click)="captureSingle()">
+            </button>
+        } @else {
+            <div class="grid grid-cols-2 gap-3">
+                <button pButton pRipple type="button"
+                    label="Repetir"
+                    icon="pi pi-refresh"
+                    class="p-button-danger"
+                    [disabled]="realScanService.loading()"
+                    (click)="retakeCapture()">
+                </button>
+                <button pButton pRipple type="button"
+                    label="Usar esta"
+                    icon="pi pi-check"
+                    class="p-button-success"
+                    (click)="acceptCapture()">
+                </button>
+            </div>
+        }
+    </div>
+    <!-- Error del lector -->
+    @if (realScanService.lastError()) {
+        <div class="mt-3 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm flex items-start">
+            <i class="pi pi-exclamation-circle mr-2 mt-0.5"></i>
+            {{ realScanService.lastError() }}
+        </div>
     }
 </p-dialog>
+<!-- Enrolamiento de 10 dedos o de seleccionar dedos -->
+<p-dialog
+    [(visible)]="enrollDialogVisible"
+    [modal]="true"
+    [style]="{ width: '42rem' }"
+    [draggable]="false"
+    [resizable]="false"
+    header="Captura de Huellas — RealScan G10"
+    (onHide)="closeEnrollDialog()">
+    <!-- Seleccion de modo -->
+    @if (enrollMode === 'select') {
+        <p class="text-sm text-gray-600 mb-5 text-center">
+            ¿Cómo deseas capturar las huellas?
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <button pButton pRipple type="button"
+                class="flex flex-col items-center p-6 p-button-outlined"
+                (click)="chooseFullMode()">
+                <i class="pi pi-users text-4xl mb-3"></i>
+                <span class="font-bold text-lg">10 Dedos Completo</span>
+                <span class="text-sm mt-1">Captura slap (4+1 por mano)</span>
+            </button>
+            <button pButton pRipple type="button"
+                class="flex flex-col items-center p-6 p-button-outlined p-button-secondary"
+                (click)="chooseCustomMode()">
+                <i class="pi pi-sliders-h text-4xl mb-3"></i>
+                <span class="font-bold text-lg">Dedos Específicos</span>
+                <span class="text-sm mt-1">Elige qué dedos capturar</span>
+            </button>
+        </div>
+
+        <!-- SDK del dispositivo -->
+        @if (!realScanService.sdkInitialized()) {
+            <button pButton pRipple type="button"
+                label="Inicializar SDK"
+                icon="pi pi-bolt"
+                class="w-full mb-3"
+                [disabled]="realScanService.loading()"
+                [loading]="realScanService.loading()"
+                (click)="initSDK()">
+            </button>
+        }
+        @if (realScanService.sdkInitialized() && !realScanService.deviceHandle()) {
+            <button pButton pRipple type="button"
+                label="Inicializar Dispositivo"
+                icon="pi pi-desktop"
+                class="p-button-success w-full mb-3"
+                [disabled]="realScanService.loading()"
+                [loading]="realScanService.loading()"
+                (click)="initDevice()">
+            </button>
+        }
+        @if (realScanService.deviceInfo()) {
+            <div class="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg text-xs text-green-700 text-center">
+                ✓ {{ realScanService.deviceInfo()?.productName }} conectado
+            </div>
+        }
+    }
+
+    <!-- Modo personalizado -->
+    @if (enrollMode === 'custom' && captureQueue.length === 0) {
+        <div class="flex items-center justify-between mb-3">
+            <button pButton pRipple type="button"
+                label="Volver"
+                icon="pi pi-arrow-left"
+                class="p-button-text p-button-sm"
+                (click)="backToEnrollSelect()">
+            </button>
+            <div class="flex gap-2">
+                <button pButton pRipple type="button"
+                    label="Todos"
+                    class="p-button-text p-button-sm"
+                    (click)="selectAllFingers()">
+                </button>
+                <button pButton pRipple type="button"
+                    label="Ninguno"
+                    class="p-button-text p-button-sm"
+                    (click)="clearFingerSelection()">
+                </button>
+            </div>
+        </div>
+
+        <p class="text-sm text-gray-600 mb-3">Selecciona los dedos a capturar:</p>
+
+        <div class="grid grid-cols-2 gap-4 mb-5">
+            <!-- Mano izquierda -->
+            <div>
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-center">
+                    Mano Izquierda
+                </p>
+                <div class="flex flex-col gap-1.5">
+                    @for (f of leftFingerDefs; track f.key) {
+                        <button pButton pRipple type="button"
+                            [label]="f.label"
+                            [class]="isFingerKeySelected(f.key)
+                                ? 'p-button-success'
+                                : 'p-button-outlined p-button-secondary'"
+                            class="w-full text-sm"
+                            (click)="toggleFingerKey(f.key)"
+                            [icon]="isFingerKeySelected(f.key) ? 'pi pi-check' : 'pi pi-plus'">
+                        </button>
+                    }
+                </div>
+            </div>
+            <!-- Mano derecha -->
+            <div>
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-center">
+                    Mano Derecha
+                </p>
+                <div class="flex flex-col gap-1.5">
+                    @for (f of rightFingerDefs; track f.key) {
+                        <button pButton pRipple type="button"
+                            [label]="f.label"
+                            [class]="isFingerKeySelected(f.key)
+                                ? 'p-button-success'
+                                : 'p-button-outlined p-button-secondary'"
+                            class="w-full text-sm"
+                            (click)="toggleFingerKey(f.key)"
+                            [icon]="isFingerKeySelected(f.key) ? 'pi pi-check' : 'pi pi-plus'">
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (selectedKeys.size > 0) {
+            <div class="mb-4 p-2 bg-gray-50 rounded-lg text-xs text-gray-600 text-center">
+                {{ selectedKeys.size }} dedo(s) seleccionado(s)
+            </div>
+        }
+
+        <button pButton pRipple type="button"
+            label="Iniciar Captura"
+            icon="pi pi-play"
+            class="w-full"
+            [disabled]="selectedKeys.size === 0"
+            (click)="startCustomCapture()">
+        </button>
+    }
+    <!-- Modo seleccion -->
+    @if (enrollMode === 'custom' && captureQueue.length > 0) {
+        <!-- Barra de progreso -->
+        <div class="mb-4">
+            <div class="flex items-center justify-between text-sm mb-1">
+                <span class="font-semibold text-gray-700">
+                    Paso {{ currentQueueIndex + 1 }} de {{ captureQueue.length }}
+                    @if (getCurrentQueueItem()) {
+                        — <span class="text-purple-700">{{ getCurrentQueueItem()!.finger.label }}</span>
+                    }
+                </span>
+                <button pButton pRipple type="button"
+                    label="Cancelar"
+                    class="p-button-text p-button-sm p-button-danger"
+                    (click)="backToEnrollSelect()">
+                </button>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-purple-500 h-2 rounded-full transition-all"
+                    [style.width.%]="(currentQueueIndex) / captureQueue.length * 100">
+                </div>
+            </div>
+        </div>
+
+        <!-- SDK del dispositivo -->
+        @if (!realScanService.sdkInitialized()) {
+            <button pButton pRipple type="button"
+                label="Inicializar SDK"
+                icon="pi pi-bolt"
+                class="w-full mb-2"
+                [disabled]="realScanService.loading()"
+                [loading]="realScanService.loading()"
+                (click)="initSDK()">
+            </button>
+        }
+        @if (realScanService.sdkInitialized() && !realScanService.deviceHandle()) {
+            <button pButton pRipple type="button"
+                label="Inicializar Dispositivo"
+                icon="pi pi-desktop"
+                class="p-button-success w-full mb-2"
+                [disabled]="realScanService.loading()"
+                [loading]="realScanService.loading()"
+                (click)="initDevice()">
+            </button>
+        }
+        <!-- Preview del dedo actual -->
+        @if (getCurrentQueueItem()?.captured) {
+            <div class="mb-3 border-2 border-purple-300 rounded-lg p-3 bg-purple-50 text-center">
+                <img [src]="getCurrentQueueImageUrl()"
+                    (error)="onCustomImgError()"
+                    [alt]="getCurrentQueueItem()!.finger.label"
+                    class="mx-auto max-h-44 object-contain bg-white p-1 rounded" />
+                <p class="text-sm text-purple-700 mt-1 font-semibold">
+                    ✓ {{ getCurrentQueueItem()!.finger.label }} capturado
+                </p>
+            </div>
+        }
+        <!-- Botones de accion -->
+        <div class="flex flex-col gap-2">
+            @if (!getCurrentQueueItem()?.captured) {
+                <button pButton pRipple type="button"
+                    [label]="realScanService.isCapturing()
+                        ? 'Capturando...'
+                        : 'Capturar ' + (getCurrentQueueItem()?.finger?.label || '')"
+                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-camera'"
+                    class="w-full"
+                    [disabled]="!realScanService.isDeviceReady() || realScanService.loading() || realScanService.isCapturing()"
+                    (click)="captureCurrentFinger()">
+                </button>
+            } @else {
+                <div class="grid grid-cols-2 gap-3">
+                    <button pButton pRipple type="button"
+                        label="Repetir"
+                        icon="pi pi-refresh"
+                        class="p-button-danger"
+                        (click)="retakeCurrentFinger()">
+                    </button>
+                    <button pButton pRipple type="button"
+                        [label]="currentQueueIndex + 1 < captureQueue.length ? 'Siguiente' : 'Finalizar'"
+                        icon="pi pi-check"
+                        class="p-button-success"
+                        (click)="acceptCurrentFinger()">
+                    </button>
+                </div>
+            }
+        </div>
+    }
+    <!-- Modo completo -->
+    @if (enrollMode === 'full') {
+        <!-- Header con indicador de pasos -->
+        <div class="flex items-center justify-between mb-4">
+            <button pButton pRipple type="button"
+                label="Volver"
+                icon="pi pi-arrow-left"
+                class="p-button-text p-button-sm"
+                (click)="backToEnrollSelect()">
+            </button>
+            <div class="flex gap-2">
+                @for (s of fullStepItems; track s.step) {
+                    <span class="px-2 py-1 rounded text-xs font-semibold"
+                        [ngClass]="{
+                            'bg-green-100 text-green-700': isFullStepDone(s.step),
+                            'bg-blue-100 text-blue-700': fullStep === s.step,
+                            'bg-gray-100 text-gray-500': !isFullStepDone(s.step) && fullStep !== s.step
+                        }">
+                        {{ s.label }}
+                    </span>
+                }
+            </div>
+        </div>
+        <!-- SDK del dispositivo -->
+        @if (!realScanService.sdkInitialized()) {
+            <button pButton pRipple type="button"
+                label="Inicializar SDK"
+                icon="pi pi-bolt"
+                class="w-full mb-2"
+                [disabled]="realScanService.loading()"
+                [loading]="realScanService.loading()"
+                (click)="initSDK()">
+            </button>
+        }
+        @if (realScanService.sdkInitialized() && !realScanService.deviceHandle()) {
+            <button pButton pRipple type="button"
+                label="Inicializar Dispositivo"
+                icon="pi pi-desktop"
+                class="p-button-success w-full mb-2"
+                [disabled]="realScanService.loading()"
+                [loading]="realScanService.loading()"
+                (click)="initDevice()">
+            </button>
+        }
+
+        <!-- 4 dedos izquierdos -->
+        @if (fullStep === 'left-four') {
+            @if (leftFourFingers.length === 0) {
+                <button pButton pRipple type="button"
+                    [label]="realScanService.isCapturing() ? 'Capturando...' : 'Capturar 4 Dedos Izquierdos'"
+                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-camera'"
+                    class="w-full"
+                    [disabled]="!realScanService.isDeviceReady() || realScanService.loading() || realScanService.isCapturing()"
+                    (click)="captureLeftFour()">
+                </button>
+            } @else {
+                <div class="mb-3">
+                    <p class="text-sm font-medium text-gray-700 mb-2">
+                        Mano Izquierda — {{ leftFourFingers.length }} dedo(s)
+                    </p>
+                    <div class="grid grid-cols-4 gap-2">
+                        @for (f of leftFourFingers; track f.fingerIndex; let i = $index) {
+                            <div class="border-2 border-green-300 rounded-lg p-2 bg-green-50 text-center">
+                                <img [src]="'data:image/bmp;base64,' + f.imageBase64"
+                                    class="mx-auto max-h-28 object-contain bg-white rounded mb-1" />
+                                <p class="text-xs font-semibold text-green-700">
+                                    {{ leftFingerNames[i] }}
+                                </p>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button pButton pRipple type="button"
+                        label="Repetir"
+                        icon="pi pi-refresh"
+                        class="p-button-danger"
+                        (click)="retakeLeftFour()">
+                    </button>
+                    <button pButton pRipple type="button"
+                        label="Aceptar"
+                        icon="pi pi-check"
+                        class="p-button-success"
+                        (click)="acceptLeftFour()">
+                    </button>
+                </div>
+            }
+        }
+
+        <!-- Pulgar izquierdo -->
+        @if (fullStep === 'left-thumb') {
+            @if (!leftThumb) {
+                <button pButton pRipple type="button"
+                    [label]="realScanService.isCapturing() ? 'Capturando...' : 'Capturar Pulgar Izquierdo'"
+                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-camera'"
+                    class="w-full"
+                    [disabled]="!realScanService.isDeviceReady() || realScanService.loading() || realScanService.isCapturing()"
+                    (click)="captureLeftThumbEnroll()">
+                </button>
+            } @else {
+                <div class="mb-3 border-2 border-green-300 rounded-lg p-3 bg-green-50 text-center">
+                    <img [src]="getLeftThumbUrl()"
+                        (error)="onLeftThumbImgError()"
+                        alt="Pulgar izq"
+                        class="mx-auto max-h-44 object-contain bg-white p-1 rounded" />
+                    <p class="text-sm text-green-700 mt-1 font-semibold">
+                        ✓ Pulgar Izquierdo
+                    </p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button pButton pRipple type="button"
+                        label="Repetir"
+                        icon="pi pi-refresh"
+                        class="p-button-danger"
+                        (click)="retakeLeftThumbEnroll()">
+                    </button>
+                    <button pButton pRipple type="button"
+                        label="Aceptar → Mano Derecha"
+                        icon="pi pi-check"
+                        class="p-button-success"
+                        (click)="acceptLeftThumbEnroll()">
+                    </button>
+                </div>
+            }
+        }
+
+        <!-- 4 dedos derechos -->
+        @if (fullStep === 'right-four') {
+            <div class="mb-3 p-2 bg-green-50 border border-green-200 rounded-lg">
+                <p class="text-xs font-semibold text-green-700">✓ Mano izquierda completada</p>
+            </div>
+
+            @if (rightFourFingers.length === 0) {
+                <button pButton pRipple type="button"
+                    [label]="realScanService.isCapturing() ? 'Capturando...' : 'Capturar 4 Dedos Derechos'"
+                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-camera'"
+                    class="w-full"
+                    [disabled]="!realScanService.isDeviceReady() || realScanService.loading() || realScanService.isCapturing()"
+                    (click)="captureRightFour()">
+                </button>
+            } @else {
+                <div class="mb-3">
+                    <p class="text-sm font-medium text-gray-700 mb-2">
+                        Mano Derecha — {{ rightFourFingers.length }} dedo(s)
+                    </p>
+                    <div class="grid grid-cols-4 gap-2">
+                        @for (f of rightFourFingers; track f.fingerIndex; let i = $index) {
+                            <div class="border-2 border-blue-300 rounded-lg p-2 bg-blue-50 text-center">
+                                <img [src]="'data:image/bmp;base64,' + f.imageBase64"
+                                    class="mx-auto max-h-28 object-contain bg-white rounded mb-1" />
+                                <p class="text-xs font-semibold text-blue-700">
+                                    {{ rightFingerNames[i] }}
+                                </p>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button pButton pRipple type="button"
+                        label="Repetir"
+                        icon="pi pi-refresh"
+                        class="p-button-danger"
+                        (click)="retakeRightFour()">
+                    </button>
+                    <button pButton pRipple type="button"
+                        label="Aceptar"
+                        icon="pi pi-check"
+                        class="p-button-success"
+                        (click)="acceptRightFour()">
+                    </button>
+                </div>
+            }
+        }
+        <!-- Pulgar derecho -->
+        @if (fullStep === 'right-thumb') {
+            @if (!rightThumb) {
+                <button pButton pRipple type="button"
+                    [label]="realScanService.isCapturing() ? 'Capturando...' : 'Capturar Pulgar Derecho'"
+                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-camera'"
+                    class="w-full"
+                    [disabled]="!realScanService.isDeviceReady() || realScanService.loading() || realScanService.isCapturing()"
+                    (click)="captureRightThumbEnroll()">
+                </button>
+            } @else {
+                <div class="mb-3 border-2 border-blue-300 rounded-lg p-3 bg-blue-50 text-center">
+                    <img [src]="getRightThumbUrl()"
+                        (error)="onRightThumbImgError()"
+                        alt="Pulgar der"
+                        class="mx-auto max-h-44 object-contain bg-white p-1 rounded" />
+                    <p class="text-sm text-blue-700 mt-1 font-semibold">
+                        ✓ Pulgar Derecho
+                    </p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button pButton pRipple type="button"
+                        label="Repetir"
+                        icon="pi pi-refresh"
+                        class="p-button-danger"
+                        (click)="retakeRightThumbEnroll()">
+                    </button>
+                    <button pButton pRipple type="button"
+                        label="Confirmar 10 Dedos"
+                        icon="pi pi-check"
+                        class="p-button-success"
+                        (click)="acceptRightThumbAndFinish()">
+                    </button>
+                </div>
+            }
+        }
+    }
+    <!-- Error global del lector -->
+    @if (realScanService.lastError()) {
+        <div class="mt-3 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm flex items-start">
+            <i class="pi pi-exclamation-circle mr-2 mt-0.5"></i>
+            {{ realScanService.lastError() }}
+        </div>
+    }
+</p-dialog>
+

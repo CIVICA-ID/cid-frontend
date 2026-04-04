@@ -1,3 +1,4 @@
+import { TenFingerCapture } from "@/components/people/people.component";
 import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Injectable, signal } from "@angular/core";
 import { catchError, finalize, Observable, tap, throwError } from "rxjs";
@@ -11,7 +12,7 @@ export type SearchFingerType =
 export interface MatchResult {
     isMatch: boolean;
     peopleId?: string;
-    firstname?: string;
+    firstName?: string;
     paternalName?: string;
     maternalName?: string;
     curp?: string;
@@ -48,7 +49,7 @@ export interface EnrollFingerprintRequest {
     alias?: string;
     birthDate?: Date;
     peopleAddress?: any[];
-    fingers: Record<string, string>;
+    fingers: TenFingerCapture;
 }
 
 @Injectable({ providedIn: 'root'})
