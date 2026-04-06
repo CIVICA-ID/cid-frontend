@@ -1,4 +1,4 @@
-import { TenFingerCapture } from "@/components/people/people.component";
+import { TenFingerCapture } from "@/components/people/models";
 import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Injectable, signal } from "@angular/core";
 import { catchError, finalize, Observable, tap, throwError } from "rxjs";

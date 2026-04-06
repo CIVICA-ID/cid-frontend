@@ -1,0 +1,97 @@
+<!-- Captura de huella para busqueda -->
+<p-dialog [(visible)]="captureDialogVisible" [modal]="true" [style]="{ width: '28rem' }" [draggable]="false" [resizable]="false" header="Captura para Busqueda" (onHide)="closeCaptureDialog()">
+    <!-- Info del dedo seleccionado -->
+    @if (selectedFingerLabel) {
+        <div class="mb-4 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700 flex items-center">
+            <i class="pi pi-tag mr-2"></i>
+            Buscando: <strong class="ml-1">{{ selectedFingerLabel }}</strong>
+        </div>
+    }
+    <!-- Estado del lector -->
+    <div class="mb-4 flex items-center p-3 rounded-lg text-sm" [ngClass]="getCaptureStateClass()">
+        <div class="w-2.5 h-2.5 rounded-full mr-2 flex-shrink-0"
+            [ngClass]="{
+                'bg-yellow-500 animate-pulse': realScanService.isCapturing(),
+                'bg-green-500': capturedFinger || realScanService.isDeviceReady(),
+                'bg-blue-500': !capturedFinger && !realScanService.isDeviceReady() && realScanService.sdkInitialized(),
+                'bg-gray-400': !realScanService.sdkInitialized()
+            }">
+        </div>
+        <span class="font-medium">{{ getCaptureStateText() }}</span>
+        @if (realScanService.loading()) {
+            <i class="pi pi-spin pi-spinner ml-auto"></i>
+        }
+    </div>
+    <!-- Boton inicializar SDK -->
+    @if (!realScanService.sdkInitialized()) {
+        <button pButton pRipple type="button"
+            label="Inicializar SDK"
+            icon="pi pi-bolt"
+            class="w-full mb-3"
+            [disabled]="realScanService.loading()"
+            [loading]="realScanService.loading()"
+            (click)="initSDK()">
+        </button>
+    }
+    <!-- Boton inicializar dispositivo -->
+    @if (realScanService.sdkInitialized() && !realScanService.deviceHandle()) {
+        <button pButton pRipple type="button"
+            label="Inicializar Dispositivo"
+            icon="pi pi-desktop"
+            class="p-button-success w-full mb-3"
+            [disabled]="realScanService.loading()"
+            [loading]="realScanService.loading()"
+            (click)="initDevice()">
+        </button>
+    }
+    <!-- Preview de la huella capturada -->
+    @if (capturedFinger) {
+        <div class="mb-4 border-2 border-green-300 rounded-lg p-3 bg-green-50 text-center">
+            <img [src]="getCaptureImageUrl()"
+                (error)="onCaptureImgError()"
+                alt="Huella"
+                class="mx-auto max-h-48 object-contain bg-white p-1 rounded shadow" />
+            <p class="text-sm text-green-700 mt-2 font-semibold">
+                <i class="pi pi-check-circle mr-1"></i> Huella capturada
+            </p>
+            <p class="text-xs text-gray-500">
+                {{ capturedFinger.width }}×{{ capturedFinger.height }} px
+            </p>
+        </div>
+    }
+    <!-- Botones de accion -->
+    <div class="flex flex-col gap-2">
+        @if (!capturedFinger) {
+            <button pButton pRipple type="button"
+                [label]="realScanService.isCapturing() ? 'Capturando...' : 'Capturar Huella'"
+                [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-camera'"
+                class="w-full"
+                [disabled]="!realScanService.isDeviceReady() || realScanService.loading() || realScanService.isCapturing()"
+                (click)="captureSingle()">
+            </button>
+        } @else {
+            <div class="grid grid-cols-2 gap-3">
+                <button pButton pRipple type="button"
+                    label="Repetir"
+                    icon="pi pi-refresh"
+                    class="p-button-danger"
+                    [disabled]="realScanService.loading()"
+                    (click)="retakeCapture()">
+                </button>
+                <button pButton pRipple type="button"
+                    label="Usar esta"
+                    icon="pi pi-check"
+                    class="p-button-success"
+                    (click)="acceptCapture()">
+                </button>
+            </div>
+        }
+    </div>
+    <!-- Error del lector -->
+    @if (realScanService.lastError()) {
+        <div class="mt-3 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm flex items-start">
+            <i class="pi pi-exclamation-circle mr-2 mt-0.5"></i>
+            {{ realScanService.lastError() }}
+        </div>
+    }
+</p-dialog>

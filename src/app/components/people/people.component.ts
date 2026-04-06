@@ -32,43 +32,6 @@ import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
 import { FingerprintService } from '../../services/fingerprint.service';
 import { RealScanService } from '@/services/realscan.service';
 
-export interface TenFingerCapture{
-    leftThumb?: string;
-    leftIndex?: string;
-    leftMiddle?: string;
-    leftRing?: string;
-    leftLittle?: string;
-    rightThumb?: string;
-    rightIndex?: string;
-    rightMiddle?: string;
-    rightRing?: string;
-    rightLittle?: string;
-}
-
-export type FingerKey = keyof TenFingerCapture;
-
-export interface FingerDef {
-    key: FingerKey;
-    label: string;
-    hand: 'left' | 'right';
-}
-
-export type EnrollMode = 'select' | 'full' | 'custom';
-interface CaptureQueueItem {
-    finger: FingerDef;
-    captured?: SegmentedFinger
-}
-
-export const All_FINGERS: FingerDef[] = [
-    {key: 'leftThumb', label: 'Pulgar Izquierdo', hand: 'left'}, {key: 'rightThumb', label: 'Pulgar derecho', hand: 'right'},
-    {key: 'leftIndex', label: 'Indice izquierdo', hand: 'left'}, {key: 'rightIndex', label: 'Indice derecho', hand: 'right'},
-    {key: 'leftMiddle', label: 'Medio Izquierdo', hand: 'left'}, {key: 'rightMiddle', label: 'Medio derecho', hand: 'right'},
-    {key: 'leftRing', label: 'Anular Izquierdo', hand: 'left'}, {key: 'rightRing', label: 'Anular derecho', hand: 'right'},
-    {key: 'leftLittle', label: 'Meñique Izquierdo', hand: 'left'}, {key: 'rightLittle', label: 'Meñique derecho', hand: 'right'}
-];
-
-const FINGER_OPTIONS = All_FINGERS.map(f => ({ key: f.key as SearchFingerType, label: f.label, hand: f.hand}));
-
 @Component({
     selector: 'app-people',
     templateUrl: './people.component.html',
@@ -105,9 +68,12 @@ const FINGER_OPTIONS = All_FINGERS.map(f => ({ key: f.key as SearchFingerType, l
     standalone: true
 })
 export class PeopleComponent implements OnInit {
-    people: People;
+
     private formBuilder = inject(FormBuilder);
+    private peopleService = inject(PeopleService);
+    private fingerprintService = inject(FingerprintService);
     formOptions: AbstractControlOptions = { validators: Validators.nullValidator };
+    public realScanService = inject(RealScanService);
     form = this.formBuilder.group(
         {
             firstName: [null, [Validators.required, Validators.maxLength(150)]],
@@ -135,9 +101,6 @@ export class PeopleComponent implements OnInit {
     );
     newAddress: null | Address[];
 
-    private peopleService = inject(PeopleService);
-    private fingerprintService = inject(FingerprintService);
-    public realScanService = inject(RealScanService);
 
     @Input() set newPeople(value: any) {
         if (value) {
@@ -212,12 +175,9 @@ export class PeopleComponent implements OnInit {
     capturedFinger: SegmentedFinger | null = null;
     captureImageFormat: string = 'bmp';
     //Enrolamiento
-    enrollDialogVisible: boolean = false
-    enrollMode: EnrollMode = 'select';
     fpEnrollFingers: TenFingerCapture = {};
     enrollFingersCount: number = 0;
     fullStep: 'left-four' | 'left-thumb' | 'right-four' | 'right-thumb' = 'left-four';
-    leftFourFingers: SegmentedFinger[] = [];
     leftThumb: SegmentedFinger | null = null;
     rightFourFingers: SegmentedFinger[] = [];
     rightThumb: SegmentedFinger | null = null;
@@ -240,56 +200,21 @@ export class PeopleComponent implements OnInit {
     readonly rightFingerDefs = All_FINGERS.filter(f => f.hand === 'right');
 
     listGender: any[] = [
-        { label: 'Femenino', value: 'femenino' },
-        { label: 'Masculino', value: 'masculino' }
+
     ];
     listSex: any[] = [];
     listDegreeStudy: any[] = [
-        {
-            label: 'NIVEL BASICO',
-            items: [
-                { label: 'Primaria', value: 'primaria' },
-                { label: 'Secundaria', value: 'secuendaria' }
-            ]
-        },
-        {
-            label: 'NIVEL MEDIO SUPERIOR',
-            items: [{ label: 'Bachillerato', value: 'bachillerato' }]
-        },
-        {
-            label: 'NIVEL SUPERIOR',
-            items: [
-                { label: 'Licenciatura', value: 'licenciatura' },
-                { label: 'Especialidad', value: 'especialidad' },
-                { label: 'Maestría', value: 'maestria' },
-                { label: 'Doctorado', value: 'doctorado' }
-            ]
-        }
+
     ];
     listCivilStatus: any[] = [
-        { label: 'Soltero', value: 'soltero' },
-        { label: 'Casado', value: 'casado' },
-        { label: 'Divorciado', value: 'divorciado' },
-        { label: 'Viudo', value: 'viudo' }
+
     ];
     filter = {};
     searchFields = [
-        { id: 'firstName', controlName: 'firstName', label: 'Nombres', maxLength: 50 },
-        { id: 'paternalName', controlName: 'paternalName', label: 'Apellido Paterno', maxLength: 50 },
-        { id: 'maternalName', controlName: 'maternalName', label: 'Apellido Materno', maxLength: 50 },
-        { id: 'curp', controlName: 'curp', label: 'CURP', maxLength: 18 }
+
     ];
     addFields = [
-        { id: 'firstName', controlName: 'firstName', label: 'Nombres', maxLength: 150, type: 'text' },
-        { id: 'paternalName', controlName: 'paternalName', label: 'Apellido Paterno', maxLength: 150, type: 'text' },
-        { id: 'maternalName', controlName: 'maternalName', label: 'Apellido Materno', maxLength: 150, type: 'text' },
-        { id: 'gender', controlName: 'gender', label: 'Género', type: 'list', options: this.listGender },
-        { id: 'alias', controlName: 'alias', label: 'Alias', maxLength: 150, type: 'text' },
-        { id: 'maritalStatus', controlName: 'maritalStatus', label: 'Estado Civil', type: 'list', options: this.listCivilStatus },
-        { id: 'birthDate', controlName: 'birthDate', label: 'Fecha de nacimiento', type: 'date' },
-        { id: 'educationLevel', controlName: 'educationLevel', label: 'Nivel de educación', type: 'list', group: true, maxLength: 50, options: this.listDegreeStudy },
-        { id: 'occupation', controlName: 'occupation', label: 'Ocupación', maxLength: 50, type: 'text' },
-        { id: 'curp', controlName: 'curp', label: 'CURP', maxLength: 18, type: 'text' }
+
     ];
 
     readonly fingerOptions = FINGER_OPTIONS;
@@ -544,84 +469,9 @@ export class PeopleComponent implements OnInit {
         this.fpErrorMessage = '';
         this.resetFpConfirmation();
     }
-    openCaptureDialog(): void{
-        this.capturedFinger = null;
-        this.captureImageFormat = 'bmp';
-        this.realScanService.clearError();
-        this.captureDialogVisible = true;
-    }
-    closeCaptureDialog(): void{
-        this.captureDialogVisible = false;
-        if(this.realScanService.deviceHandle()){
-            this.realScanService.exitDevice().subscribe();
-        }
-    }
-    initSDK(): void {
-        this.realScanService.initSDK().subscribe({
-            error: e => console.error(e)
-        });
-    }
-    initDevice(): void{
-        this.realScanService.initDevice(0).subscribe({ error: e => console.error(e)});
-    }
-    captureSingle(): void{
-        this.capturedFinger = null;
-        this.captureImageFormat = 'bmp';
-        this.realScanService.clearError();
-        this.realScanService.quickCapture(CaptureMode.FLAT_SINGLE_FINGER, 12000, Segment.ENABLED).subscribe({
-            next: (r) => {
-                if(!r.success){
-                    this.realScanService.lastError.set(r.message || 'Error');
-                    return;
-                }
-                if(r.fingers.length){
-                    this.capturedFinger = r.fingers[0];
-                } else if(r.imageBase64){
-                    this.capturedFinger = {
-                        fingerIndex: 1,
-                        fingerType: 0,
-                        fingerTypeName: 'Tipo de dedo desconocido',
-                        width: r.width ?? 0,
-                        height: r.height ?? 0,
-                        imageBase64: r.imageBase64
-                    };
-                } else{
-                    this.realScanService.lastError.set('No se recibio imagen');
-                }
-            },
-            error: e => console.error(e)
-        });
-    }
-    retakeCapture(): void{
-        this.capturedFinger = null;
-        this.captureImageFormat = 'bmp';
-        this.realScanService.clearError();
-    }
-    acceptCapture(): void{
-        if(!this.capturedFinger?.imageBase64) return;
-        this.onFpImageCaptured(this.capturedFinger.imageBase64);
-        this.closeCaptureDialog();
-    }
-    getCaptureImageUrl(): string | null{
-        return this.capturedFinger ? `data:image/${this.captureImageFormat};base64,${this.capturedFinger.imageBase64}` : null;
-    }
-    onCaptureImgError(): void{
-        this.captureImageFormat = this.captureImageFormat === 'bmp' ? 'png' : this.captureImageFormat === 'png' ? 'jpg' : 'bmp';
-    }
-    getCaptureStateText(): string{
-        if(this.realScanService.isCapturing()) return 'Capturando';
-        if(this.capturedFinger) return 'Huella Capturada';
-        if(this.realScanService.isDeviceReady()) return 'Dispositivo Listo, coloca el dedo a escanear';
-        if(this.realScanService.sdkInitialized()) return 'SDK listo, inicializa el dispositivo'
-        return 'Inicializa el SDK';
-    }
-    getCaptureStateClass(): string{
-        if(this.realScanService.isCapturing()) return 'bg-yellow-100 text-yellow-700';
-        if(this.capturedFinger) return 'bg-green-100 text-green-700';
-        if(this.realScanService.isDeviceReady()) return 'bg-green-100 text-green-700';
-        if(this.realScanService.sdkInitialized()) return 'bg-blue-100 text-blue-700';
-        return 'bg-gray-100 text-gray-700';
-    }
+
+
+
     onFpImageCaptured(imageBase64: string): void{
         this.fpSearchResult = null;
         this.fpErrorMessage = '';
@@ -750,67 +600,11 @@ export class PeopleComponent implements OnInit {
         }
     }
     // Dialog enrolamiento de huellas
-    openEnrollDialog(): void{
-        this.enrollMode = 'select';
-        this.resetEnrollState();
-        this.realScanService.clearError();
-        this.enrollDialogVisible = true;
-    }
-    closeEnrollDialog(): void{
-        this.enrollDialogVisible = false;
-        if(this.realScanService.deviceHandle()) this.realScanService.exitAllDevices().subscribe();
-    }
-    chooseFullMode(): void{
-        this.enrollMode = 'full';
-        this.resetFullMode();
-    }
-    chooseCustomMode(): void{
-        this.enrollMode = 'custom';
-        this.selectedKeys = new Set();
-    }
-    backToEnrollSelect(): void{
-        this.enrollMode = 'select';
-        this.resetEnrollState();
-        this.realScanService.clearError();
-    }
-    captureLeftFour(): void{
-        this.leftFourFingers = [];
-        this.realScanService.clearError();
-        this.realScanService.quickCapture(CaptureMode.FLAT_LEFT_FOUR_FINGERS, 15000, Segment.ENABLED)
-        .subscribe({
-            next: r => {
-                if(!r.success){
-                    this.realScanService.lastError.set(r.message || 'Error');
-                    return;
-                }
-                if(r.fingers?.length){
-                    this.leftFourFingers = r.fingers;
-                } else{
-                    this.realScanService.lastError.set('No se detectaron dedos');
-                }
-            },
-            error: e => console.error(e)
-        });
-    }
-    captureRightFour(): void{
-        this.rightFourFingers = [];
-        this.realScanService.clearError();
-        this.realScanService.quickCapture(CaptureMode.FLAT_RIGHT_FOUR_FINGERS, 15000, Segment.ENABLED)
-        .subscribe({
-            next: r => {
-                if(!r.success){
-                    this.realScanService.lastError.set(r.message || 'Error');
-                    return;
-                }
-                if(r.fingers?.length){
-                    this.rightFourFingers = r.fingers;
-                }else{
-                    this.realScanService.lastError.set('No se detectaron dedos');
-                }
-            },
-            error: e => console.error(e)
-        });
-    }
+
+
+
+
+
     captureLeftThumbEnroll(): void{
         this.leftThumb = null;
         this.leftThumbFormat = 'bmp';
@@ -870,42 +664,11 @@ export class PeopleComponent implements OnInit {
             error: e => console.error(e)
         });
     }
-    acceptLeftFour(): void{
-        if(this.leftFourFingers.length > 0){
-            this.fullStep = 'left-thumb';
-            this.realScanService.clearError();
-        }
-    }
-    acceptLeftThumbEnroll(): void{
-        if(this.leftThumb){
-            this.fullStep = 'right-four';
-            this.realScanService.clearError();
-        }
-    }
-    acceptRightFour(): void{
-        if(this.rightFourFingers.length > 0){
-            this.fullStep = 'right-thumb';
-            this.realScanService.clearError();
-        }
-    }
-    retakeLeftFour(): void{
-        this.leftFourFingers = [];
-        this.realScanService.clearError();
-    }
-    retakeLeftThumbEnroll(): void{
-        this.leftThumb = null;
-        this.leftThumbFormat = 'bmp';
-        this.realScanService.clearError();
-    }
-    retakeRightFour(): void{
-        this.rightFourFingers = [];
-        this.realScanService.clearError();
-    }
-    retakeRightThumbEnroll(): void{
-        this.rightThumb = null;
-        this.rightThumbFormat = 'bmp';
-        this.realScanService.clearError();
-    }
+
+
+
+
+
     getLeftThumbUrl(): string | null{
         return this.leftThumb ? `data:image/${this.leftThumbFormat};base64,${this.leftThumb.imageBase64}` : null;
     }
