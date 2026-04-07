@@ -1,23 +1,23 @@
 <div class="flex flex-col w-full gap-4">
     <div class="w-full max-w-1xl">
         <div class="flex items-stretch p-inputgroup shadow-sm border border-gray-300 rounded-lg overflow-hidden">
-            <span class="p-inputgroup-addon bg-gray-100 text-gray-700 font-semibold px-4 flex items-center border-none" [style.minWidth.px]="120"> Persona{{ people ? ':' : '' }} </span>
+            <span class="p-inputgroup-addon bg-gray-100 text-gray-700 font-semibold px-4 flex items-center border-none" [style.minWidth.px]="120"> Persona{{ selectedPerson ? ':' : '' }} </span>
             <button
                 pButton
                 pRipple
                 type="button"
                 icon="pi pi-search"
-                [label]="people ? (people.firstName || '') + (people.paternalName ? ' ' + people.paternalName : '') + (people.maternalName ? ' ' + people.maternalName : '') : 'Seleccionar Persona'"
-                [class]="people ? 'p-button-primary' : 'p-button-outlined p-button-secondary'"
+                [label]="selectedPerson ? (selectedPerson.firstName || '') + (selectedPerson.paternalName ? ' ' + selectedPerson.paternalName : '') + (selectedPerson.maternalName ? ' ' + selectedPerson.maternalName : '') : 'Seleccionar Persona'"
+                [class]="selectedPerson ? 'p-button-primary' : 'p-button-outlined p-button-secondary'"
                 class="flex-grow border-none text-left justify-start px-4"
                 (click)="openDialog()"
             ></button>
-            @if (people) {
-                <button pButton pRipple icon="pi pi-times" class="p-button-danger p-button-text border-none bg-gray-50" (click)="deletePeople()" type="button" pTooltip="Quitar seleccion"></button>
+            @if (selectedPerson) {
+                <button pButton pRipple icon="pi pi-times" class="p-button-danger p-button-text border-none bg-gray-50" (click)="removePerson()" type="button" pTooltip="Quitar seleccion"></button>
             }
         </div>
     </div>
-    @if (people) {
+    @if (selectedPerson) {
         <div class="w-full animate-fade-in">
             <div class="flex flex-col gap-2">
                 <div class="flex items-center gap-2 mb-1 text-gray-700">
@@ -25,7 +25,7 @@
                     <span class="font-bold">Detalles de la persona seleccionada</span>
                 </div>
                 <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-md">
-                    <p-table [value]="[people]" [responsiveLayout]="'scroll'" styleClass="p-datatable-gridlines p-datatable-sm">
+                    <p-table [value]="[selectedPerson]" [responsiveLayout]="'scroll'" styleClass="p-datatable-gridlines p-datatable-sm">
                         <ng-template pTemplate="header">
                             <tr class="bg-gray-50">
                                 <th class="text-xs uppercase tracking-wider font-bold text-gray-500 py-3">Ocupación</th>
@@ -55,7 +55,7 @@
     }
 </div>
 
-<p-dialog [(visible)]="visibleDialog" [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }" [modal]="true" [style]="{ width: '55vw' }" [draggable]="false" [resizable]="false" [header]="getDialogHeader()">
+<p-dialog [(visible)]="isMainDialogVisible" [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }" [modal]="true" [style]="{ width: '55vw' }" [draggable]="false" [resizable]="false" [header]="getDialogHeader()">
     <p-tabs [value]="activeTabValue" (valueChange)="onTabChange($event)">
         <p-tablist>
             <p-tab value="0"><i class="pi pi-search mr-2"></i>Busqueda por Datos</p-tab>
@@ -68,12 +68,12 @@
                 <div class="pt-4">
                     <div class="flex justify-between items-center mb-6">
                         <div class="flex items-center gap-2">
-                            <button pButton type="button" pRipple icon="pi pi arrow-left" class="p-button-outlined" (click)="dataPreviousStep()" [disabled]="dataStep === 1"></button>
-                            <span class="text-sm font-medium text-gray-700">{{dataStep}} de 3</span>
+                            <button pButton type="button" pRipple icon="pi pi arrow-left" class="p-button-outlined" (click)="goBackDataStep()" [disabled]="dataSearchStep === 1"></button>
+                            <span class="text-sm font-medium text-gray-700">{{dataSearchStep}} de 3</span>
                         </div>
                     </div>
-                    @if(dataStep === 1){
-                        <form [formGroup]="formSearch" class="flex flex-col gap-y-5">
+                    @if(dataSearchStep === 1){
+                        <form [formGroup]="searchForm" class="flex flex-col gap-y-5">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                                 @for (field of searchFields; track field.controlName) {
                                     <div class="flex flex-col gap-1.5">
@@ -82,9 +82,9 @@
                                         </label>
                                         <input pInputText [id]="field.id" [formControlName]="field.controlName" class="w-full" [class.uppercase]="field.controlName === 'curp'" />
                                         <div class="min-h-5">
-                                            @if (formSearch.get(field.controlName)?.hasError('required')) {
+                                            @if (searchForm.get(field.controlName)?.hasError('required')) {
                                                 <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
-                                            } @else if (formSearch.get(field.controlName)?.hasError('maxlength')) {
+                                            } @else if (searchForm.get(field.controlName)?.hasError('maxlength')) {
                                                 <small class="text-red-600 text-right block text-xs">*Longitud máxima {{ field.maxLength }}</small>
                                             }
                                         </div>
@@ -92,11 +92,11 @@
                                 }
                             </div>
                             <div class="flex justify-end">
-                                <button pButton pRipple type="button" label="Buscar" (click)="searchPerson()" class="!w-32"></button>
+                                <button pButton pRipple type="button" label="Buscar" (click)="searchPersonByData()" class="!w-32"></button>
                             </div>
                         </form>
                     }
-                    @if(dataStep === 2){
+                    @if(dataSearchStep === 2){
                         <div class="flex flex-col gap-4">
                             <div class="flex justify-end">
                                 <button pButton type="button" pRipple label="Agregar" type="button" icon="pi pi-plus" (click)="addPerson()" class="p-button-outlined !w-32"></button>
@@ -104,18 +104,18 @@
                             <div class="mt-2 card">
                                 <p-table
                                     #dt
-                                    [value]="listPerson"
+                                    [value]="personList"
                                     [lazy]="true"
                                     [resetPageOnSort]="false"
                                     dataKey="id"
-                                    [rows]="limit"
+                                    [rows]="pageSize"
                                     [paginator]="true"
-                                    (onLazyLoad)="loadTable($event)"
+                                    (onLazyLoad)="loadPersonTable($event)"
                                     [lazyLoadOnInit]="true"
                                     [totalRecords]="totalRows"
                                     [rowsPerPageOptions]="[10, 25, 50]"
                                     [showCurrentPageReport]="true"
-                                    currentPageReportTemplate="{{ getPageRange(page, limit, totalRows) }}"
+                                    currentPageReportTemplate="{{ getPageRange() }}"
                                     [responsive]="true"
                                     [rowHover]="true"
                                     responsiveLayout="scroll"
@@ -150,7 +150,7 @@
                             </div>
                         </div>
                     }
-                    @if(dataStep === 3){
+                    @if(dataSearchStep === 3){
                         <ng-container *ngTemplateOutlet="addPersonFormTpl"></ng-container>
                     }
                 </div>
@@ -159,7 +159,7 @@
             <p-tabpanel value="1">
                 <div class="pt-4">
                     <!-- Seleccionar dedo y buscar -->
-                    @if (fpStep === 1) {
+                    @if (fingerprintStep === 1) {
                         <div class="flex items-center gap-2 mb-4">
                             <span class="text-sm font-medium text-gray-700">
                                 Busqueda por huella dactilar
@@ -177,15 +177,15 @@
                                         Mano Izquierda
                                     </p>
                                     <div class="flex flex-col gap-1.5">
-                                        @for (f of leftFingerOptions; track f.key) {
+                                        @for (fingerOption of leftFingerSearchOptions; track fingerOption.key) {
                                             <button pButton pRipple type="button"
-                                                [label]="f.label"
-                                                [class]="selectedFinger === f.key
+                                                [label]="fingerOption.label"
+                                                [class]="selectedSearchFinger === fingerOption.key
                                                     ? 'p-button-success'
                                                     : 'p-button-outlined p-button-secondary'"
                                                 class="w-full text-sm"
-                                                (click)="selectFinger(f.key)"
-                                                [icon]="selectedFinger === f.key ? 'pi pi-check' : 'pi pi-circle'">
+                                                (click)="selectSearchFinger(fingerOption.key)"
+                                                [icon]="selectedSearchFinger === fingerOption.key ? 'pi pi-check' : 'pi pi-circle'">
                                             </button>
                                         }
                                     </div>
@@ -196,15 +196,15 @@
                                         Mano Derecha
                                     </p>
                                     <div class="flex flex-col gap-1.5">
-                                        @for (f of rightFingerOptions; track f.key) {
+                                        @for (fingerOption of rightFingerSearchOptions; track fingerOption.key) {
                                             <button pButton pRipple type="button"
-                                                [label]="f.label"
-                                                [class]="selectedFinger === f.key
+                                                [label]="fingerOption.label"
+                                                [class]="selectedSearchFinger === fingerOption.key
                                                     ? 'p-button-success'
                                                     : 'p-button-outlined p-button-secondary'"
                                                 class="w-full text-sm"
-                                                (click)="selectFinger(f.key)"
-                                                [icon]="selectedFinger === f.key ? 'pi pi-check' : 'pi pi-circle'">
+                                                (click)="selectSearchFinger(fingerOption.key)"
+                                                [icon]="selectedSearchFinger === fingerOption.key ? 'pi pi-check' : 'pi pi-circle'">
                                             </button>
                                         }
                                     </div>
@@ -212,11 +212,11 @@
                             </div>
                         </div>
                         <!-- Captura de huella para busqueda -->
-                        @if (selectedFinger) {
+                        @if (selectedSearchFinger) {
                             <div class="border-t border-gray-200 pt-4 mb-4">
                                 <p class="text-sm font-semibold text-gray-700 mb-3">
                                     Capturar huella de:
-                                    <strong class="text-blue-600">{{ selectedFingerLabel }}</strong>
+                                    <strong class="text-blue-600">{{ selectedSearchFingerLabel }}</strong>
                                 </p>
 
                                 <div class="flex gap-3 mb-3">
@@ -229,7 +229,7 @@
                                     <div class="relative">
                                         <input type="file"
                                             accept="image/png,image/jpeg,image/bmp"
-                                            (change)="onFpFileSelected($event)"
+                                            (change)="onSearchFileSelected($event)"
                                             class="hidden"
                                             #fpFileInput />
                                         <button pButton pRipple type="button"
@@ -241,9 +241,9 @@
                                     </div>
                                 </div>
                                 <!-- Preview de la huella capturada -->
-                                @if (previewUrl) {
+                                @if (fingerprintPreviewUrl) {
                                     <div class="border-2 border-green-300 rounded-lg p-3 bg-green-50 text-center mb-4">
-                                        <img [src]="previewUrl"
+                                        <img [src]="fingerprintPreviewUrl"
                                             alt="Huella"
                                             class="mx-auto max-h-40 object-contain bg-white p-1 rounded shadow" />
                                         <p class="text-sm text-green-700 mt-2 font-semibold">
@@ -252,14 +252,14 @@
                                     </div>
                                 }
                                 <!-- Boton buscar -->
-                                <button pButton pRipple type="button" label="Buscar Huella" icon="pi pi-search" class="w-full" [disabled]="!previewUrl || fpLoading" [loading]="fpLoading" (click)="searchFingerprint()"></button>
+                                <button pButton pRipple type="button" label="Buscar Huella" icon="pi pi-search" class="w-full" [disabled]="!fingerprintPreviewUrl || isFingerprintSearchLoading" [loading]="isFingerprintSearchLoading" (click)="searchByFingerprint()"></button>
                             </div>
                         }
                         <!-- Resultados de la busqueda -->
-                        @if (fpSearchResult) {
+                        @if (fingerprintSearchResult) {
                             <div class="border-t border-gray-200 pt-4 mt-4">
                                 <!-- Coincidencia encontrada, se pide confirmacion -->
-                                @if (fpSearchResult.isMatch && fpWaitingConfirmation) {
+                                @if (fingerprintSearchResult.isMatch && isAwaitingMatchConfirmation) {
                                     <div class="border-2 border-blue-300 rounded-lg p-4 bg-blue-50 mb-4">
                                         <div class="flex items-center gap-2 mb-3">
                                             <i class="pi pi-user text-blue-600 text-xl"></i>
@@ -271,28 +271,28 @@
                                             <div>
                                                 <span class="text-gray-500">Nombre:</span>
                                                 <span class="font-semibold ml-1">
-                                                    {{ fpSearchResult.firstName }}
-                                                    {{ fpSearchResult.paternalName }}
-                                                    {{ fpSearchResult.maternalName }}
+                                                    {{ fingerprintSearchResult.firstName }}
+                                                    {{ fingerprintSearchResult.paternalName }}
+                                                    {{ fingerprintSearchResult.maternalName }}
                                                 </span>
                                             </div>
                                             <div>
                                                 <span class="text-gray-500">CURP:</span>
                                                 <span class="font-mono font-semibold ml-1 uppercase">
-                                                    {{ fpSearchResult.curp || 'N/A' }}
+                                                    {{ fingerprintSearchResult.curp || 'N/A' }}
                                                 </span>
                                             </div>
                                             <div>
                                                 <span class="text-gray-500">Score:</span>
                                                 <span class="font-bold ml-1"
-                                                    [class]="getScoreColor(fpSearchResult.score)">
-                                                    {{ fpSearchResult.score | number:'1.1-1' }}
+                                                    [class]="getScoreColor(fingerprintSearchResult.score)">
+                                                    {{ fingerprintSearchResult.score | number:'1.1-1' }}
                                                 </span>
                                             </div>
                                             <div>
                                                 <span class="text-gray-500">Procesados:</span>
                                                 <span class="font-semibold ml-1">
-                                                    {{ fpSearchResult.processedRecords }}/{{ fpSearchResult.totalRecords }}
+                                                    {{ fingerprintSearchResult.processedRecords }}/{{ fingerprintSearchResult.totalRecords }}
                                                 </span>
                                             </div>
                                         </div>
@@ -304,23 +304,23 @@
                                                 label="Sí, es correcta"
                                                 icon="pi pi-check"
                                                 class="p-button-success"
-                                                [disabled]="fpLoading"
-                                                [loading]="fpLoading"
-                                                (click)="confirmFpMatch(true)">
+                                                [disabled]="isFingerprintSearchLoading"
+                                                [loading]="isFingerprintSearchLoading"
+                                                (click)="confirmMatch(true)">
                                             </button>
                                             <button pButton pRipple type="button"
                                                 label="No, seguir buscando"
                                                 icon="pi pi-times"
                                                 class="p-button-danger p-button-outlined"
-                                                [disabled]="fpLoading"
-                                                [loading]="fpLoading"
-                                                (click)="confirmFpMatch(false)">
+                                                [disabled]="isFingerprintSearchLoading"
+                                                [loading]="isFingerprintSearchLoading"
+                                                (click)="confirmMatch(false)">
                                             </button>
                                         </div>
                                     </div>
                                 }
                                 <!-- Match confirmado -->
-                                @if (fpSearchResult.isMatch && !fpWaitingConfirmation && !fpSearchResult.requiresConfirmation) {
+                                @if (fingerprintSearchResult.isMatch && !isAwaitingMatchConfirmation && !fingerprintSearchResult.requiresConfirmation) {
                                     <div class="border-2 border-green-300 rounded-lg p-4 bg-green-50">
                                         <div class="flex items-center gap-2">
                                             <i class="pi pi-check-circle text-green-600 text-xl"></i>
@@ -331,7 +331,7 @@
                                     </div>
                                 }
                                 <!-- Sin coincidencias -->
-                                @if (!fpSearchResult.isMatch && fpNoMatchFound) {
+                                @if (!fingerprintSearchResult.isMatch && noMatchWasFound) {
                                     <div class="border-2 border-yellow-300 rounded-lg p-4 bg-yellow-50 mb-4">
                                         <div class="flex items-center gap-2 mb-3">
                                             <i class="pi pi-exclamation-triangle text-yellow-600 text-xl"></i>
@@ -340,10 +340,10 @@
                                             </span>
                                         </div>
                                         <p class="text-sm text-yellow-700 mb-3">
-                                            Se revisaron {{ fpSearchResult.totalRecords }} registros
-                                            @if (fpSearchResult.elapsedMs) {
+                                            Se revisaron {{ fingerprintSearchResult.totalRecords }} registros
+                                            @if (fingerprintSearchResult.elapsedMs) {
                                                 <span class="text-gray-500">
-                                                    ({{ formatTime(fpSearchResult.elapsedMs) }})
+                                                    ({{ formatTime(fingerprintSearchResult.elapsedMs) }})
                                                 </span>
                                             }
                                         </p>
@@ -351,7 +351,7 @@
                                             label="Agregar Persona"
                                             icon="pi pi-user-plus"
                                             class="p-button-warning w-full"
-                                            (click)="goToFpAddPerson()">
+                                            (click)="goToAddPersonFromFingerprint()">
                                         </button>
                                     </div>
                                 }
@@ -359,27 +359,27 @@
                             </div>
                         }
                         <!-- Error -->
-                        @if (fpErrorMessage) {
+                        @if (fingerprintSearchError) {
                             <div class="mt-3 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm flex items-start">
                                 <i class="pi pi-exclamation-circle mr-2 mt-0.5"></i>
-                                {{ fpErrorMessage }}
+                                {{ fingerprintSearchError }}
                             </div>
                         }
 
                     }
                     <!-- Agregar persona con huellas -->
-                    @if (fpStep === 3) {
+                    @if (fingerprintStep === 3) {
                         <div class="flex items-center gap-2 mb-4">
                             <button pButton type="button" pRipple
                                 icon="pi pi-arrow-left"
                                 class="p-button-outlined p-button-sm"
-                                (click)="fpGoBack()">
+                                (click)="goBackFromFingerprintAddPerson()">
                             </button>
                             <span class="text-sm font-medium text-gray-700">
                                 Agregar nueva persona con huellas
                             </span>
                         </div>
-                        <ng-container *ngTemplateOutlet="addPersonFormTpl; context: { fromFingerprint: true }"></ng-container>
+                        <ng-container *ngTemplateOutlet="addPersonFormTpl; context: { includeFingerprints: true }"></ng-container>
                     }
                 </div>
             </p-tabpanel>
@@ -399,10 +399,10 @@
     </p-tabs>
 </p-dialog>
 
-<ng-template #addPersonFormTpl let-fromFingerprint="fromFingerprint">
+<ng-template #addPersonFormTpl let-includeFingerprints="includeFingerprints">
     <form [formGroup]="form" class="flex flex-col gap-y-5">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-            @for (field of addFields; track field.controlName) {
+            @for (field of addPersonFields; track field.controlName) {
                 <div class="flex flex-col gap-1.5">
                     <label [for]="field.id" class="font-semibold ">
                         {{ field.label }}
@@ -432,7 +432,7 @@
                 }
             </div>
             <div class="flex flex-col ">
-                @for (elementGroup of getPeopleAddressArray().controls; track elementGroup; let i = $index) {
+                @for (addressGroup of getAddressFormArray().controls; track addressGroup; let i = $index) {
                     <p-card [formGroupName]="i" class="mt-6">
                         <ng-template pTemplate="title">
                             <div class="flex justify-content-between align-items-center">
@@ -440,12 +440,12 @@
                                     <i class="pi pi-map-marker text-primary"></i>
                                     <span class="text-xl font-bold">Domicilio #{{ i + 1 }}</span>
                                 </div>
-                                <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="removeRow(getPeopleAddressArray(), i)" pTooltip="Eliminar este domicilio"></button>
+                                <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="removeAddressRow(getAddressFormArray(), i)" pTooltip="Eliminar este domicilio"></button>
                             </div>
                         </ng-template>
-                        <app-addresses (sendAddress)="getAddresses($event, $index, getPeopleAddressArray())" [newAddress]="elementGroup.get('address_data')?.value"></app-addresses>
+                        <app-addresses (sendAddress)="onAddressSelected($event, $index, getAddressFormArray())" [newAddress]="addressGroup.get('address_data')?.value"></app-addresses>
                         <div class="mt-2">
-                            @if (elementGroup.get('address')?.invalid) {
+                            @if (addressGroup.get('address')?.invalid) {
                                 <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
                             }
                         </div>
@@ -453,10 +453,10 @@
                 }
             </div>
             <div class="mt-4 flex justify-content-center ">
-                <button pButton type="button" label="Añadir Domicilio" icon="pi pi-plus-circle" class="p-button-raised p-button-secondary w-full" (click)="addRow(getPeopleAddressArray(), newPeopleAddress())"></button>
+                <button pButton type="button" label="Añadir Domicilio" icon="pi pi-plus-circle" class="p-button-raised p-button-secondary w-full" (click)="addAddressRow(getAddressFormArray())"></button>
             </div>
         </div>
-        @if(fromFingerprint){
+        @if(includeFingerprints){
             <div class="mt-4">
                 <!-- Boton añadir huellas -->
                 <button pButton type="button"
@@ -466,28 +466,28 @@
                     (click)="openEnrollDialog()">
                 </button>
                 <!-- Preview de huellas ya capturadas -->
-                @if (enrollFingersCount > 0) {
+                @if (enrolledFingersCount > 0) {
                     <div class="mt-4 p-4 border-2 border-blue-300 rounded-lg bg-blue-50">
                         <div class="flex items-center justify-between mb-3">
                             <div class="flex items-center text-blue-700">
                                 <i class="pi pi-check-circle mr-2"></i>
                                 <span class="font-semibold">
-                                    {{ enrollFingersCount }} Dedo(s) Capturados
+                                    {{ enrolledFingersCount }} Dedo(s) Capturados
                                 </span>
                             </div>
                         </div>
                         <!-- Mano izquierda -->
-                        @if (getFingerImage('leftThumb') || getFingerImage('leftIndex') || getFingerImage('leftMiddle') || getFingerImage('leftRing') || getFingerImage('leftLittle')) {
+                        @if (hasLeftHandFingers()){
                             <p class="text-xs font-semibold text-green-700 mb-1">Mano Izquierda</p>
                             <div class="flex flex-wrap gap-2 mb-3">
-                                @for (item of leftFingerItems; track item.key) {
-                                    @if (getFingerImage(item.key)) {
+                                @for (thumbnail of leftFingerThumbnails; track thumbnail.key) {
+                                    @if (getEnrolledFingerImage(thumbnail.key)) {
                                         <div class="text-center">
-                                            <img [src]="'data:image/bmp;base64,' + getFingerImage(item.key)"
-                                                [alt]="item.label"
+                                            <img [src]="'data:image/bmp;base64,' + getEnrolledFingerImage(thumbnail.key)"
+                                                [alt]="thumbnail.label"
                                                 class="w-16 max-h-20 object-contain bg-white rounded shadow border border-green-200" />
                                             <p class="text-xs text-green-600 mt-0.5 font-medium">
-                                                {{ item.label }}
+                                                {{ thumbnail.label }}
                                             </p>
                                         </div>
                                     }
@@ -495,17 +495,17 @@
                             </div>
                         }
                         <!-- Mano derecha -->
-                        @if (getFingerImage('rightThumb') || getFingerImage('rightIndex') || getFingerImage('rightMiddle') || getFingerImage('rightRing') || getFingerImage('rightLittle')) {
+                        @if (hasRightHandFingers) {
                             <p class="text-xs font-semibold text-blue-700 mb-1">Mano Derecha</p>
                             <div class="flex flex-wrap gap-2">
-                                @for (item of rightFingerItems; track item.key) {
-                                    @if (getFingerImage(item.key)) {
+                                @for (thumbnail of rightFingerThumbnails; track thumbnail.key) {
+                                    @if (getEnrolledFingerImage(thumbnail.key)) {
                                         <div class="text-center">
-                                            <img [src]="'data:image/bmp;base64,' + getFingerImage(item.key)"
-                                                [alt]="item.label"
+                                            <img [src]="'data:image/bmp;base64,' + getEnrolledFingerImage(thumbnail.key)"
+                                                [alt]="thumbnail.label"
                                                 class="w-16 max-h-20 object-contain bg-white rounded shadow border border-blue-200" />
                                             <p class="text-xs text-blue-600 mt-0.5 font-medium">
-                                                {{ item.label }}
+                                                {{ thumbnail.label }}
                                             </p>
                                         </div>
                                     }
@@ -517,11 +517,15 @@
             </div>
         }
         <div class="flex justify-end mt-4">
-            @if(fromFingerprint){
-                <button pButton pRipple type="button" label="Guardar Persona y Huellas" icon="pi pi-save" (click)="saveFpForm()" class="!w-64"></button>
+            @if(includeFingerprints){
+                <button pButton pRipple type="button" label="Guardar Persona y Huellas" icon="pi pi-save" (click)="savePersonWithFingerprints()" class="!w-64"></button>
             }@else {
-                <button pButton pRipple type="button" label="Guardar" (click)="saveForm()" class="!w-32"></button>
+                <button pButton pRipple type="button" label="Guardar" (click)="savePersonWithoutFingerprints()" class="!w-32"></button>
             }
         </div>
     </form>
 </ng-template>
+
+<app-fingerprint-capture-dialog $captureDialog [selectedFingerLabel]="selectedSearchFingerLabel" (fingerCaptured)="onSearchFingerCaptured($event)"></app-fingerprint-capture-dialog>
+
+<app-fingerprint-enroll-dialog #enrollDialog (fingersEnrolled)="onFingersEnrolled($event)"></app-fingerprint-enroll-dialog>

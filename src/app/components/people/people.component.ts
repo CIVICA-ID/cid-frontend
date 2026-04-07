@@ -1,5 +1,5 @@
-import { ChangeDetectorRef, Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
-import { AbstractControl, AbstractControlOptions, FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ChangeDetectorRef, Component, EventEmitter, inject, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { AbstractControlOptions, FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 
 import { FileUploadModule } from 'primeng/fileupload';
@@ -25,12 +25,12 @@ import { PeopleService } from '@/services/people.service';
 import { DatePicker } from 'primeng/datepicker';
 import { SelectModule } from 'primeng/select';
 import { AddressesComponent } from '../addresses/addresses.component';
-import { Address } from '@/api/address';
-import { CaptureMode, Segment, SegmentedFinger } from '@/api/realscan';
-import { EnrollFingerprintRequest, MatchResult, SearchFingerType } from '@/services/fingerprint.service';
+import { EnrollFingerprintRequest, MatchResult } from '@/services/fingerprint.service';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
 import { FingerprintService } from '../../services/fingerprint.service';
-import { RealScanService } from '@/services/realscan.service';
+import { FingerprintEnrollDialogComponent } from './dialogs/components/fingerprint-enroll-dialog/fingerprint-enroll-dialog.component';
+import { FingerprintCaptureDialogComponent } from './dialogs/components/fingerprint-capture-dialog/fingerprint-capture-dialog.component';
+import { ADD_PERSON_FIELDS, buildImageDataUrl, countCapturedFingers, FINGER_SEARCH_OPTIONS, FingerKey, formatElapsedTime, formatPageRange, getScoreColorClass, LEFT_FINGER_SEARCH_OPTIONS, LEFT_FINGER_THUMBNAILS, RIGHT_FINGER_SEARCH_OPTIONS, RIGHT_FINGER_THUMBNAILS, SEARCH_FIELDS, TenFingerCapture } from './models';
 
 @Component({
     selector: 'app-people',
@@ -64,16 +64,52 @@ import { RealScanService } from '@/services/realscan.service';
     Tab,
     TabPanels,
     TabPanel,
+    FingerprintCaptureDialogComponent,
+    FingerprintEnrollDialogComponent
 ],
     standalone: true
 })
 export class PeopleComponent implements OnInit {
-
+    //Injections
     private formBuilder = inject(FormBuilder);
     private peopleService = inject(PeopleService);
     private fingerprintService = inject(FingerprintService);
+    private messageService = inject(MessageService);
+    private miscService = inject(MiscService);
+    private changeDetector = inject(ChangeDetectorRef);
+    // Componentes hijos
+    @ViewChild('enrollDialog') enrollDialog!: FingerprintEnrollDialogComponent;
+    @ViewChild('captureDialog') captureDialog!: FingerprintCaptureDialogComponent;
+
+    //Entradas y Salidas
+    selectedPerson: People | null = null;
+    @Output() sendPeople = new EventEmitter<People | null>();
+
+    @Input() set newPeople(personId: any){
+        if(personId){
+            this.peopleService.getById(personId)
+            .subscribe({
+                next: person => {
+                    if(person){
+                        this.selectedPerson = person;
+                        this.form.patchValue(person);
+                        this.form.patchValue(person);                        
+                    } else{
+                        this.selectedPerson = null;
+                        this.form.reset();
+                        this.searchForm.reset();
+                    }
+                },
+                error: error => this.showError('Error al obtener la persona: ' + error.message)
+            });
+        } else{
+            this.selectedPerson = null;
+            this.form.reset();
+            this.searchForm.reset();
+        }
+    }
+
     formOptions: AbstractControlOptions = { validators: Validators.nullValidator };
-    public realScanService = inject(RealScanService);
     form = this.formBuilder.group(
         {
             firstName: [null, [Validators.required, Validators.maxLength(150)]],
@@ -90,7 +126,7 @@ export class PeopleComponent implements OnInit {
         },
         this.formOptions
     );
-    formSearch = this.formBuilder.group(
+    searchForm = this.formBuilder.group(
         {
             firstName: [null, [Validators.required, Validators.maxLength(150)]],
             paternalName: [null, Validators.maxLength(150)],
@@ -99,897 +135,439 @@ export class PeopleComponent implements OnInit {
         },
         this.formOptions
     );
-    newAddress: null | Address[];
+    // Estado del dialog principal
+    isMainDialogVisible = false;
+    activeTabValue = '0';
 
+    // Tab 1
+    dataSearchStep = 1;
+    currentPage = 1;
+    pageSize = 10;
+    sortBy:[[string, string]] = [['createdAt', 'DESC']];
+    totalRows = 0;
+    personList: People[] = [];
+    searchFilter = {};
+    // Tab 2
+    fingerprintStep = 1;
+    selectedSearchFinger: string | null = null;
+    selectedSearchFingerLabel: string | null = null;
+    fingerprintPreviewUrl: string | null = null;
+    capturedSearchImageBase64: string | null = null;
+    isSearchImageFromLiveCapture = false;
+    isFingerprintSearchLoading = false;
+    fingerprintSearchResult: MatchResult | null = null;
+    fingerprintSearchError = '';
+    isAwaitingMatchConfirmation = false;
+    activeSessionId: string | null = null;
+    searchThreshold = 40;
+    highConfidenceThreshold = 100;
+    noMatchWasFound = false;
 
-    @Input() set newPeople(value: any) {
-        if (value) {
-            this.peopleService.getById(value).subscribe(
-                (data) => {
-                    if (data) {
-                        this.people = data;
-                        this.form.patchValue(data);
-                        this.formSearch.patchValue(data);
-                    } else {
-                        this.messageService.add({
-                            life: 5000,
-                            key: 'msg',
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: 'No hay información sobre persona'
-                        });
-                    }
-                },
-                (error) => {
-                    this.messageService.add({
-                        life: 5000,
-                        key: 'msg',
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: 'Error al obtener la persona, error: ' + error.message
-                    });
-                }
-            );
-        } else {
-            //caso donde se borra el people desde el front
-            this.people = null;
-            this.form.reset();
-            this.formSearch.reset();
-        }
-    }
+    // enrolamiento de huellas
+    enrolledFingers: TenFingerCapture = {};
+    enrolledFingersCount = 0;
 
-    visibleDialog: boolean = false;
-    // visibleSearchForm: boolean = true; //true
-    // visibleAddForm: boolean = false;
-    // visibleList: boolean = false;
+    // Constantes template
+    readonly searchFields = SEARCH_FIELDS;
+    readonly addPersonFields = ADD_PERSON_FIELDS;
+    readonly leftFingerSearchOptions = LEFT_FINGER_SEARCH_OPTIONS;
+    readonly rightFingerSearchOptions = RIGHT_FINGER_SEARCH_OPTIONS;
+    readonly leftFingerThumbnails = LEFT_FINGER_THUMBNAILS;
+    readonly rightFingerThumbnails = RIGHT_FINGER_THUMBNAILS;
 
-    @Output()
-    sendPeople = new EventEmitter<People | null>();
-    // currentStep: number = 1;
-    // steps = 3;
-    activeTabValue: string = '0';
-    // Tab 1 Busqueda por datos
-    dataStep: number = 1;
-    page: number = 1;
-    limit: number = 10;
-    sortBy: [[string, string]] = [['createdAt', 'DESC']];
-    totalRows: number = 0;
-    listPerson: People[] = [];
-    // Tab 2 Busqueda por huellas dactilares
-    fpStep: number = 1;
-    selectedFinger: SearchFingerType | null = null;
-    selectedFingerLabel: string | null = null;
-    previewUrl: string | null = null;
-    capturedImageBase64: string | null = null;
-    isLiveCaptured: boolean = false;
-    fpLoading: boolean = false;
-    fpSearchResult: MatchResult | null = null;
-    fpErrorMessage: string = '';
-    fpWaitingConfirmation: boolean = false;
-    fpCurrentSessionId: string | null = null;
-    fpThreshold: number = 40;
-    fpHighConfidenceThreshold: number = 100;
-    fpNoMatchFound: boolean = false;
-    //Dialog para captura en busqueda
-    captureDialogVisible: boolean = false;
-    capturedFinger: SegmentedFinger | null = null;
-    captureImageFormat: string = 'bmp';
-    //Enrolamiento
-    fpEnrollFingers: TenFingerCapture = {};
-    enrollFingersCount: number = 0;
-    fullStep: 'left-four' | 'left-thumb' | 'right-four' | 'right-thumb' = 'left-four';
-    leftThumb: SegmentedFinger | null = null;
-    rightFourFingers: SegmentedFinger[] = [];
-    rightThumb: SegmentedFinger | null = null;
-    leftThumbFormat: string = 'bmp';
-    rightThumbFormat: string = 'bmp';
-    selectedKeys: Set<FingerKey> = new Set();
-    captureQueue: CaptureQueueItem[] = [];
-    currentQueueIndex: number = 0;
-    customImageFormat: string = 'bmp';
+    ngOnInit(): void{}
 
-    readonly fullStepItems = [
-        {step: 'left-four' as const, label: '4 izquierdos'},
-        {step: 'left-thumb' as const, label: 'Pulgar izquierdo'},
-        {step: 'right-four' as const, label: '4 derechos'},
-        {step: 'right-thumb' as const, label: 'Pulgar derecho'}
-    ];
-    readonly leftFingerNames = ['Indice', 'Medio', 'Anular', 'Meñique'];
-    readonly rightFingerNames = ['Meñique', 'Anular', 'Medio', 'Indice'];
-    readonly leftFingerDefs = All_FINGERS.filter(f => f.hand === 'left');
-    readonly rightFingerDefs = All_FINGERS.filter(f => f.hand === 'right');
-
-    listGender: any[] = [
-
-    ];
-    listSex: any[] = [];
-    listDegreeStudy: any[] = [
-
-    ];
-    listCivilStatus: any[] = [
-
-    ];
-    filter = {};
-    searchFields = [
-
-    ];
-    addFields = [
-
-    ];
-
-    readonly fingerOptions = FINGER_OPTIONS;
-    readonly leftFingerOptions = FINGER_OPTIONS.filter(f => f.hand === 'left');
-    readonly rightFingerOptions = FINGER_OPTIONS.filter(f => f.hand === 'right');
-    readonly leftFingerItems: {key: FingerKey, label: string}[] =
-    [
-        {key: 'leftThumb', label: 'Pulgar'},
-        {key: 'leftIndex', label: 'Indice'},
-        {key: 'leftMiddle', label: 'Medio'},
-        {key: 'leftRing', label: 'Anular'},
-        {key: 'leftLittle', label: 'Meñique'}
-    ];
-    readonly rightFingerItems: {key: FingerKey, label: string}[] =
-    [
-        {key: 'rightThumb', label: 'Pulgar'},
-        {key: 'rightIndex', label: 'Indice'},
-        {key: 'rightMiddle', label: 'Medio'},
-        {key: 'rightRing', label: 'Anular'},
-        {key: 'rightLittle', label: 'Meñique'}
-    ];
-
-    constructor(
-        private messageService: MessageService,
-        private miscService: MiscService,
-        private datePipe: DatePipe,
-        private changeDetector: ChangeDetectorRef
-    ) {}
-
-    ngOnInit(): void {
-        this.listSex = [
-            { label: 'Hombre', value: 'hombre' },
-            { label: 'mujer', value: 'mujer' }
-        ];
-        this.listDegreeStudy = [
-            {
-                label: 'NIVEL BASICO',
-                items: [
-                    { label: 'Primaria', value: 'primaria' },
-                    { label: 'Secundaria', value: 'secuendaria' }
-                ]
-            },
-            {
-                label: 'NIVEL MEDIO SUPERIOR',
-                items: [{ label: 'Bachillerato', value: 'bachillerato' }]
-            },
-            {
-                label: 'NIVEL SUPERIOR',
-                items: [
-                    { label: 'Licenciatura', value: 'licenciatura' },
-                    { label: 'Especialidad', value: 'especialidad' },
-                    { label: 'Maestría', value: 'maestria' },
-                    { label: 'Doctorado', value: 'doctorado' }
-                ]
-            }
-        ];
-    }
     // Dialog principal
     openDialog(){
         this.activeTabValue = '0';
         this.resetAllState();
-        this.visibleDialog = true;
+        this.isMainDialogVisible = true;
         this.changeDetector.detectChanges();
     }
-    onTabChange(value: string | number){
+    onTabChange(value: string | number): void{
         this.activeTabValue = String(value);
         this.resetAllState();
         this.changeDetector.detectChanges();
     }
-    //Tab 1
-    newPeopleAddress() {
-        return this.formBuilder.group({
-            address: [null, Validators.required],
-            address_data:[null]
-        });
-    }
-    getPeopleAddressArray(): FormArray {
-        return this.form.get('peopleAddresses') as FormArray;
-    }
-    getAddresses(data: any, index: number, array: FormArray) {
-        if (data) {
-            array.at(index).patchValue({
-                address: data.id,
-                address_data: data
-            });
-        } else {
-            array.at(index).patchValue({
-                address: null,
-                address_data: null,
-            });
-        }
-    }
-    addRow(array: any, newRow: any) {
-        array.push(newRow);
-    }
-    removeRow(array: FormArray, index: number) {
-        array.removeAt(index);
-    }
-    selectPerson(person) {
-        this.people = person;
-        //se envía el dato al componente padre
-        this.sendPeople.emit(person);
-        this.dataStep= 1;
-        // this.resetSteps();
-        this.visibleDialog = false;
-    }
-    searchPerson() {
-        this.filter = {};
-        if (!this.formSearch.invalid) {
-            this.miscService.startRequest();
-            this.dataStep = 2;
-            // this.nextStep();
-            for (const key in this.formSearch.value) {
-                if (this.formSearch.controls[key].value != null && this.formSearch.controls[key].value != '') {
-                    this.filter[key] = '$ilike:' + this.formSearch.value[key];
-                }
-            }
-        } else {
+
+    // Tab 1
+    searchPersonByData(): void {
+        this.searchFilter = {};
+        if (this.searchForm.invalid) {
             this.miscService.endRquest();
-            this.messageService.add({ life: 5000, key: 'msg', severity: 'warn', summary: 'Nombre es dato obligatorio para busqueda' });
+            this.showWarning('El Nombre es un dato obligatorio para busqueda');
+            return;
+        }
+        this.miscService.startRequest();
+        this.dataSearchStep = 2;
+        for (const fieldName in this.searchForm.value) {
+            const fieldValue = this.searchForm.controls[fieldName]?.value;
+            if (fieldValue != null && fieldValue !== '') {
+                this.searchFilter[fieldName] = '$ilike:' + fieldValue;
+            }
         }
     }
 
     addPerson() {
-        this.form.controls.curp.setValue(this.formSearch.controls.curp.value);
-        this.form.controls.firstName.setValue(this.formSearch.controls.firstName.value);
-        this.form.controls.paternalName.setValue(this.formSearch.controls.paternalName.value);
-        this.form.controls.maternalName.setValue(this.formSearch.controls.maternalName.value);
+        this.form.controls.curp.setValue(this.searchForm.controls.curp.value);
+        this.form.controls.firstName.setValue(this.searchForm.controls.firstName.value);
+        this.form.controls.paternalName.setValue(this.searchForm.controls.paternalName.value);
+        this.form.controls.maternalName.setValue(this.searchForm.controls.maternalName.value);
         // this.nextStep();
-        this.dataStep = 3;
+        this.dataSearchStep = 3;
     }
-
-    saveForm() {
+    selectPerson(person: People): void {
+        this.selectedPerson = person;
+        this.sendPeople.emit(person);
+        this.dataSearchStep = 1;
+        this.isMainDialogVisible = false;
+    }
+    savePersonWithoutFingerprints(): void {
         this.miscService.startRequest();
         if (this.form.invalid) {
-            this.messageService.add({ severity: 'error', key: 'msg', summary: 'Faltan campos por añadir en el formulario', life: 3000 });
+            this.showError('Faltan campos por añadir');
             this.miscService.endRquest();
             return;
         }
-        const rawData = this.form.getRawValue();
-
-        // Iteramos sobre las direcciones para quitar 'address_data'
-        const cleanAddresses = rawData.peopleAddresses.map((item: any) => {
-            const { address_data, ...rest } = item; // Desestructuración: extrae address_data y deja el resto
-            return rest;
-        });
-
-        const finalData = {
-            ...rawData,
-            peopleAddresses: cleanAddresses
-        };
-
-        this.peopleService.create(finalData).subscribe(
-            (data: any) => {
-                this.selectPerson(data['object']);
+        const formData = this.form.getRawValue();
+        const cleanAddresses = this.removeAddressMetadata(formData.peopleAddresses);
+        this.peopleService.create({ ...formData, peopleAddresses: cleanAddresses }).subscribe({
+            next: (response: any) => {
+                this.selectPerson(response['object']);
                 this.miscService.endRquest();
-                this.messageService.add({ severity: 'success', key: 'msg', summary: 'Operación exitosa', life: 3000 });
+                this.showSuccess('Operacion correcta');
             },
-            (error: any) => {
+            error: (error: any) => {
                 this.miscService.endRquest();
-                this.messageService.add({ life: 5000, key: 'msg', severity: 'error', summary: 'Error al guardar registro de persona', detail: error.error.message });
-            }
-        );
+                this.showError('Error al guardar persona', error.error?.message);
+            },
+        });
     }
-    // getDialogHeader(): string {
-    //     switch (this.currentStep) {
-    //         case 1:
-    //             return 'Buscar persona';
-    //         case 2:
-    //             return 'Seleccionar Persona';
-    //         default:
-    //             return 'Agregar persona';
-    //     }
-    // }
-    // getNextButtonLabel(): string {
-    //     switch (this.currentStep) {
-    //         case 1:
-    //             return 'Buscar';
-    //         case 2:
-    //             return 'Agregar';
-    //         default:
-    //             return 'Guardar';
-    //     }
-    // }
-    // nextStep(): void {
-    //     if (this.currentStep < 3) {
-    //         this.currentStep++;
-    //         this.updateVisibility();
-    //     }
-    // }
-    // previousStep(): void {
-    //     if (this.currentStep > 1) {
-    //         this.currentStep--;
-    //         this.updateVisibility();
-    //     }
-    // }
-    // resetSteps(): void {
-    //     this.currentStep = 1;
-    //     this.updateVisibility();
-    // }
-    // updateVisibility(): void {
-    //     this.visibleSearchForm = this.currentStep === 1;
-    //     this.visibleList = this.currentStep === 2;
-    //     this.visibleAddForm = this.currentStep === 3;
-    // }
-    deletePeople() {
-        this.people = null;
-        this.sendPeople.emit(this.people);
-        this.newPeople = null;
-    }
-    loadTable(event: TableLazyLoadEvent) {
-        this.page = event.first / event.rows + 1;
-        this.limit = event.rows;
-        this.peopleService.getList(this.limit, this.page, this.sortBy, this.filter).subscribe(
-            async (data: any) => {
-                if (data['meta']['totalItems'] != 0) {
-                    this.listPerson = data['data'];
-                    this.totalRows = data['meta']['totalItems'];
-                    // this.miscService.endRquest();
+
+    loadPersonTable(event: TableLazyLoadEvent): void {
+        this.currentPage = event.first / event.rows + 1;
+        this.pageSize = event.rows;
+        this.peopleService.getList(this.pageSize, this.currentPage, this.sortBy, this.searchFilter).subscribe({
+            next: (response: any) => {
+                if (response['meta']['totalItems'] !== 0) {
+                    this.personList = response['data'];
+                    this.totalRows = response['meta']['totalItems'];
                 } else {
-                    // No hay resultados o formato inesperado
-                    this.listPerson = [];
+                    this.personList = [];
                     this.totalRows = 0;
-                    this.messageService.add({
-                        life: 5000,
-                        key: 'msg',
-                        severity: 'warn',
-                        summary: 'No se encontraron personas'
-                    });
+                    this.showWarning('No se encontraron personas');
                 }
                 this.miscService.endRquest();
             },
-            (error: any) => {
-                this.listPerson = [];
+            error: (error: any) => {
+                this.personList = [];
                 this.totalRows = 0;
                 this.miscService.endRquest();
-                this.messageService.add({
-                    life: 5000,
-                    key: 'msg',
-                    severity: 'error',
-                    summary: 'Error al buscar el personas',
-                    detail: error.error?.message || 'Error desconocido'
-                });
-            }
-        );
-    }
-    // Tab 2 - Busqueda por huellas dactilares
-    selectFinger(key: SearchFingerType): void{
-        this.selectedFinger = key;
-        this.selectedFingerLabel = FINGER_OPTIONS.find(f => f.key === key)?.label ?? null;
-        this.fpSearchResult = null;
-        this.fpErrorMessage = '';
-        this.resetFpConfirmation();
-    }
-
-
-
-    onFpImageCaptured(imageBase64: string): void{
-        this.fpSearchResult = null;
-        this.fpErrorMessage = '';
-        this.resetFpConfirmation();
-        this.isLiveCaptured = true;
-        this.capturedImageBase64 = imageBase64;
-        this.previewUrl = `data:image/bmp;base64,${imageBase64}`;
-    }
-    onFpFileSelected(event: Event): void{
-        const input = event.target as HTMLInputElement;
-        const file = input.files?.[0];
-        if(!file) return;
-        if(!['image/png', 'image/jpeg', 'image/jpg', 'image/bmp'].includes(file.type.toLowerCase())){
-            this.fpErrorMessage = 'Formato Invalido';
-            input.value = '';
-            return;
-        }
-        this.fpSearchResult = null;
-        this.fpErrorMessage = '';
-        this.resetFpConfirmation();
-        this.isLiveCaptured = false;
-        const reader = new FileReader();
-        reader.onload = e => {
-            if(e.target?.result){
-                const d = e.target.result as string;
-                this.previewUrl = d;
-                this.capturedImageBase64 = d.split(',')[1];
-            }
-        };
-        reader.readAsDataURL(file);
-        input.value = '';
-    }
-    async searchFingerprint(): Promise<void>{
-        if(!this.capturedImageBase64){
-            this.fpErrorMessage = 'Capture o seleccione imagen';
-            return;
-        }
-        if(!this.selectFinger){
-            this.fpErrorMessage = 'Seleccione el dedo';
-            return;
-        }
-        this.fpLoading = true;
-        this.fpSearchResult = null;
-        this.fpErrorMessage = '';
-        this.resetFpConfirmation();
-        this.fpNoMatchFound = false;
-        this.fingerprintService.searchFingerprint({
-            fingerprintImage: this.capturedImageBase64,
-            threshold: this.fpThreshold,
-            highConfidenceThreshold: this.fpHighConfidenceThreshold,
-            fingerType: this.selectedFinger
-        })
-        .subscribe({
-            next: (r) => {
-                this.handleFpSearchResult(r);
-                this.fpLoading = false;
+                this.showError('Error al buscar', error.error?.message);
             },
-            error: (e) => {
-                this.fpErrorMessage = e.message || 'Error';
-                this.fpLoading = false;
-            }
         });
     }
-    handleFpSearchResult(result: MatchResult): void{
-        this.fpSearchResult = result;
-        if(result.requiresConfirmation){
-            this.fpWaitingConfirmation = true;
-            this.fpCurrentSessionId = result.sessionId || null;
-        }else if(result.isMatch){
-            this.fpWaitingConfirmation = false;
-        }
-        else{
-            this.fpWaitingConfirmation = false;
-            this.fpNoMatchFound = true;
-        }
+    goBackDataStep(): void{
+        if(this.dataSearchStep > 1) this.dataSearchStep--;
     }
-    confirmFpMatch(isCorrect: boolean): void{
-        const sid = this.fpCurrentSessionId;
-        if(!sid){
-            this.fpErrorMessage = 'No hay sesion';
+
+    // Tab 2
+    selectSearchFinger(fingerKey: string): void {
+        this.selectedSearchFinger = fingerKey;
+        this.selectedSearchFingerLabel = FINGER_SEARCH_OPTIONS.find(option => option.key === fingerKey)?.label ?? null;
+        this.fingerprintSearchResult = null;
+        this.fingerprintSearchError = '';
+        this.resetMatchConfirmation();
+    }
+
+    openCaptureDialog(): void {
+        this.captureDialog.openCaptureDialog();
+    }
+
+    onSearchFingerCaptured(imageBase64: string): void {
+        this.fingerprintSearchResult = null;
+        this.fingerprintSearchError = '';
+        this.resetMatchConfirmation();
+        this.isSearchImageFromLiveCapture = true;
+        this.capturedSearchImageBase64 = imageBase64;
+        this.fingerprintPreviewUrl = buildImageDataUrl(imageBase64, 'bmp');
+    }
+
+    onSearchFileSelected(event: Event): void {
+        const fileInput = event.target as HTMLInputElement;
+        const selectedFile = fileInput.files?.[0];
+        if (!selectedFile) return;
+
+        const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/bmp'];
+        if (!allowedTypes.includes(selectedFile.type.toLowerCase())) {
+            this.fingerprintSearchError = 'Formato invalido (PNG, JPG, BMP)';
+            fileInput.value = '';
             return;
         }
-        this.fpLoading = true;
-        this.fingerprintService.confirmMatch({
-            sessionId: sid,
-            isCorrect
-        })
-        .subscribe({
-            next: (r) => {
-                if(isCorrect){
-                    this.fpSearchResult = r;
-                    this.fpWaitingConfirmation = false;
-                    if(r.peopleId){
-                        this.peopleService.getById(r.peopleId)
-                        .subscribe(p => {
-                            if(p) this.selectPerson(p);
+
+        this.fingerprintSearchResult = null;
+        this.fingerprintSearchError = '';
+        this.resetMatchConfirmation();
+        this.isSearchImageFromLiveCapture = false;
+
+        const reader = new FileReader();
+        reader.onload = loadEvent => {
+            if (loadEvent.target?.result) {
+                const dataUrl = loadEvent.target.result as string;
+                this.fingerprintPreviewUrl = dataUrl;
+                this.capturedSearchImageBase64 = dataUrl.split(',')[1];
+            }
+        };
+        reader.readAsDataURL(selectedFile);
+        fileInput.value = '';
+    }
+
+    searchByFingerprint(): void {
+        if (!this.capturedSearchImageBase64) { this.fingerprintSearchError = 'Capture o seleccione una imagen'; return; }
+        if (!this.selectedSearchFinger)      { this.fingerprintSearchError = 'Seleccione el dedo'; return; }
+
+        this.isFingerprintSearchLoading = true;
+        this.fingerprintSearchResult = null;
+        this.fingerprintSearchError = '';
+        this.resetMatchConfirmation();
+        this.noMatchWasFound = false;
+
+        this.fingerprintService.searchFingerprint({
+            fingerprintImage: this.capturedSearchImageBase64,
+            threshold: this.searchThreshold,
+            highConfidenceThreshold: this.highConfidenceThreshold,
+            fingerType: this.selectedSearchFinger as any,
+        }).subscribe({
+            next: result => { this.handleSearchResult(result); this.isFingerprintSearchLoading = false; },
+            error: error => { this.fingerprintSearchError = error.message || 'Error en la busqueda'; this.isFingerprintSearchLoading = false; },
+        });
+    }
+
+    confirmMatch(isCorrect: boolean): void {
+        if (!this.activeSessionId) { this.fingerprintSearchError = 'No hay sesion activa'; return; }
+        this.isFingerprintSearchLoading = true;
+
+        this.fingerprintService.confirmMatch({ sessionId: this.activeSessionId, isCorrect }).subscribe({
+            next: result => {
+                if (isCorrect) {
+                    this.fingerprintSearchResult = result;
+                    this.isAwaitingMatchConfirmation = false;
+                    if (result.peopleId) {
+                        this.peopleService.getById(result.peopleId).subscribe(person => {
+                            if (person) this.selectPerson(person);
                         });
                     }
                 } else {
-                    this.handleFpSearchResult(r);
+                    this.handleSearchResult(result);
                 }
-                this.fpLoading = false;
+                this.isFingerprintSearchLoading = false;
             },
-            error: (e) => {
-                this.fpErrorMessage = e.message || 'Error';
-                this.fpLoading = false;
-                this.fpWaitingConfirmation = false;
-            }
+            error: error => {
+                this.fingerprintSearchError = error.message || 'Error al confirmar';
+                this.isFingerprintSearchLoading = false;
+                this.isAwaitingMatchConfirmation = false;
+            },
         });
     }
-    // Limpiar todo al agregar persona
-    goToFpAddPerson(): void{
-        // Limpiar huellas
-        this.fpEnrollFingers = {};
-        this.enrollFingersCount = 0;
-        this.resetEnrollState();
-        // Limpiar formulario de persona
+
+    goToAddPersonFromFingerprint(): void {
+        this.enrolledFingers = {};
+        this.enrolledFingersCount = 0;
         this.form.reset();
-        const arr = this.getPeopleAddressArray();
-        while(arr.length > 0) arr.removeAt(0);
-        this.fpStep = 3;
+        this.clearAddressFormArray();
+        this.fingerprintStep = 3;
     }
-    fpGoBack(): void{
-        if(this.fpStep === 3){
-            this.fpStep = 1;
+
+    goBackFromFingerprintAddPerson(): void {
+        if (this.fingerprintStep === 3) {
+            this.fingerprintStep = 1;
         }
     }
-    // Dialog enrolamiento de huellas
 
-
-
-
-
-    captureLeftThumbEnroll(): void{
-        this.leftThumb = null;
-        this.leftThumbFormat = 'bmp';
-        this.realScanService.clearError();
-        this.realScanService.quickCapture(CaptureMode.FLAT_SINGLE_FINGER, 10000, Segment.ENABLED)
-        .subscribe({
-            next: r => {
-                if(!r.success){
-                    this.realScanService.lastError.set(r.message || 'Error');
-                    return;
-                }
-                const s = r.fingers?.length ? r.fingers[0] : r.imageBase64 ? {
-                    fingerIndex: 1,
-                    fingerType: 0,
-                    fingerTypeName: 'Thumb',
-                    width: r.width ?? 0,
-                    height: r.height ?? 0,
-                    imageBase64: r.imageBase64
-                }
-                : null;
-                if(s){
-                    this.rightThumb = s;
-                }else {
-                    this.realScanService.lastError.set('No se recibio imagen');
-                }
-            },
-            error: e => console.error(e)
-        });
-    }
-    captureRightThumbEnroll(): void{
-        this.rightThumb = null;
-        this.rightThumbFormat = 'bmp';
-        this.realScanService.clearError();
-        this.realScanService.quickCapture(CaptureMode.FLAT_SINGLE_FINGER, 10000, Segment.ENABLED)
-        .subscribe({
-            next: r => {
-                if(!r.success){
-                    this.realScanService.lastError.set(r.message || 'Error');
-                    return;
-                }
-                const s = r.fingers?.length ? r.fingers[0] : r.imageBase64 ?
-                {
-                    fingerIndex: 1,
-                    fingerType: 0,
-                    fingerTypeName: 'Thumb',
-                    width: r.width ?? 0,
-                    height: r.height ?? 0,
-                    imageBase64: r.imageBase64
-                } : null;
-                if(s){
-                    this.rightThumb = s;
-                }
-                else {
-                    this.realScanService.lastError.set('No se recibio imagen');
-                }
-            },
-            error: e => console.error(e)
-        });
+    // Enrolamiento de huellas
+    openEnrollDialog(): void {
+        this.enrollDialog.openEnrollDialog();
     }
 
-
-
-
-
-    getLeftThumbUrl(): string | null{
-        return this.leftThumb ? `data:image/${this.leftThumbFormat};base64,${this.leftThumb.imageBase64}` : null;
-    }
-    getRightThumbUrl(): string | null{
-        return this.rightThumb ? `data:image/${this.rightThumbFormat};base64,${this.rightThumb.imageBase64}` : null;
-    }
-    onLeftThumbImgError(): void{
-        this.leftThumbFormat = this.leftThumbFormat === 'bmp' ? 'png' : 'jpg';
-    }
-    onRightThumbImgError(): void{
-        this.rightThumbFormat = this.rightThumbFormat === 'bmp' ? 'png' : 'jpg';
-    }
-    isFullStepDone(step: string): boolean{
-        const order = ['left-four', 'left-thumb', 'right-four', 'right-thumb'];
-        return order.indexOf(step) < order.indexOf(this.fullStep);
-    }
-    acceptRightThumbAndFinish(): void{
-        const lf = this.leftFourFingers, lt = this.leftThumb, rf = this.rightFourFingers, rt = this.rightThumb;
-        if(lf.length < 1 || !lt || rf.length < 1 || !rt){
-            this.realScanService.lastError.set('Complete todos los pasos');
-            return;
-        }
-        const result: TenFingerCapture = {
-            leftThumb: lt.imageBase64,
-            rightThumb: rt.imageBase64
-        };
-        for(const f of lf){
-            switch(f.fingerType){
-                case 7:
-                    result.leftIndex = f.imageBase64;
-                    break;
-                case 8:
-                    result.leftMiddle = f.imageBase64;
-                    break;
-                case 9:
-                    result.leftRing = f.imageBase64;
-                    break;
-                case 10:
-                    result.leftLittle = f.imageBase64;
-                    break;
-            }
-        }
-        for(const f of rf){
-            switch(f.fingerType){
-                case 2:
-                    result.rightIndex = f.imageBase64;
-                    break;
-                case 3:
-                    result.rightMiddle = f.imageBase64;
-                    break;
-                case 4:
-                    result.rightRing = f.imageBase64;
-                    break;
-                case 5:
-                    result.rightLittle = f.imageBase64;
-                    break;
-            }
-        }
-        const lu = lf.filter(f => !f.fingerType), ru = rf.filter(f => !f.fingerType);
-        if(lu.length){
-            (['leftLittle', 'leftRing', 'leftMiddle', 'leftIndex'] as FingerKey[])
-            .forEach((k, i) => {
-                if(lu[i] && !result[k]){
-                    result[k] = lu[i].imageBase64;
-                }
-            });
-            this.fpEnrollFingers  = result;
-            this.enrollFingersCount = Object.values(result).filter(v => v).length;
-            this.closeEnrollDialog();
-        }
-    }
-    toggleFingerKey(key: FingerKey): void{
-        if(this.selectedKeys.has(key)){
-            this.selectedKeys.delete(key);
-        }else {
-            this.selectedKeys.add(key);
-        }
-    }
-    isFingerKeySelected(key: FingerKey): boolean{
-        return this.selectedKeys.has(key);
-    }
-    selectAllFingers(): void{
-        this.selectedKeys = new Set(All_FINGERS.map(f => f.key));
-    }
-    clearFingerSelection(): void{
-        this.selectedKeys = new Set();
-    }
-    startCustomCapture(): void{
-        if(this.selectedKeys.size === 0){
-            this.realScanService.lastError.set('Selecciona al menos un dedo');
-            return;
-        }
-        this.captureQueue = All_FINGERS.filter(f => this.selectedKeys.has(f.key))
-        .map(f => ({
-            finger: f
-        }));
-        this.currentQueueIndex = 0;
-        this.customImageFormat = 'bmp';
-        this.realScanService.clearError();
-    }
-    getCurrentQueueItem(): CaptureQueueItem | null{
-        return this.captureQueue[this.currentQueueIndex] ?? null;
-    }
-    getCurrentQueueImageUrl(): string | null{
-        const item = this.getCurrentQueueItem();
-        return item?.captured ? `data:image/${this.customImageFormat};base64,${item.captured.imageBase64}` : null;
-    }
-    onCustomImgError(): void{
-        this.customImageFormat = this.customImageFormat === 'bmp' ? 'png' : this.customImageFormat === 'png' ? 'jpg' : 'bmp';
-    }
-    captureCurrentFinger(): void{
-        const item = this.getCurrentQueueItem();
-        if(!item) return;
-        this.updateQueueItem(undefined);
-        this.customImageFormat = 'bmp';
-        this.realScanService.clearError();
-        this.realScanService.quickCapture(CaptureMode.FLAT_SINGLE_FINGER, 12000, Segment.ENABLED)
-        .subscribe({
-            next: r => {
-                if(!r.success){
-                    this.realScanService.lastError.set(r.message || 'Error');
-                    return;
-                }
-                let seg: SegmentedFinger | null = null;
-                if(r.fingers?.length){
-                    seg = r.fingers[0];
-                } else if(r.imageBase64){
-                    seg = {
-                        fingerIndex: 1,
-                        fingerType: 0,
-                        fingerTypeName: item.finger.label,
-                        width: r.width ?? 0,
-                        height: r.height ?? 0,
-                        imageBase64: r.imageBase64
-                    };
-                }
-                if(seg){
-                    this.updateQueueItem(seg);
-                }else{
-                    this.realScanService.lastError.set('No se recibio imagen');
-                }
-            },
-            error: e => console.error(e)
-        })
-    }
-    retakeCurrentFinger(): void{
-        this.updateQueueItem(undefined);
-        this.customImageFormat = 'bmp';
-        this.realScanService.clearError();
-    }
-    acceptCurrentFinger(): void{
-        const item = this.captureQueue[this.currentQueueIndex];
-        if(!item?.captured) return;
-        if(this.currentQueueIndex + 1 < this.captureQueue.length){
-            this.currentQueueIndex++;
-            this.customImageFormat = 'bmp';
-            this.realScanService.clearError();
-        }else{
-            this.finishCustomCapture();
-        }
-    }
-    private updateQueueItem(captured: SegmentedFinger | undefined): void{
-        this.captureQueue = this.captureQueue.map((it, i) => i === this.currentQueueIndex ?
-        {...it, captured} : it);
-    }
-    private finishCustomCapture(): void{
-        const r: TenFingerCapture = {};
-        for(const item of this.captureQueue){
-            if(item.captured) (r as any)[item.finger.key] = item.captured.imageBase64;
-        }
-        this.fpEnrollFingers = {
-            ...this.fpEnrollFingers,
-            ...r
-        };
-        this.enrollFingersCount = Object.values(this.fpEnrollFingers).filter(v => v).length;
-        this.closeEnrollDialog();
+    onFingersEnrolled(capturedFingers: TenFingerCapture): void {
+        this.enrolledFingers = { ...this.enrolledFingers, ...capturedFingers };
+        this.enrolledFingersCount = countCapturedFingers(this.enrolledFingers);
     }
 
-    private resetFullMode(): void{
-        this.fullStep = 'left-four';
-        this.leftFourFingers = [];
-        this.leftThumb = null;
-        this.rightFourFingers = [];
-        this.rightThumb = null;
-        this.leftThumbFormat = 'bmp';
-        this.rightThumbFormat = 'bmp';
-    }
-    private resetEnrollState(): void{
-        this.resetFullMode();
-        this.selectedKeys = new Set();
-        this.captureQueue = [];
-        this.currentQueueIndex = 0;
-        this.customImageFormat = 'bmp';
-    }
-
-    saveFpForm(): void{
+    savePersonWithFingerprints(): void {
         this.miscService.startRequest();
-        if(this.form.invalid){
-            this.messageService.add({
-                severity: 'error',
-                key: 'msg',
-                summary: 'Faltan campos por llenar',
-                life: 3000
-            });
+
+        if (this.form.invalid) {
+            this.showError('Faltan campos por añadir');
             this.miscService.endRquest();
             return;
         }
-        if(this.enrollFingersCount === 0){
-            this.messageService.add({
-                severity: 'error',
-                key: 'msg',
-                summary: 'Capture al menos una huella',
-                life: 3000
-            });
+        if (this.enrolledFingersCount === 0) {
+            this.showError('Capture al menos una huella');
             this.miscService.endRquest();
             return;
         }
-        const rawData = this.form.getRawValue();
-        const cleanAddresses = rawData.peopleAddresses.map((item: any) => {
-            const {address_data, ...rest} = item;
-            return rest;
-        });
-        const req: EnrollFingerprintRequest = {
-            firstName: rawData.firstName,
-            paternalName: rawData.paternalName,
-            maternalName: rawData.maternalName,
-            curp: rawData.curp,
-            gender: rawData.gender,
-            maritalStatus: rawData.maritalStatus,
-            educationLevel: rawData.educationLevel,
-            occupation: rawData.occupation,
-            alias: rawData.alias,
-            birthDate: rawData.birthDate,
+
+        const formData = this.form.getRawValue();
+        const cleanAddresses = this.removeAddressMetadata(formData.peopleAddresses);
+
+        const enrollRequest: EnrollFingerprintRequest = {
+            firstName: formData.firstName,
+            paternalName: formData.paternalName,
+            maternalName: formData.maternalName,
+            curp: formData.curp,
+            gender: formData.gender,
+            maritalStatus: formData.maritalStatus,
+            educationLevel: formData.educationLevel,
+            occupation: formData.occupation,
+            alias: formData.alias,
+            birthDate: formData.birthDate,
             peopleAddress: cleanAddresses,
-            fingers: this.fpEnrollFingers
+            fingers: this.enrolledFingers,
         };
-        this.fingerprintService.enrollFingerprint(req)
-        .subscribe(
-            (data: any) => {
-                this.selectPerson(data['object']);
+
+        this.fingerprintService.enrollFingerprint(enrollRequest).subscribe({
+            next: (response: any) => {
+                this.selectPerson(response['object']);
                 this.miscService.endRquest();
-                this.messageService.add({
-                    severity: 'success',
-                    key: 'msg',
-                    summary: 'Persona y huellas enroladas',
-                    life: 3000
-                });
+                this.showSuccess('Persona y huellas enroladas');
             },
-            (error: any) => {
+            error: (error: any) => {
                 this.miscService.endRquest();
-                this.messageService.add({
-                    life: 5000,
-                    key: 'msg',
-                    severity: 'Error al enrolar',
-                    detail: error.error?.message || error.message
-                });
-            }
-        );
+                this.showError('Error al enrolar', error.error?.message || error.message);
+            },
+        });
     }
-    // Tab
-    getPageRange(page, limit, totalRows) {
-        var startIndex = 0;
-        var endIndex = 0;
-        if (totalRows > 0) {
-            startIndex = (page - 1) * limit + 1;
-            endIndex = Math.min(startIndex + limit - 1, totalRows);
+    // FormArray
+    createAddressFormGroup() {
+        return this.formBuilder.group({
+            address: [null, Validators.required],
+            address_data: [null],
+        });
+    }
+
+    getAddressFormArray(): FormArray {
+        return this.form.get('peopleAddresses') as FormArray;
+    }
+
+    onAddressSelected(addressData: any, index: number, formArray: FormArray): void {
+        if (addressData) {
+            formArray.at(index).patchValue({ address: addressData.id, address_data: addressData });
+        } else {
+            formArray.at(index).patchValue({ address: null, address_data: null });
         }
-        return `Mostrando del ${startIndex} al ${endIndex} de ${totalRows} registros`;
     }
-    private resetAllState(): void {
-        // Tab 1
-        this.dataStep = 1;
-        this.filter = {},
-        this.listPerson = [];
-        this.totalRows = 0;
-        // Tab 2
-        this.fpStep = 1;
-        this.selectedFinger = null;
-        this.selectedFingerLabel = null,
-        this.previewUrl = null;
-        this.capturedImageBase64 = null;
-        this.isLiveCaptured = false;
-        this.fpLoading = false;
-        this.fpSearchResult = null,
-        this.fpErrorMessage = '';
-        this.fpWaitingConfirmation = false;
-        this.fpCurrentSessionId = null;
-        this.fpNoMatchFound = false;
-        //Enrolamiento completo
-        this.fpEnrollFingers = {};
-        this.enrollFingersCount = 0;
-        // this.resetEnrollState();
-        //Formularios
-        this.form.reset();
-        this.formSearch.reset();
-        //Limpiar FormArray de direcciones
-        const arr = this.getPeopleAddressArray();
-        while(arr.length > 0) arr.removeAt(0);
+
+    addAddressRow(formArray: FormArray): void {
+        formArray.push(this.createAddressFormGroup());
     }
-    resetFpConfirmation(): void{
-        this.fpWaitingConfirmation = false;
-        this.fpCurrentSessionId = null;
+
+    removeAddressRow(formArray: FormArray, index: number): void {
+        formArray.removeAt(index);
     }
-    getDialogHeader(): string{
+    // Helpers para template
+    removePerson(): void {
+        this.selectedPerson = null;
+        this.sendPeople.emit(null);
+        this.newPeople = null;
+    }
+
+    getDialogHeader(): string {
         return 'Buscar Persona';
     }
-    dataPreviousStep(): void{
-        if(this.dataStep > 1) this.dataStep--;
+
+    getScoreColor(score: number): string {
+        return getScoreColorClass(score);
     }
-    getScoreColor(score: number): string{
-        if(score >= 100) return 'text-green-600';
-        if(score >= 60) return 'text-blue-600';
-        if(score >= 40) return 'text-yellow-600';
-        return 'text-red-600';
+
+    formatTime(milliseconds: number): string {
+        return formatElapsedTime(milliseconds);
     }
-    formatTime(ms: number): string{
-        if(!ms || ms <= 0) return '0ms';
-        if(ms < 1000) return `${ms}ms`;
-        return `${(ms / 1000).toFixed(2)}s`
+
+    getPageRange(): string {
+        return formatPageRange(this.currentPage, this.pageSize, this.totalRows);
     }
-    getFingerImage(key: FingerKey): string{
-        return this.fpEnrollFingers?.[key] ?? '';
+
+    getEnrolledFingerImage(fingerKey: FingerKey): string {
+        return this.enrolledFingers?.[fingerKey] ?? '';
+    }
+
+    hasLeftHandFingers(): boolean {
+        return !!(this.enrolledFingers.leftThumb || this.enrolledFingers.leftIndex || this.enrolledFingers.leftMiddle || this.enrolledFingers.leftRing || this.enrolledFingers.leftLittle);
+    }
+
+    hasRightHandFingers(): boolean {
+        return !!(this.enrolledFingers.rightThumb || this.enrolledFingers.rightIndex || this.enrolledFingers.rightMiddle || this.enrolledFingers.rightRing || this.enrolledFingers.rightLittle);
+    }
+
+    // Metodos privados
+    private handleSearchResult(result: MatchResult): void {
+        this.fingerprintSearchResult = result;
+        if (result.requiresConfirmation) {
+            this.isAwaitingMatchConfirmation = true;
+            this.activeSessionId = result.sessionId || null;
+        } else if (result.isMatch) {
+            this.isAwaitingMatchConfirmation = false;
+        } else {
+            this.isAwaitingMatchConfirmation = false;
+            this.noMatchWasFound = true;
+        }
+    }
+
+    private resetMatchConfirmation(): void {
+        this.isAwaitingMatchConfirmation = false;
+        this.activeSessionId = null;
+    }
+
+    private resetAllState(): void {
+        // Tab 1
+        this.dataSearchStep = 1;
+        this.searchFilter = {};
+        this.personList = [];
+        this.totalRows = 0;
+        // Tab 2
+        this.fingerprintStep = 1;
+        this.selectedSearchFinger = null;
+        this.selectedSearchFingerLabel = null;
+        this.fingerprintPreviewUrl = null;
+        this.capturedSearchImageBase64 = null;
+        this.isSearchImageFromLiveCapture = false;
+        this.isFingerprintSearchLoading = false;
+        this.fingerprintSearchResult = null;
+        this.fingerprintSearchError = '';
+        this.isAwaitingMatchConfirmation = false;
+        this.activeSessionId = null;
+        this.noMatchWasFound = false;
+        // Enrollment
+        this.enrolledFingers = {};
+        this.enrolledFingersCount = 0;
+        // Forms
+        this.form.reset();
+        this.searchForm.reset();
+        this.clearAddressFormArray();
+    }
+
+    private clearAddressFormArray(): void {
+        const addressArray = this.getAddressFormArray();
+        while (addressArray.length > 0) addressArray.removeAt(0);
+    }
+
+    private removeAddressMetadata(addresses: any[]): any[] {
+        return addresses.map((item: any) => {
+            const { address_data, ...addressWithoutMetadata } = item;
+            return addressWithoutMetadata;
+        });
+    }
+
+    private showSuccess(message: string): void {
+        this.messageService.add({ severity: 'success', key: 'msg', summary: message, life: 3000 });
+    }
+
+    private showError(summary: string, detail?: string): void {
+        this.messageService.add({ life: 5000, key: 'msg', severity: 'error', summary, detail });
+    }
+
+    private showWarning(message: string): void {
+        this.messageService.add({ life: 5000, key: 'msg', severity: 'warn', summary: message });
     }
 }
