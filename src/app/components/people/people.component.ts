@@ -93,7 +93,7 @@ export class PeopleComponent implements OnInit {
                     if(person){
                         this.selectedPerson = person;
                         this.form.patchValue(person);
-                        this.form.patchValue(person);                        
+                        this.form.patchValue(person);
                     } else{
                         this.selectedPerson = null;
                         this.form.reset();
@@ -323,8 +323,13 @@ export class PeopleComponent implements OnInit {
     }
 
     searchByFingerprint(): void {
-        if (!this.capturedSearchImageBase64) { this.fingerprintSearchError = 'Capture o seleccione una imagen'; return; }
-        if (!this.selectedSearchFinger)      { this.fingerprintSearchError = 'Seleccione el dedo'; return; }
+        if (!this.capturedSearchImageBase64) {
+            this.fingerprintSearchError = 'Capture o seleccione una imagen';
+            return;
+        }
+        if (!this.selectedSearchFinger){
+            this.fingerprintSearchError = 'Seleccione el dedo'; return;
+        }
 
         this.isFingerprintSearchLoading = true;
         this.fingerprintSearchResult = null;
@@ -338,13 +343,22 @@ export class PeopleComponent implements OnInit {
             highConfidenceThreshold: this.highConfidenceThreshold,
             fingerType: this.selectedSearchFinger as any,
         }).subscribe({
-            next: result => { this.handleSearchResult(result); this.isFingerprintSearchLoading = false; },
-            error: error => { this.fingerprintSearchError = error.message || 'Error en la busqueda'; this.isFingerprintSearchLoading = false; },
+            next: result => {
+                this.handleSearchResult(result);
+                this.isFingerprintSearchLoading = false;
+            },
+            error: error => {
+                this.fingerprintSearchError = error.message || 'Error en la busqueda';
+                this.isFingerprintSearchLoading = false;
+            },
         });
     }
 
     confirmMatch(isCorrect: boolean): void {
-        if (!this.activeSessionId) { this.fingerprintSearchError = 'No hay sesion activa'; return; }
+        if (!this.activeSessionId) {
+            this.fingerprintSearchError = 'No hay sesion activa';
+            return;
+        }
         this.isFingerprintSearchLoading = true;
 
         this.fingerprintService.confirmMatch({ sessionId: this.activeSessionId, isCorrect }).subscribe({
@@ -390,7 +404,10 @@ export class PeopleComponent implements OnInit {
     }
 
     onFingersEnrolled(capturedFingers: TenFingerCapture): void {
-        this.enrolledFingers = { ...this.enrolledFingers, ...capturedFingers };
+        this.enrolledFingers = {
+            ...this.enrolledFingers,
+            ...capturedFingers
+        };
         this.enrolledFingersCount = countCapturedFingers(this.enrolledFingers);
     }
 

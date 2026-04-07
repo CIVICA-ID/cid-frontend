@@ -68,7 +68,7 @@
                 <div class="pt-4">
                     <div class="flex justify-between items-center mb-6">
                         <div class="flex items-center gap-2">
-                            <button pButton type="button" pRipple icon="pi pi arrow-left" class="p-button-outlined" (click)="goBackDataStep()" [disabled]="dataSearchStep === 1"></button>
+                            <button pButton type="button" pRipple icon="pi pi-arrow-left" class="p-button-outlined" (click)="goBackDataStep()" [disabled]="dataSearchStep === 1"></button>
                             <span class="text-sm font-medium text-gray-700">{{dataSearchStep}} de 3</span>
                         </div>
                     </div>
@@ -526,6 +526,6 @@
     </form>
 </ng-template>
 
-<app-fingerprint-capture-dialog $captureDialog [selectedFingerLabel]="selectedSearchFingerLabel" (fingerCaptured)="onSearchFingerCaptured($event)"></app-fingerprint-capture-dialog>
+<app-fingerprint-capture-dialog #captureDialog [selectedFingerLabel]="selectedSearchFingerLabel" (fingerCaptured)="onSearchFingerCaptured($event)"></app-fingerprint-capture-dialog>
 
 <app-fingerprint-enroll-dialog #enrollDialog (fingersEnrolled)="onFingersEnrolled($event)"></app-fingerprint-enroll-dialog>
