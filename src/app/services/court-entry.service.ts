@@ -2,6 +2,9 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
+import { serializeDateTimeFields } from '@/lib/date-time';
+
+const COURT_ENTRY_DATE_FIELDS = ['entryDate'] as const;
 
 @Injectable({
     providedIn: 'root'
@@ -20,7 +23,7 @@ export class CourtEntryService {
     }
 
     create(data: any) {
-        return this.http.post(this.url, data);
+        return this.http.post(this.url, serializeDateTimeFields(data, COURT_ENTRY_DATE_FIELDS));
     }
     getById(id: string) {
         return this.http.get<any>(this.url + '/' + id);
@@ -29,6 +32,6 @@ export class CourtEntryService {
         return this.http.put(this.url + '/disable/' + id, '');
     }
     update(id: string, data: any) {
-        return this.http.patch(this.url + '/' + id, data);
+        return this.http.patch(this.url + '/' + id, serializeDateTimeFields(data, COURT_ENTRY_DATE_FIELDS));
     }
 }

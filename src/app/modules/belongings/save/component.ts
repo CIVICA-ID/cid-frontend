@@ -16,6 +16,13 @@ import { ToastModule } from 'primeng/toast';
 import { MiscService } from '@/services/misc.service';
 import { BelongingsService } from '../module/service';
 import { CellStaysService } from '@/modules/cell_stays/module/service';
+import { deserializeApiDateTime } from '@/lib/date-time';
+
+interface CellStayOption {
+  label: string;
+  value: string;
+  entryDate?: Date | null;
+}
 
 @Component({
   selector: 'app-belongings-save',
@@ -49,6 +56,7 @@ export class SaveComponent implements OnInit {
 
   form: FormGroup = this.fb.group({
     id_cell_stay: [null, [Validators.required]],
+    belonging: [null, [Validators.required, this.trimRequiredValidator(), Validators.maxLength(150)]],
     recipient: [null, [Validators.required, this.trimRequiredValidator(), Validators.maxLength(150)]],
     value: [null, [Validators.required, Validators.min(0)]],
     serialNumber: [null, [Validators.maxLength(100)]],
@@ -62,7 +70,7 @@ export class SaveComponent implements OnInit {
   isEditMode = false;
   id: string | null = null;
   submitted = false;
-  cellStayOptions: { label: string; value: string }[] = [];
+  cellStayOptions: CellStayOption[] = [];
 
   private trimRequiredValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
@@ -94,11 +102,11 @@ export class SaveComponent implements OnInit {
       next: (data) => {
         const rows = data ?? [];
         this.cellStayOptions = rows.map((item: any) => {
-          const date = item.entryDate ? String(item.entryDate).slice(0, 10) : '';
-          const label = date ? `${item.cellRegister} - ${date}` : item.cellRegister;
+          const entryDate = deserializeApiDateTime(item.entryDate);
           return {
-            label: label || item.id,
-            value: item.id
+            label: this.buildCellStayLabel(item),
+            value: item.id,
+            entryDate
           };
         });
       },
@@ -115,6 +123,7 @@ export class SaveComponent implements OnInit {
         if (data) {
           this.form.patchValue({
             id_cell_stay: (data as any).cellStay?.id ?? (data as any).id_cell_stay ?? null,
+            belonging: (data as any).belonging ?? null,
             recipient: (data as any).recipient ?? null,
             value: (data as any).value ?? null,
             serialNumber: (data as any).serialNumber ?? null,
@@ -153,6 +162,7 @@ export class SaveComponent implements OnInit {
     const raw = this.form.value;
     const payload = {
       ...raw,
+      belonging: String(raw.belonging ?? '').trim(),
       recipient: String(raw.recipient ?? '').trim(),
       value: raw.value !== null && raw.value !== '' ? Number(raw.value) : null,
       serialNumber: raw.serialNumber ? String(raw.serialNumber).trim() : null,
@@ -230,5 +240,36 @@ export class SaveComponent implements OnInit {
   textLength(controlName: string): number {
     const value = this.form.get(controlName)?.value;
     return typeof value === 'string' ? value.length : 0;
+  }
+
+  get selectedEntryDate(): Date | null {
+    const cellStayId = this.form.get('id_cell_stay')?.value;
+    if (!cellStayId) {
+      return null;
+    }
+
+    return this.cellStayOptions.find((item) => item.value === cellStayId)?.entryDate ?? null;
+  }
+
+  private buildCellStayLabel(item: any): string {
+    const people = item?.offender?.people;
+    const offenderName = [people?.paternalName, people?.maternalName, people?.firstName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const entryDate = deserializeApiDateTime(item?.entryDate);
+    const dateLabel = entryDate
+      ? new Intl.DateTimeFormat('es-MX', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }).format(entryDate)
+      : 'Sin fecha';
+    const cellLabel = item?.cellRegister ? `Celda ${item.cellRegister}` : null;
+
+    return [offenderName || item?.id || 'Sin infractor', dateLabel, cellLabel].filter(Boolean).join(' | ');
   }
 }

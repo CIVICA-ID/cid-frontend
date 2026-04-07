@@ -36,14 +36,14 @@
                             </div>
                             <div class="flex flex-col gap-2">
                                 <label for="captureDate" class="font-semibold">Fecha de captura</label>
-                                <p-datepicker inputId="calendar-24h" formControlName="captureDate" [showTime]="true" hourFormat="24" />
+                                <app-date-time-picker inputId="captureDate" formControlName="captureDate" [invalid]="!!form.get('captureDate')?.invalid" />
                                 @if (form.get('captureDate')?.invalid) {
                                     <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
                                 }
                             </div>
                             <div class="flex flex-col gap-2">
                                 <label for="serviceDate" class="font-semibold">Fecha de servicio</label>
-                                <p-datepicker inputId="serviceDate" formControlName="serviceDate" [showTime]="true" [hourFormat]="'24'" [showIcon]="true" />
+                                <app-date-time-picker inputId="serviceDate" formControlName="serviceDate" [invalid]="!!form.get('serviceDate')?.invalid" />
                                 <div class="h-4">
                                     @if (form.get('serviceDate')?.invalid) {
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
@@ -52,7 +52,7 @@
                             </div>
                             <div class="flex flex-col gap-2">
                                 <label for="dateReception" class="font-semibold">Fecha de recepción</label>
-                                <p-datepicker inputId="dateReception" formControlName="dateReception" [showTime]="true" [hourFormat]="'24'" [showIcon]="true" />
+                                <app-date-time-picker inputId="dateReception" formControlName="dateReception" [invalid]="!!form.get('dateReception')?.invalid" />
                                 <div class="h-4">
                                     @if (form.get('dateReception')?.invalid) {
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
@@ -61,7 +61,7 @@
                             </div>
                             <div class="flex flex-col gap-2">
                                 <label for="arrivalDate" class="font-semibold">Fecha de arribo</label>
-                                <p-datepicker inputId="arrivalDate" formControlName="arrivalDate" [showTime]="true" [hourFormat]="'24'" [showIcon]="true" />
+                                <app-date-time-picker inputId="arrivalDate" formControlName="arrivalDate" [invalid]="!!form.get('arrivalDate')?.invalid" />
                                 <div class="h-4">
                                     @if (form.get('arrivalDate')?.invalid) {
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
@@ -71,7 +71,7 @@
 
                             <div class="flex flex-col gap-2">
                                 <label for="endDate" class="font-semibold">Fecha de término</label>
-                                <p-datepicker inputId="endDate" formControlName="endDate" [showTime]="true" [hourFormat]="'24'" [showIcon]="true" />
+                                <app-date-time-picker inputId="endDate" formControlName="endDate" [invalid]="!!form.get('endDate')?.invalid" />
                                 <div class="h-4">
                                     @if (form.get('endDate')?.invalid) {
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
@@ -81,7 +81,7 @@
 
                             <div class="flex flex-col gap-2">
                                 <label for="arrestDate" class="font-semibold">Fecha de arresto</label>
-                                <p-datepicker inputId="arrestDate" formControlName="arrestDate" [showTime]="true" [hourFormat]="'24'" [showIcon]="true" />
+                                <app-date-time-picker inputId="arrestDate" formControlName="arrestDate" [invalid]="!!form.get('arrestDate')?.invalid" />
                                 <div class="h-4">
                                     @if (form.get('arrestDate')?.invalid) {
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
@@ -91,7 +91,7 @@
 
                             <div class="flex flex-col gap-2">
                                 <label for="submissionDate" class="font-semibold">Fecha de puesta a disposición</label>
-                                <p-datepicker inputId="submissionDate" formControlName="submissionDate" [showTime]="true" [hourFormat]="'24'" [showIcon]="true" />
+                                <app-date-time-picker inputId="submissionDate" formControlName="submissionDate" [invalid]="!!form.get('submissionDate')?.invalid" />
                                 <div class="h-4">
                                     @if (form.get('submissionDate')?.invalid) {
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>

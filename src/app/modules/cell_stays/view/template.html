@@ -21,16 +21,16 @@
             <span class="text-base">{{ cellStay?.id || '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Infractor</span>
+            <span class="text-sm text-slate-500">Nombre del infractor</span>
             <span class="text-base">{{ offenderName }}</span>
           </div>
           <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Registro de celda</span>
+            <span class="text-sm text-slate-500">Celda de resguardo</span>
             <span class="text-base">{{ cellStay?.cellRegister || '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Fecha de ingreso</span>
-            <span class="text-base">{{ cellStay?.entryDate ? (cellStay?.entryDate | date: 'mediumDate') : '-' }}</span>
+            <span class="text-sm text-slate-500">Fecha y hora de ingreso</span>
+            <span class="text-base">{{ cellStay?.entryDate ? (cellStay?.entryDate | date: 'dd/MM/yyyy HH:mm') : '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">
             <span class="text-sm text-slate-500">Observaciones</span>

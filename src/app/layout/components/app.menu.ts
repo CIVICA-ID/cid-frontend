@@ -87,6 +87,11 @@ export class AppMenu {
                     icon: 'pi pi-ticket',
                     routerLink: ['/freedom-tickets']
                 },
+                {
+                    label: 'Seguimiento',
+                    icon: 'pi pi-eye',
+                    routerLink: ['/seguimiento']
+                },
             ]
         },
     ];

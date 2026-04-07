@@ -1,4 +1,5 @@
-import { PsychosocialReport } from '@/api/psychosocial-report';
+import { Seguimiento } from '@/api/seguimiento';
+import { PageSectionHeaderComponent } from '@/components/page-section-header/page-section-header.component';
 import { TableTemplateComponent } from '@/components/table-template/table-template.component';
 import { MiscService } from '@/services/misc.service';
 import { CommonModule } from '@angular/common';
@@ -9,20 +10,17 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
-import { ToolbarModule } from 'primeng/toolbar';
 import { catchError, finalize, forkJoin, of, Subject, switchMap, tap } from 'rxjs';
-import { PsychosocialReportsService } from '../module/service';
+import { SeguimientoService } from '../module/service';
 
 type SortExpression = string[][];
 type SearchFilters = Record<string, string>;
 
-type TableFieldType = 'text' | 'date' | 'datetime' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
-
 interface TableColumn {
   field: string;
   column: string;
-  columnType: TableFieldType;
-  fieldType: TableFieldType;
+  columnType: 'text' | 'date' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
+  fieldType: 'text' | 'date' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
 }
 
 interface ListParamsEvent {
@@ -32,8 +30,8 @@ interface ListParamsEvent {
   sort: SortExpression;
 }
 
-interface PsychosocialReportsListResponse {
-  data?: PsychosocialReport[];
+interface SeguimientoListResponse {
+  data?: Seguimiento[];
   meta?: {
     totalItems?: number;
   };
@@ -42,21 +40,23 @@ interface PsychosocialReportsListResponse {
 type DeleteType = 1 | 2;
 
 @Component({
-  selector: 'app-list-psychosocial-reports',
+  selector: 'app-list-seguimiento',
   standalone: true,
-  imports: [CommonModule, ButtonModule, ToolbarModule, ConfirmDialogModule, ToastModule, TableTemplateComponent, RouterModule],
-  providers: [PsychosocialReportsService, MessageService, ConfirmationService],
+  imports: [
+    CommonModule,
+    ButtonModule,
+    ConfirmDialogModule,
+    ToastModule,
+    PageSectionHeaderComponent,
+    TableTemplateComponent,
+    RouterModule
+  ],
+  providers: [SeguimientoService, MessageService, ConfirmationService],
   templateUrl: './template.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ListComponent implements OnInit {
   readonly columns: TableColumn[] = [
-    {
-      field: 'staff.full_name',
-      column: 'Responsable',
-      columnType: 'text',
-      fieldType: 'text'
-    },
     {
       field: 'offender.people.firstName',
       column: 'Infractor',
@@ -64,34 +64,38 @@ export class ListComponent implements OnInit {
       fieldType: 'text'
     },
     {
-      field: 'dictation_date',
-      column: 'Fecha dictamen',
+      field: 'followType',
+      column: 'Tipo de Seguimiento',
+      columnType: 'text',
+      fieldType: 'text'
+    },
+    {
+      field: 'followDate',
+      column: 'Fecha y Hora',
       columnType: 'date',
-      fieldType: 'datetime'
+      fieldType: 'date'
     }
   ];
-
   readonly totalRows = signal<number>(0);
-  readonly data = signal<PsychosocialReport[]>([]);
+  readonly data = signal<Seguimiento[]>([]);
   readonly configTable = computed(() => ({
-    module: 'Reportes psicosociales',
-    route: 'psychosocial-reports',
+    module: 'Seguimiento',
+    route: 'seguimiento',
     view: true,
     totalRows: this.totalRows()
   }));
-
   limit = 10;
   search: SearchFilters = {};
   sort: SortExpression = [];
   page = 1;
   readonly ids = signal<string[]>([]);
+  readonly selectedRows = computed(() => this.ids().length);
   readonly isLoading = signal<boolean>(false);
-
   private readonly reloadList$ = new Subject<void>();
   private readonly destroyRef = inject(DestroyRef);
 
   constructor(
-    private readonly psychosocialReportsService: PsychosocialReportsService,
+    private readonly seguimientoService: SeguimientoService,
     private readonly messageService: MessageService,
     private readonly miscService: MiscService,
     private readonly confirmationService: ConfirmationService
@@ -102,11 +106,11 @@ export class ListComponent implements OnInit {
       .pipe(
         tap(() => this.setLoadingState(true)),
         switchMap(() =>
-          this.psychosocialReportsService.getList(this.limit, this.page, this.sort, this.search).pipe(
+          this.seguimientoService.getList(this.limit, this.page, this.sort, this.search).pipe(
             catchError((error: unknown) => {
               this.resetList();
-              this.showErrorMessage('Error cargando la lista de reportes psicosociales', error);
-              return of<PsychosocialReportsListResponse | null>(null);
+              this.showErrorMessage('Error cargando la lista de seguimientos', error);
+              return of<SeguimientoListResponse | null>(null);
             }),
             finalize(() => this.setLoadingState(false))
           )
@@ -154,7 +158,7 @@ export class ListComponent implements OnInit {
     this.ids.set(Array.from(new Set(ids)));
   }
 
-  private handleListResponse(response: PsychosocialReportsListResponse | null): void {
+  private handleListResponse(response: SeguimientoListResponse | null): void {
     if (!response) {
       return;
     }
@@ -172,7 +176,7 @@ export class ListComponent implements OnInit {
       life: 5000,
       key: 'message',
       severity: 'warn',
-      summary: 'No se encontraron reportes psicosociales',
+      summary: 'No se encontró información de seguimientos',
       detail: ''
     });
     this.resetList();
@@ -189,7 +193,7 @@ export class ListComponent implements OnInit {
     this.setLoadingState(true);
 
     const requests = idsToDelete.map((itemId) =>
-      this.psychosocialReportsService.disable(itemId).pipe(
+      this.seguimientoService.disable(itemId).pipe(
         catchError((error: unknown) => {
           this.messageService.add({
             life: 5000,
@@ -216,7 +220,6 @@ export class ListComponent implements OnInit {
       )
       .subscribe((results) => {
         const successes = results.reduce<number>((acc, result) => (result !== null ? acc + 1 : acc), 0);
-
         if (successes > 0) {
           this.messageService.add({
             severity: 'success',

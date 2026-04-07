@@ -3,6 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { PsychosocialReport } from '@/api/psychosocial-report';
+import { serializeDateTimeFields } from '@/lib/date-time';
+
+const PSYCHOSOCIAL_REPORT_DATE_FIELDS = ['dictation_date'] as const;
 
 @Injectable({
   providedIn: 'root'
@@ -23,11 +26,11 @@ export class PsychosocialReportsService {
   }
 
   create(data: Partial<PsychosocialReport>) {
-    return this.http.post(this.url, data);
+    return this.http.post(this.url, serializeDateTimeFields(data, PSYCHOSOCIAL_REPORT_DATE_FIELDS));
   }
 
   update(id: string, data: Partial<PsychosocialReport>) {
-    return this.http.put(`${this.url}/${id}`, data);
+    return this.http.put(`${this.url}/${id}`, serializeDateTimeFields(data, PSYCHOSOCIAL_REPORT_DATE_FIELDS));
   }
 
   disable(id: string) {

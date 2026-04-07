@@ -255,7 +255,7 @@
             <form [formGroup]="formCourtEntry" class="flex flex-col gap-4">
                 <div class="flex flex-col gap-2">
                     <label for="entryDate" class="font-semibold text-gray-700"> Fecha de entrada </label>
-                    <p-datepicker inputId="entryDate" formControlName="entryDate" [fluid]="true" [showTime]="false" [showIcon]="true" />
+                    <app-date-time-picker inputId="entryDate" formControlName="entryDate" [invalid]="!!formCourtEntry.get('entryDate')?.invalid" />
                 </div>
                 <div class="mt-0" formArrayName="offensives">
                     <div class="flex flex-col mb-3"></div>
@@ -300,7 +300,7 @@
                                     @if (field.type == 'text') {
                                         <input pInputText [id]="field.id" [formControlName]="field.controlName" [fluid]="true" [class.uppercase]="field.controlName === 'curp'" />
                                     } @else if (field.type == 'date') {
-                                        <p-datepicker [inputId]="field.id" [formControlName]="field.controlName" [fluid]="true" [showTime]="false" [showIcon]="true" />
+                                        <app-date-time-picker [inputId]="field.id" [formControlName]="field.controlName" [invalid]="!!form.get(field.controlName)?.invalid" />
                                     } @else if (field.type == 'textarea') {
                                         <textarea pTextarea [id]="field.id" [formControlName]="field.controlName" [fluid]="true" [autoResize]="true" rows="3"></textarea>
                                     } @else if (field.type == 'list') {

@@ -17,6 +17,8 @@ import { MiscService } from '@/services/misc.service';
 import { PsychosocialReportsService } from '../module/service';
 import { OffendersService } from '@/services/offenders.service';
 import { StaffService } from '@/modules/staff/module/service';
+import { DateTimePickerComponent } from '@/components/date-time-picker/date-time-picker.component';
+import { deserializeApiDateTime } from '@/lib/date-time';
 
 @Component({
   selector: 'app-psychosocial-reports-save',
@@ -34,7 +36,8 @@ import { StaffService } from '@/modules/staff/module/service';
     CardModule,
     SelectModule,
     IconFieldModule,
-    InputIconModule
+    InputIconModule,
+    DateTimePickerComponent
   ],
   providers: [MessageService],
   templateUrl: './template.html'
@@ -138,7 +141,7 @@ export class SaveComponent implements OnInit {
           this.form.patchValue({
             id_offender: (data as any).offender?.id ?? (data as any).id_offender ?? null,
             id_staff: (data as any).staff?.id ?? (data as any).id_staff ?? null,
-            dictation_date: (data as any).dictation_date ? String((data as any).dictation_date).slice(0, 10) : null,
+            dictation_date: deserializeApiDateTime((data as any).dictation_date),
             dictation: (data as any).dictation ?? null,
             observations: (data as any).observations ?? null
           });

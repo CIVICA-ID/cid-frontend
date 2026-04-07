@@ -4,6 +4,7 @@ export interface Belonging {
   createdAt?: Date | string;
   updatedAt?: Date | string;
   id_cell_stay: string;
+  belonging?: string | null;
   recipient: string;
   value: number;
   serialNumber?: string | null;
@@ -12,5 +13,6 @@ export interface Belonging {
   quantity: number;
   measurementUnit: string;
   observation?: string | null;
+  offenderName?: string;
   cellStay?: any;
 }

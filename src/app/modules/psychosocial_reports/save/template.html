@@ -53,16 +53,7 @@
 
             <div class="flex flex-col gap-2 md:col-span-2">
               <label for="dictation_date" class="font-semibold">Fecha de dictamen</label>
-              <p-iconfield>
-                <p-inputicon class="pi pi-calendar" />
-                <input
-                  pInputText
-                  id="dictation_date"
-                  type="date"
-                  formControlName="dictation_date"
-                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('dictation_date') }"
-                />
-              </p-iconfield>
+              <app-date-time-picker inputId="dictation_date" formControlName="dictation_date" [invalid]="isInvalid('dictation_date')" />
               @if (isInvalid('dictation_date') && form.get('dictation_date')?.hasError('required')) {
                 <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
               }

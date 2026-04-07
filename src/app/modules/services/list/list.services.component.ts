@@ -58,13 +58,13 @@ export class ListServicesComponent {
             field: 'captureDate',
             column: 'Fecha de captura',
             columnType: 'date',
-            fieldType: 'date'
+            fieldType: 'datetime'
         },
         {
             field: 'arrestDate',
             column: 'Fecha de arresto',
             columnType: 'date',
-            fieldType: 'date'
+            fieldType: 'datetime'
         }
     ];
     totalRows: number = 0;

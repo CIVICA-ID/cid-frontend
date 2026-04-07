@@ -1,0 +1,93 @@
+<p-toast [breakpoints]="{ '920px': { width: '100%', right: '0', left: '0' } }" key="msg" />
+<div class="px-4 py-4 md:px-8">
+  <div class="mx-auto w-full max-w-[96rem] flex flex-col gap-5">
+    <div class="card overflow-hidden border border-slate-200 shadow-md">
+      <div class="bg-slate-50 px-6 py-5 md:px-8 border-b border-slate-200">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h2 class="text-2xl font-semibold leading-tight m-0">{{ isEditMode ? 'Actualizar Seguimiento' : 'Alta de Seguimiento' }}</h2>
+            <p class="text-sm text-slate-600 mt-2 mb-0">Registra los datos del seguimiento realizado al infractor.</p>
+          </div>
+          <span class="inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+            {{ isEditMode ? 'Edición' : 'Nuevo' }}
+          </span>
+        </div>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="p-6 md:p-8">
+        <p-fluid>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+            <div class="flex flex-col gap-2">
+              <label for="idOffender" class="font-semibold">Infractor</label>
+              <p-select
+                [options]="offenderOptions"
+                formControlName="idOffender"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar infractor"
+                [filter]="true"
+                [showClear]="true"
+                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('idOffender') }"
+              ></p-select>
+              <small class="text-slate-500 text-xs">Infractor al que se le realiza el seguimiento.</small>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="followType" class="font-semibold">Tipo de Seguimiento</label>
+              <p-iconfield>
+                <p-inputicon class="pi pi-tag" />
+                <input
+                  pInputText
+                  id="followType"
+                  formControlName="followType"
+                  placeholder="Ej. Médico, psicológico, legal..."
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('followType') }"
+                />
+              </p-iconfield>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Categoría o tipo del seguimiento realizado.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('followType') }}/100</small>
+              </div>
+              @if (isInvalid('followType') && (form.get('followType')?.hasError('required') || form.get('followType')?.hasError('whitespace'))) {
+                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+              }
+              @if (isInvalid('followType') && form.get('followType')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 100 caracteres</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="followDate" class="font-semibold">Fecha y Hora</label>
+              <app-date-time-picker inputId="followDate" formControlName="followDate" [invalid]="isInvalid('followDate')" [appendTo]="'body'" />
+              <small class="text-slate-500 text-xs">Fecha y hora en que se realizó el seguimiento.</small>
+            </div>
+
+            <div class="flex flex-col gap-2 md:col-span-3">
+              <label for="description" class="font-semibold">Descripción</label>
+              <textarea
+                pInputTextarea
+                id="description"
+                formControlName="description"
+                class="w-full"
+                rows="5"
+                placeholder="Detalla los aspectos relevantes del seguimiento realizado al infractor."
+                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('description') }"
+              ></textarea>
+              <small class="text-slate-500 text-xs">Descripción detallada del seguimiento.</small>
+              @if (isInvalid('description') && (form.get('description')?.hasError('required') || form.get('description')?.hasError('whitespace'))) {
+                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+              }
+            </div>
+
+          </div>
+        </p-fluid>
+
+        <div class="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+          <button pButton pRipple label="Cancelar" (click)="onCancel($event)" class="p-button-outlined sm:!w-32"></button>
+          <button pButton pRipple type="submit" [label]="isEditMode ? 'Actualizar' : 'Guardar'" class="sm:!w-32"></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

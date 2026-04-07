@@ -51,7 +51,7 @@
                 <ng-container *ngIf="column.columnType === 'date'">
                     <p-columnFilter [type]="column.columnType" [field]="column.field" [matchModeOptions]="matchModeOptionsDate" display="menu">
                         <ng-template pTemplate="filter" let-value let-filter="filterCallback">
-                            <p-datepicker [ngModel]="value" (ngModelChange)="filter($event)" dateFormat="yy/mm/dd" [showTime]="true" hourFormat="24" placeholder="Seleccionar Fecha y Hora" [appendTo]="'body'"> </p-datepicker>
+                            <app-date-time-picker [ngModel]="value" (ngModelChange)="filter($event)" [appendTo]="'body'" />
                         </ng-template>
                     </p-columnFilter>
                 </ng-container>
@@ -77,6 +77,9 @@
             <td *ngFor="let col of columns">
                 <ng-container *ngIf="col.fieldType === 'date'">
                     <span>{{ (getDeepValue(rowData, col.field) | date: 'medium') ? (getDeepValue(rowData, col.field) | date: 'medium') : '-' }}</span>
+                </ng-container>
+                <ng-container *ngIf="col.fieldType === 'datetime'">
+                    <span>{{ getDeepValue(rowData, col.field) ? (getDeepValue(rowData, col.field) | date: 'dd/MM/yyyy HH:mm') : '-' }}</span>
                 </ng-container>
                 <ng-container *ngIf="col.fieldType === 'text'">
                     <span>{{ getDeepValue(rowData, col.field) ? getDeepValue(rowData, col.field) : '-' }}</span>

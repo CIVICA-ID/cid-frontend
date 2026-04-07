@@ -4,18 +4,18 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import {  SelectItem } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { DatePickerModule } from 'primeng/datepicker';
 import { DropdownModule } from 'primeng/dropdown';
 import { RippleModule } from 'primeng/ripple';
 import { Table, TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { Observable } from 'rxjs';
+import { DateTimePickerComponent } from '@/components/date-time-picker/date-time-picker.component';
 
 @Component({
     selector: 'app-table-template',
     templateUrl: './table-template.component.html',
-    imports: [CommonModule, RouterModule, TableModule, ButtonModule, TooltipModule, RippleModule, TagModule, DatePickerModule, FormsModule, DropdownModule],
+    imports: [CommonModule, RouterModule, TableModule, ButtonModule, TooltipModule, RippleModule, TagModule, DateTimePickerComponent, FormsModule, DropdownModule],
     standalone: true,
     providers: [DatePipe]
 })

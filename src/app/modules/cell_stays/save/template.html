@@ -18,7 +18,7 @@
         <p-fluid>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="flex flex-col gap-2 md:col-span-2">
-              <label for="id_offender" class="font-semibold">Infractor</label>
+              <label for="id_offender" class="font-semibold">Nombre del infractor</label>
               <p-select
                 [options]="offenderOptions"
                 formControlName="id_offender"
@@ -33,7 +33,7 @@
             </div>
 
             <div class="flex flex-col gap-2">
-              <label for="cellRegister" class="font-semibold">Registro de celda</label>
+              <label for="cellRegister" class="font-semibold">Celda de resguardo</label>
               <p-iconfield>
                 <p-inputicon class="pi pi-home" />
                 <input
@@ -57,17 +57,8 @@
             </div>
 
             <div class="flex flex-col gap-2">
-              <label for="entryDate" class="font-semibold">Fecha de ingreso</label>
-              <p-iconfield>
-                <p-inputicon class="pi pi-calendar" />
-                <input
-                  pInputText
-                  id="entryDate"
-                  type="date"
-                  formControlName="entryDate"
-                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('entryDate') }"
-                />
-              </p-iconfield>
+              <label for="entryDate" class="font-semibold">Fecha y hora de ingreso</label>
+              <app-date-time-picker inputId="entryDate" formControlName="entryDate" [invalid]="isInvalid('entryDate')" />
               <small class="text-slate-500 text-xs">Si no se captura, quedará pendiente para actualización posterior.</small>
             </div>
 
