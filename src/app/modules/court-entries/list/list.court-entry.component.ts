@@ -35,7 +35,7 @@ export class ListCourtEntryComponent {
             field: 'entryDate',
             column: 'Fecha de entrada',
             columnType: 'date',
-            fieldType: 'date'
+            fieldType: 'datetime'
         },
         {
             field: 'offender.people.firstName',

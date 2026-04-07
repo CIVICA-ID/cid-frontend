@@ -3,6 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { CellStay } from '@/api/cell-stay';
+import { serializeDateTimeFields } from '@/lib/date-time';
+
+const CELL_STAY_DATE_FIELDS = ['entryDate'] as const;
 
 @Injectable({
   providedIn: 'root'
@@ -27,11 +30,11 @@ export class CellStaysService {
   }
 
   create(data: Partial<CellStay>) {
-    return this.http.post(this.url, data);
+    return this.http.post(this.url, serializeDateTimeFields(data, CELL_STAY_DATE_FIELDS));
   }
 
   update(id: string, data: Partial<CellStay>) {
-    return this.http.put(`${this.url}/${id}`, data);
+    return this.http.put(`${this.url}/${id}`, serializeDateTimeFields(data, CELL_STAY_DATE_FIELDS));
   }
 
   disable(id: string) {

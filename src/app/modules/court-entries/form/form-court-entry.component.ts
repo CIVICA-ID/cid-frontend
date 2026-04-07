@@ -11,7 +11,6 @@ import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
-import { DatePicker } from 'primeng/datepicker';
 import { CourtEntryService } from '@/services/court-entry.service';
 import { TextareaModule } from 'primeng/textarea';
 import { PeopleComponent } from '@/components/people/people.component';
@@ -30,11 +29,13 @@ import { PeopleService } from '@/services/people.service';
 import { People } from '@/api/people';
 import { VehiclesService } from '@/services/vehicles.service';
 import { Vehicle } from '@/api/vehicle';
+import { DateTimePickerComponent } from '@/components/date-time-picker/date-time-picker.component';
+import { deserializeApiDateTime } from '@/lib/date-time';
 
 @Component({
     selector: 'app-form-court-entry',
     templateUrl: './form-court-entry.component.html',
-    imports: [CommonModule, ButtonModule, InputTextModule, ToastModule, ReactiveFormsModule, FormsModule, Fluid, TableModule, MessageModule, CardModule, SelectModule, DatePicker, TextareaModule, PeopleComponent, AccordionModule, BadgeModule],
+    imports: [CommonModule, ButtonModule, InputTextModule, ToastModule, ReactiveFormsModule, FormsModule, Fluid, TableModule, MessageModule, CardModule, SelectModule, DateTimePickerComponent, TextareaModule, PeopleComponent, AccordionModule, BadgeModule],
     standalone: true
 })
 export class FormCourtEntryComponent implements OnInit {
@@ -422,7 +423,7 @@ export class FormCourtEntryComponent implements OnInit {
 
                 // Validamos si el string tiene formato de fecha ISO
                 if (typeof value === 'string' && this.isIsoDateString(value)) {
-                    processedObj[key] = new Date(value);
+                    processedObj[key] = deserializeApiDateTime(value);
                 } else if (typeof value === 'object') {
                     // Llamada recursiva para objetos anidados o arreglos
                     processedObj[key] = this.convertStringsToDates(value);

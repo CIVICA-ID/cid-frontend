@@ -63,4 +63,14 @@ export class ViewComponent implements OnInit {
   backToList() {
     this.router.navigate(['/freedom-tickets']);
   }
+
+  get offenderName(): string {
+    const people = (this.freedomTicket as any)?.cellStay?.offender?.people;
+    const fullName = [people?.paternalName, people?.maternalName, people?.firstName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    return fullName || (this.freedomTicket as any)?.cellStay?.id_offender || this.freedomTicket?.idCellStay || '-';
+  }
 }

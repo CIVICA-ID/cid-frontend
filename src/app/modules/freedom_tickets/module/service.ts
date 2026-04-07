@@ -3,6 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { FreedomTicket } from '@/api/freedom-ticket';
+import { serializeDateTimeFields } from '@/lib/date-time';
+
+const FREEDOM_TICKET_DATE_FIELDS = ['releaseDate'] as const;
 
 @Injectable({
   providedIn: 'root'
@@ -27,11 +30,11 @@ export class FreedomTicketsService {
   }
 
   create(data: Partial<FreedomTicket>) {
-    return this.http.post(this.url, data);
+    return this.http.post(this.url, serializeDateTimeFields(data, FREEDOM_TICKET_DATE_FIELDS));
   }
 
   update(id: string, data: Partial<FreedomTicket>) {
-    return this.http.put(`${this.url}/${id}`, data);
+    return this.http.put(`${this.url}/${id}`, serializeDateTimeFields(data, FREEDOM_TICKET_DATE_FIELDS));
   }
 
   disable(id: string) {

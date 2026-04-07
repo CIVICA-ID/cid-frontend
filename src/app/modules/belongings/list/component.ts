@@ -16,7 +16,7 @@ import { BelongingsService } from '../module/service';
 type SortExpression = string[][];
 type SearchFilters = Record<string, string>;
 
-type TableFieldType = 'text' | 'date' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
+type TableFieldType = 'text' | 'date' | 'datetime' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
 
 interface TableColumn {
   field: string;
@@ -52,20 +52,26 @@ type DeleteType = 1 | 2;
 export class ListComponent implements OnInit {
   readonly columns: TableColumn[] = [
     {
-      field: 'cellStay.cellRegister',
-      column: 'Registro celda',
+      field: 'offenderName',
+      column: 'Nombre del infractor',
+      columnType: 'text',
+      fieldType: 'text'
+    },
+    {
+      field: 'cellStay.entryDate',
+      column: 'Fecha de ingreso',
+      columnType: 'date',
+      fieldType: 'datetime'
+    },
+    {
+      field: 'belonging',
+      column: 'Pertenencias',
       columnType: 'text',
       fieldType: 'text'
     },
     {
       field: 'recipient',
-      column: 'Receptor',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'description',
-      column: 'Descripción',
+      column: 'Recibe',
       columnType: 'text',
       fieldType: 'text'
     }
@@ -159,7 +165,12 @@ export class ListComponent implements OnInit {
       return;
     }
 
-    const rows = Array.isArray(response.data) ? response.data : [];
+    const rows = Array.isArray(response.data)
+      ? response.data.map((row) => ({
+          ...row,
+          offenderName: this.getOffenderName(row)
+        }))
+      : [];
     const totalItems = response.meta?.totalItems ?? rows.length;
 
     if (totalItems > 0 || rows.length > 0) {
@@ -176,6 +187,16 @@ export class ListComponent implements OnInit {
       detail: ''
     });
     this.resetList();
+  }
+
+  private getOffenderName(row: any): string {
+    const people = row?.cellStay?.offender?.people;
+    const fullName = [people?.paternalName, people?.maternalName, people?.firstName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    return fullName || row?.cellStay?.id_offender || row?.id_cell_stay || '-';
   }
 
   private resolveIdsToDelete(id: string | null, deleteType: DeleteType): string[] {

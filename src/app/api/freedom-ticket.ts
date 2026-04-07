@@ -4,6 +4,9 @@ export interface FreedomTicket {
   createdAt?: Date | string;
   updatedAt?: Date | string;
   idCellStay: string;
+  offenderName?: string;
+  releaseDateDate?: string;
+  releaseDateTime?: string;
   arrestHours: number;
   fineAmount?: number | null;
   releaseDate: Date | string;

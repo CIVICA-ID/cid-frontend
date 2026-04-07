@@ -21,16 +21,16 @@
             <span class="text-base">{{ freedomTicket?.id || '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Estadía en celda</span>
-            <span class="text-base">{{ freedomTicket?.cellStay?.cellRegister || freedomTicket?.idCellStay || '-' }}</span>
+            <span class="text-sm text-slate-500">Nombre del infractor</span>
+            <span class="text-base">{{ offenderName }}</span>
           </div>
           <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">ID estadía en celda</span>
-            <span class="text-base">{{ freedomTicket?.idCellStay || '-' }}</span>
+            <span class="text-sm text-slate-500">Fecha libertad</span>
+            <span class="text-base">{{ freedomTicket?.releaseDate ? (freedomTicket?.releaseDate | date: 'dd/MM/yyyy') : '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Fecha de liberación</span>
-            <span class="text-base">{{ freedomTicket?.releaseDate ? (freedomTicket?.releaseDate | date: 'mediumDate') : '-' }}</span>
+            <span class="text-sm text-slate-500">Hora libertad</span>
+            <span class="text-base">{{ freedomTicket?.releaseDate ? (freedomTicket?.releaseDate | date: 'HH:mm:ss') : '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">
             <span class="text-sm text-slate-500">Horas de arresto</span>
@@ -41,15 +41,15 @@
             <span class="text-base">{{ freedomTicket?.fineAmount ?? '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Motivo de salida</span>
+            <span class="text-sm text-slate-500">Motivo de egreso</span>
             <span class="text-base">{{ freedomTicket?.exitReason || '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Folio de pago</span>
+            <span class="text-sm text-slate-500">Folio de boleta de pago</span>
             <span class="text-base">{{ freedomTicket?.paymentTicketFolio || '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Juez cívico</span>
+            <span class="text-sm text-slate-500">Juez cívico municipal</span>
             <span class="text-base">{{ freedomTicket?.civilJudge || '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">

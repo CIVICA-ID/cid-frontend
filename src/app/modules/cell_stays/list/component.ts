@@ -16,7 +16,7 @@ import { CellStaysService } from '../module/service';
 type SortExpression = string[][];
 type SearchFilters = Record<string, string>;
 
-type TableFieldType = 'text' | 'date' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
+type TableFieldType = 'text' | 'date' | 'datetime' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
 
 interface TableColumn {
   field: string;
@@ -52,22 +52,22 @@ type DeleteType = 1 | 2;
 export class ListComponent implements OnInit {
   readonly columns: TableColumn[] = [
     {
-      field: 'id_offender',
-      column: 'Infractor',
-      columnType: 'uuid',
-      fieldType: 'uuid'
+      field: 'offenderName',
+      column: 'Nombre del infractor',
+      columnType: 'text',
+      fieldType: 'text'
     },
     {
       field: 'cellRegister',
-      column: 'Registro de celda',
+      column: 'Celda de resguardo',
       columnType: 'text',
       fieldType: 'text'
     },
     {
       field: 'entryDate',
-      column: 'Fecha de ingreso',
+      column: 'Fecha y hora de ingreso',
       columnType: 'date',
-      fieldType: 'date'
+      fieldType: 'datetime'
     },
     {
       field: 'observations',
@@ -165,7 +165,12 @@ export class ListComponent implements OnInit {
       return;
     }
 
-    const rows = Array.isArray(response.data) ? response.data : [];
+    const rows = Array.isArray(response.data)
+      ? response.data.map((row) => ({
+          ...row,
+          offenderName: this.getOffenderName(row)
+        }))
+      : [];
     const totalItems = response.meta?.totalItems ?? rows.length;
 
     if (totalItems > 0 || rows.length > 0) {
@@ -182,6 +187,16 @@ export class ListComponent implements OnInit {
       detail: ''
     });
     this.resetList();
+  }
+
+  private getOffenderName(row: any): string {
+    const people = row?.offender?.people;
+    const fullName = [people?.paternalName, people?.maternalName, people?.firstName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    return fullName || row?.id_offender || '-';
   }
 
   private resolveIdsToDelete(id: string | null, deleteType: DeleteType): string[] {

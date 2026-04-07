@@ -63,4 +63,14 @@ export class ViewComponent implements OnInit {
   backToList() {
     this.router.navigate(['/belongings']);
   }
+
+  get offenderName(): string {
+    const people = (this.belonging as any)?.cellStay?.offender?.people;
+    const fullName = [people?.paternalName, people?.maternalName, people?.firstName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    return fullName || (this.belonging as any)?.cellStay?.id_offender || this.belonging?.id_cell_stay || '-';
+  }
 }

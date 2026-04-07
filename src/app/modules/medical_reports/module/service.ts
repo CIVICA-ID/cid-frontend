@@ -3,6 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { MedicalReport } from '@/api/medical-report';
+import { serializeDateTimeFields } from '@/lib/date-time';
+
+const MEDICAL_REPORT_DATE_FIELDS = ['dictation_date'] as const;
 
 @Injectable({
   providedIn: 'root'
@@ -27,11 +30,11 @@ export class MedicalReportsService {
   }
 
   create(data: Partial<MedicalReport>) {
-    return this.http.post(this.url, data);
+    return this.http.post(this.url, serializeDateTimeFields(data, MEDICAL_REPORT_DATE_FIELDS));
   }
 
   update(id: string, data: Partial<MedicalReport>) {
-    return this.http.put(`${this.url}/${id}`, data);
+    return this.http.put(`${this.url}/${id}`, serializeDateTimeFields(data, MEDICAL_REPORT_DATE_FIELDS));
   }
 
   disable(id: string) {

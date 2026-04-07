@@ -18,35 +18,26 @@
         <p-fluid>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="flex flex-col gap-2 md:col-span-2">
-              <label for="idCellStay" class="font-semibold">Estadía en celda</label>
+              <label for="idCellStay" class="font-semibold">Nombre del infractor</label>
               <p-select
                 [options]="cellStayOptions"
                 formControlName="idCellStay"
                 optionLabel="label"
                 optionValue="value"
-                placeholder="Seleccionar estadía"
+                placeholder="Seleccionar infractor"
                 [filter]="true"
                 [showClear]="true"
                 [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('idCellStay') }"
               ></p-select>
-              <small class="text-slate-500 text-xs">Selecciona el registro de celda al que corresponde esta boleta.</small>
+              <small class="text-slate-500 text-xs">El valor guardado sigue siendo la estadía en celda vinculada.</small>
               @if (isInvalid('idCellStay') && form.get('idCellStay')?.hasError('required')) {
                 <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
               }
             </div>
 
             <div class="flex flex-col gap-2">
-              <label for="releaseDate" class="font-semibold">Fecha de liberación</label>
-              <p-iconfield>
-                <p-inputicon class="pi pi-calendar" />
-                <input
-                  pInputText
-                  id="releaseDate"
-                  type="date"
-                  formControlName="releaseDate"
-                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('releaseDate') }"
-                />
-              </p-iconfield>
+              <label for="releaseDate" class="font-semibold">Fecha y hora de libertad</label>
+              <app-date-time-picker inputId="releaseDate" formControlName="releaseDate" [invalid]="isInvalid('releaseDate')" />
               @if (isInvalid('releaseDate') && form.get('releaseDate')?.hasError('required')) {
                 <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
               }
@@ -76,7 +67,7 @@
             </div>
 
             <div class="flex flex-col gap-2">
-              <label for="exitReason" class="font-semibold">Motivo de salida</label>
+              <label for="exitReason" class="font-semibold">Motivo de egreso</label>
               <p-iconfield>
                 <p-inputicon class="pi pi-sign-out" />
                 <input
@@ -100,7 +91,7 @@
             </div>
 
             <div class="flex flex-col gap-2">
-              <label for="civilJudge" class="font-semibold">Juez cívico</label>
+              <label for="civilJudge" class="font-semibold">Juez cívico municipal</label>
               <p-iconfield>
                 <p-inputicon class="pi pi-briefcase" />
                 <input
@@ -168,7 +159,7 @@
             </div>
 
             <div class="flex flex-col gap-2">
-              <label for="paymentTicketFolio" class="font-semibold">Folio de pago</label>
+              <label for="paymentTicketFolio" class="font-semibold">Folio de boleta de pago</label>
               <p-iconfield>
                 <p-inputicon class="pi pi-receipt" />
                 <input

@@ -16,6 +16,13 @@ import { ToastModule } from 'primeng/toast';
 import { MiscService } from '@/services/misc.service';
 import { FreedomTicketsService } from '../module/service';
 import { CellStaysService } from '@/modules/cell_stays/module/service';
+import { DateTimePickerComponent } from '@/components/date-time-picker/date-time-picker.component';
+import { deserializeApiDateTime } from '@/lib/date-time';
+
+interface CellStayOption {
+  label: string;
+  value: string;
+}
 
 @Component({
   selector: 'app-freedom-tickets-save',
@@ -33,7 +40,8 @@ import { CellStaysService } from '@/modules/cell_stays/module/service';
     CardModule,
     SelectModule,
     IconFieldModule,
-    InputIconModule
+    InputIconModule,
+    DateTimePickerComponent
   ],
   providers: [MessageService],
   templateUrl: './template.html'
@@ -62,7 +70,7 @@ export class SaveComponent implements OnInit {
   isEditMode = false;
   id: string | null = null;
   submitted = false;
-  cellStayOptions: { label: string; value: string }[] = [];
+  cellStayOptions: CellStayOption[] = [];
 
   private trimRequiredValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
@@ -94,10 +102,8 @@ export class SaveComponent implements OnInit {
       next: (data) => {
         const rows = data ?? [];
         this.cellStayOptions = rows.map((item: any) => {
-          const date = item.entryDate ? String(item.entryDate).slice(0, 10) : '';
-          const label = date ? `${item.cellRegister} - ${date}` : item.cellRegister;
           return {
-            label: label || item.id,
+            label: this.buildCellStayLabel(item),
             value: item.id
           };
         });
@@ -116,7 +122,7 @@ export class SaveComponent implements OnInit {
           this.form.patchValue({
             idCellStay: (data as any).cellStay?.id ?? (data as any).idCellStay ?? null,
             arrestHours: (data as any).arrestHours ?? null,
-            releaseDate: (data as any).releaseDate ? String((data as any).releaseDate).slice(0, 10) : null,
+            releaseDate: deserializeApiDateTime((data as any).releaseDate),
             exitReason: (data as any).exitReason ?? null,
             fineAmount: (data as any).fineAmount ?? null,
             paymentTicketFolio: (data as any).paymentTicketFolio ?? null,
@@ -229,5 +235,27 @@ export class SaveComponent implements OnInit {
   textLength(controlName: string): number {
     const value = this.form.get(controlName)?.value;
     return typeof value === 'string' ? value.length : 0;
+  }
+
+  private buildCellStayLabel(item: any): string {
+    const people = item?.offender?.people;
+    const offenderName = [people?.paternalName, people?.maternalName, people?.firstName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const entryDate = deserializeApiDateTime(item?.entryDate);
+    const dateLabel = entryDate
+      ? new Intl.DateTimeFormat('es-MX', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }).format(entryDate)
+      : 'Sin fecha';
+    const cellLabel = item?.cellRegister ? `Celda ${item.cellRegister}` : null;
+
+    return [offenderName || item?.id || 'Sin infractor', dateLabel, cellLabel].filter(Boolean).join(' | ');
   }
 }

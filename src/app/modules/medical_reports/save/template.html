@@ -49,13 +49,7 @@
 
             <div class="flex flex-col gap-2">
               <label for="dictation_date" class="font-semibold">Fecha de dictamen</label>
-               <p-datepicker 
-                  inputId="dictation_date" \
-                  formControlName="dictation_date" 
-                  [showTime]="true" 
-                  [hourFormat]="'24'" 
-                  [showIcon]="true" 
-                />
+              <app-date-time-picker inputId="dictation_date" formControlName="dictation_date" [invalid]="isInvalid('dictation_date')" />
                 <div class="h-4">
                     @if (form.get('dictation_date')?.invalid) {
                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>

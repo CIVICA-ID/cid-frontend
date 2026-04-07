@@ -12,11 +12,12 @@ import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { catchError, finalize, forkJoin, of, Subject, switchMap, tap } from 'rxjs';
 import { FreedomTicketsService } from '../module/service';
+import { deserializeApiDateTime } from '@/lib/date-time';
 
 type SortExpression = string[][];
 type SearchFilters = Record<string, string>;
 
-type TableFieldType = 'text' | 'date' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
+type TableFieldType = 'text' | 'date' | 'datetime' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
 
 interface TableColumn {
   field: string;
@@ -52,20 +53,26 @@ type DeleteType = 1 | 2;
 export class ListComponent implements OnInit {
   readonly columns: TableColumn[] = [
     {
-      field: 'cellStay.cellRegister',
-      column: 'Registro celda',
+      field: 'offenderName',
+      column: 'Nombre del infractor',
       columnType: 'text',
       fieldType: 'text'
     },
     {
-      field: 'releaseDate',
-      column: 'Fecha de liberación',
-      columnType: 'date',
-      fieldType: 'date'
+      field: 'releaseDateDate',
+      column: 'Fecha libertad',
+      columnType: 'text',
+      fieldType: 'text'
+    },
+    {
+      field: 'releaseDateTime',
+      column: 'Hora libertad',
+      columnType: 'text',
+      fieldType: 'text'
     },
     {
       field: 'exitReason',
-      column: 'Motivo de salida',
+      column: 'Motivo de egreso',
       columnType: 'text',
       fieldType: 'text'
     }
@@ -159,7 +166,9 @@ export class ListComponent implements OnInit {
       return;
     }
 
-    const rows = Array.isArray(response.data) ? response.data : [];
+    const rows = Array.isArray(response.data)
+      ? response.data.map((row) => this.enrichRow(row))
+      : [];
     const totalItems = response.meta?.totalItems ?? rows.length;
 
     if (totalItems > 0 || rows.length > 0) {
@@ -176,6 +185,40 @@ export class ListComponent implements OnInit {
       detail: ''
     });
     this.resetList();
+  }
+
+  private enrichRow(row: FreedomTicket): FreedomTicket {
+    const releaseDate = deserializeApiDateTime(row.releaseDate);
+
+    return {
+      ...row,
+      offenderName: this.getOffenderName(row),
+      releaseDateDate: releaseDate && !Number.isNaN(releaseDate.getTime())
+        ? new Intl.DateTimeFormat('es-MX', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          }).format(releaseDate)
+        : '-',
+      releaseDateTime: releaseDate && !Number.isNaN(releaseDate.getTime())
+        ? new Intl.DateTimeFormat('es-MX', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+          }).format(releaseDate)
+        : '-'
+    };
+  }
+
+  private getOffenderName(row: any): string {
+    const people = row?.cellStay?.offender?.people;
+    const fullName = [people?.paternalName, people?.maternalName, people?.firstName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    return fullName || row?.cellStay?.id_offender || row?.idCellStay || '-';
   }
 
   private resolveIdsToDelete(id: string | null, deleteType: DeleteType): string[] {

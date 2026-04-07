@@ -70,6 +70,11 @@ export const appRoutes: Routes = [
                 data: { breadcrumb: 'Registros del Juez' },
                 loadChildren: () => import('@/modules/court-entries/court-entry.routes').then(m=>m.COURT_ENTRY_ROUTES)
             },
+            {
+                path: 'seguimiento',
+                loadChildren: () => import('@/modules/seguimiento/module/routes').then((m) => m.SEGUIMIENTO_ROUTES),
+                data: { breadcrumb: 'Seguimiento', module: 'seguimiento' }
+            },
         ]
     },
     {

@@ -17,7 +17,8 @@ import { MiscService } from '@/services/misc.service';
 import { MedicalReportsService } from '../module/service';
 import { OffendersService } from '@/services/offenders.service';
 import { StaffService } from '@/modules/staff/module/service';
-import { DatePicker } from 'primeng/datepicker';
+import { DateTimePickerComponent } from '@/components/date-time-picker/date-time-picker.component';
+import { deserializeApiDateTime } from '@/lib/date-time';
 
 @Component({
   selector: 'app-medical-reports-save',
@@ -27,7 +28,7 @@ import { DatePicker } from 'primeng/datepicker';
     ButtonModule,
     InputTextModule,
     InputTextarea,
-    DatePicker,
+    DateTimePickerComponent,
     ToastModule,
     ReactiveFormsModule,
     FormsModule,
@@ -153,7 +154,7 @@ export class SaveComponent implements OnInit {
           this.form.patchValue({
             id_offender: (data as any).offender?.id ?? (data as any).id_offender ?? null,
             id_staff: (data as any).staff?.id ?? (data as any).id_staff ?? null,
-            dictation_date: (data as any).dictation_date ? new Date((data as any).dictation_date) : null,
+            dictation_date: deserializeApiDateTime((data as any).dictation_date),
             rh_factor: (data as any).rh_factor ?? null,
             blood_type: (data as any).blood_type ?? null,
             entry_status: (data as any).entry_status ?? null,
@@ -193,7 +194,7 @@ export class SaveComponent implements OnInit {
       ...raw,
       id_offender: raw.id_offender || null,
       id_staff: raw.id_staff || null,
-      dictation_date: this.serializeDateTimeForApi(raw.dictation_date),
+      dictation_date: raw.dictation_date ?? null,
       rh_factor: raw.rh_factor ? String(raw.rh_factor).trim() : null,
       blood_type: raw.blood_type ? String(raw.blood_type).trim() : null,
       entry_status: raw.entry_status ? String(raw.entry_status).trim() : null,
@@ -272,27 +273,4 @@ export class SaveComponent implements OnInit {
     return typeof value === 'string' ? value.length : 0;
   }
 
-  private serializeDateTimeForApi(value: unknown): string | null {
-    if (value instanceof Date) {
-      return this.toIsoStringWithOffset(value);
-    }
-
-    if (value === null || value === undefined) {
-      return null;
-    }
-
-    const normalizedValue = String(value).trim();
-    return normalizedValue.length ? normalizedValue : null;
-  }
-
-  private toIsoStringWithOffset(date: Date): string {
-    const pad = (value: number): string => String(Math.trunc(Math.abs(value))).padStart(2, '0');
-    const offsetMinutes = -date.getTimezoneOffset();
-    const sign = offsetMinutes >= 0 ? '+' : '-';
-    const absoluteOffsetMinutes = Math.abs(offsetMinutes);
-    const offsetHours = Math.floor(absoluteOffsetMinutes / 60);
-    const remainingOffsetMinutes = absoluteOffsetMinutes % 60;
-
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}${sign}${pad(offsetHours)}:${pad(remainingOffsetMinutes)}`;
-  }
 }

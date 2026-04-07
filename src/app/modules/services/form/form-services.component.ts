@@ -9,7 +9,6 @@ import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
-import { DatePicker } from 'primeng/datepicker';
 import { Fluid } from 'primeng/fluid';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
@@ -26,6 +25,8 @@ import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { Offender } from '@/api/offender';
 import { AdministrativeFaultsService } from '@/services/administrative-faults.service';
 import { AdministrativeFaults } from '@/api/administrative-faults';
+import { DateTimePickerComponent } from '@/components/date-time-picker/date-time-picker.component';
+import { deserializeApiDateTime } from '@/lib/date-time';
 
 interface OffenderFormGroup extends FormGroup {
     dynamicOptions: Signal<any[]>;
@@ -43,7 +44,7 @@ interface OffenderFormGroup extends FormGroup {
         ReactiveFormsModule,
         FormsModule,
         Fluid,
-        DatePicker,
+        DateTimePickerComponent,
         TableModule,
         MessageModule,
         CardModule,
@@ -195,7 +196,7 @@ export class FormServicesComponent implements OnInit, OnChanges {
                 const value = obj[key];
                 // Validamos si el string tiene formato de fecha ISO
                 if (typeof value === 'string' && this.isIsoDateString(value)) {
-                    processedObj[key] = new Date(value);
+                    processedObj[key] = deserializeApiDateTime(value);
                 } else if (typeof value === 'object') {
                     // Llamada recursiva para objetos anidados o arreglos
                     processedObj[key] = this.convertStringsToDates(value);
@@ -357,7 +358,6 @@ export class FormServicesComponent implements OnInit, OnChanges {
         array.push(newRow);
     }
     onSubmit() {
-        console.log(this.form);
         if (this.form.invalid) {
             this.messageService.add({
                 key: 'msg',
@@ -380,7 +380,6 @@ export class FormServicesComponent implements OnInit, OnChanges {
                 }
             });
         });
-        console.log('properties', properties);
         //si el elemento es nuevo no tendrá id
         if (properties.id == null) {
             delete properties.id;
