@@ -79,7 +79,7 @@
                     <span>{{ (getDeepValue(rowData, col.field) | date: 'medium') ? (getDeepValue(rowData, col.field) | date: 'medium') : '-' }}</span>
                 </ng-container>
                 <ng-container *ngIf="col.fieldType === 'datetime'">
-                    <span>{{ getDeepValue(rowData, col.field) ? (getDeepValue(rowData, col.field) | date: 'dd/MM/yyyy HH:mm') : '-' }}</span>
+                    <span>{{ getDeepValue(rowData, col.field) ? (getDeepValue(rowData, col.field) | date: 'dd/MM/yyyy HH:mm' : 'UTC') : '-' }}</span>
                 </ng-container>
                 <ng-container *ngIf="col.fieldType === 'text'">
                     <span>{{ getDeepValue(rowData, col.field) ? getDeepValue(rowData, col.field) : '-' }}</span>
