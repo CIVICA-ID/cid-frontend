@@ -49,7 +49,9 @@ export class FingerprintEnrollDialogComponent{
     }
     closeEnrollDialog(): void{
         this.enrollDialogVisible = false;
-        if(this.realScanService.deviceHandle()) this.realScanService.exitAllDevices().subscribe();
+        if(this.realScanService.deviceHandle()) {
+            this.realScanService.exitDevice().subscribe();
+        }
     }
     selectFullMode(): void{
         this.enrollMode = 'full';
@@ -183,6 +185,7 @@ export class FingerprintEnrollDialogComponent{
         this.realScanService.clearError();
     }
     confirmFullCaptureAndFinish(): void{
+        console.log('Estoy dentro');
         if(this.leftFourFingers.length < 1 || !this.leftThumbFinger || this.rightFourFingers.length < 1 || !this.rightThumbFinger){
             this.realScanService.lastError.set('Complete todos los pasos');
             return;
@@ -190,7 +193,7 @@ export class FingerprintEnrollDialogComponent{
         const capturedFingers = assignSlapFingersToCapture(this.leftFourFingers, this.leftThumbFinger, this.rightFourFingers, this.rightThumbFinger);
 
         this.fingersEnrolled.emit(capturedFingers);
-        this.closeEnrollDialog;
+        this.closeEnrollDialog();
     }
 
     getLeftThumbImageUrl(): string | null {

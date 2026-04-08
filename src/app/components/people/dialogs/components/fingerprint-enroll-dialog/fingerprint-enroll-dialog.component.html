@@ -10,23 +10,21 @@
     <!-- Seleccion de modo -->
     @if (enrollMode === 'select') {
         <p class="text-sm text-gray-600 mb-5 text-center">
-            ¿Cómo deseas capturar las huellas?
+            ¿Que modo deseas utilizar para la captura de huellas dactilares?
         </p>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <button pButton pRipple type="button"
                 class="flex flex-col items-center p-6 p-button-outlined"
                 (click)="selectFullMode()">
-                <i class="pi pi-users text-4xl mb-3"></i>
-                <span class="font-bold text-lg">10 Dedos Completo</span>
-                <span class="text-sm mt-1">Captura slap (4+1 por mano)</span>
+                <span class="font-bold text-lg">10 Dedos (Completo)</span>
+                <span class="text-sm mt-1">Captura huellas de ambas manos</span>
             </button>
             <button pButton pRipple type="button"
                 class="flex flex-col items-center p-6 p-button-outlined p-button-secondary"
                 (click)="chooseCustomMode()">
-                <i class="pi pi-sliders-h text-4xl mb-3"></i>
-                <span class="font-bold text-lg">Dedos Específicos</span>
-                <span class="text-sm mt-1">Elige qué dedos capturar</span>
+                <span class="font-bold text-lg">Dedos Especificos</span>
+                <span class="text-sm mt-1">Elige que dedos capturar</span>
             </button>
         </div>
 

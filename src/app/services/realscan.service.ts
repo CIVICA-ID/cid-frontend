@@ -1,7 +1,7 @@
 import { computed, Injectable, signal } from "@angular/core";
 import { CaptureImageResponse, CaptureMode, Segment, CapturingStatusResponse, DeviceInfoResponse, InitDeviceResponse, InitSDKResponse, OperationResponse, RealScanStatus } from "../api/realscan";
 import { HttpClient, HttpErrorResponse } from "@angular/common/http";
-import { catchError, finalize, Observable, tap, throwError } from "rxjs";
+import { catchError, finalize, Observable, of, tap, throwError } from "rxjs";
 
 
 @Injectable({
@@ -159,19 +159,20 @@ export class RealScanService {
     const handle = this.deviceHandle();
 
     if (handle === null) {
-      const error = 'No hay dispositivo para liberar';
-      this.lastError.set(error);
-      return throwError(() => new Error(error));
+        return of({
+            success: true,
+            message: 'No hay dispositivo que liberar'
+        } as OperationResponse);
     }
-
+    this.deviceHandle.set(null);
+    this.deviceInfo.set(null);
     this.loading.set(true);
+
     return this.http.post<OperationResponse>(`${this.apiUrl}/exit-device/${handle}`, {})
       .pipe(
         tap((response) => {
           if (response.success) {
-            this.deviceHandle.set(null);
-            this.deviceInfo.set(null);
-            console.log('Dispositivo liberado');
+            console.log('Dispositivo liberado')
           } else {
             this.lastError.set(response.message);
           }
@@ -182,15 +183,21 @@ export class RealScanService {
   }
 
   exitAllDevices(): Observable<OperationResponse> {
+    if(!this.sdkInitialized()){
+        return of({
+            success: true,
+            message: 'SDK no inicializado'
+        } as OperationResponse);
+    }
+    this.deviceHandle.set(null);
+    this.deviceInfo.set(null),
+    this.sdkInitialized.set(false);
     this.loading.set(true);
 
     return this.http.post<OperationResponse>(`${this.apiUrl}/exit-all-devices`, {})
       .pipe(
         tap((response) => {
           if (response.success) {
-            this.deviceHandle.set(null);
-            this.deviceInfo.set(null);
-            this.sdkInitialized.set(false);
             console.log('Todos los dispositivos liberados');
           }
         }),
