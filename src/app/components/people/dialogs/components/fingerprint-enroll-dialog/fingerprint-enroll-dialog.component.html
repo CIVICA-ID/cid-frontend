@@ -90,13 +90,16 @@
                 <div class="flex flex-col gap-1.5">
                     @for (fingerDef of leftFingerDefinitions; track fingerDef.key) {
                         <button pButton pRipple type="button"
-                            [label]="fingerDef.label"
-                            [class]="isFingerSelected(fingerDef.key)
-                                ? 'p-button-success'
-                                : 'p-button-outlined p-button-secondary'"
+                            [label]="isFingerAlreadyEnrolled(fingerDef.key) ? fingerDef.label : fingerDef.label"
+                            [class]="isFingerAlreadyEnrolled(fingerDef.key)
+                                ? 'p-button-outlined opacity-50'
+                                : isFingerSelected(fingerDef.key)
+                                    ? 'p-button-success'
+                                    : 'p-button-outlined p-button-secondary'"
                             class="w-full text-sm"
+                            [disabled]="isFingerAlreadyEnrolled(fingerDef.key)"
                             (click)="toggleFingerSelection(fingerDef.key)"
-                            [icon]="isFingerSelected(fingerDef.key) ? 'pi pi-check' : 'pi pi-plus'">
+                            [icon]="isFingerAlreadyEnrolled(fingerDef.key) ? 'pi pi-lock' : isFingerSelected(fingerDef.key) ? 'pi pi-check' : 'pi pi-plus'">
                         </button>
                     }
                 </div>
@@ -109,13 +112,16 @@
                 <div class="flex flex-col gap-1.5">
                     @for (fingerDef of rightFingerDefinitions; track fingerDef.key) {
                         <button pButton pRipple type="button"
-                            [label]="fingerDef.label"
-                            [class]="isFingerSelected(fingerDef.key)
-                                ? 'p-button-success'
-                                : 'p-button-outlined p-button-secondary'"
+                            [label]="isFingerAlreadyEnrolled(fingerDef.key) ? fingerDef.label : fingerDef.label"
+                            [class]="isFingerAlreadyEnrolled(fingerDef.key)
+                                ? 'p-button-outlined opacity-50'
+                                : isFingerSelected(fingerDef.key)
+                                    ? 'p-button-success'
+                                    : 'p-button-outlined p-button-secondary'"
                             class="w-full text-sm"
+                            [disabled]="isFingerAlreadyEnrolled(fingerDef.key)"
                             (click)="toggleFingerSelection(fingerDef.key)"
-                            [icon]="isFingerSelected(fingerDef.key) ? 'pi pi-check' : 'pi pi-plus'">
+                            [icon]="isFingerAlreadyEnrolled(fingerDef.key) ? 'pi pi-lock' : isFingerSelected(fingerDef.key) ? 'pi pi-check' : 'pi pi-plus'">
                         </button>
                     }
                 </div>
@@ -200,7 +206,7 @@
                     [label]="realScanService.isCapturing()
                         ? 'Capturando...'
                         : 'Capturar ' + (getCurrentQueueItem()?.finger?.label || '')"
-                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-camera'"
+                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-thumbs-up-fill'"
                     class="w-full"
                     [disabled]="!realScanService.isDeviceReady() || realScanService.loading() || realScanService.isCapturing()"
                     (click)="captureCurrentQueueFinger()">
@@ -273,7 +279,7 @@
             @if (leftFourFingers.length === 0) {
                 <button pButton pRipple type="button"
                     [label]="realScanService.isCapturing() ? 'Capturando...' : 'Capturar 4 Dedos Izquierdos'"
-                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-camera'"
+                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-thumbs-up-fill'"
                     class="w-full"
                     [disabled]="!realScanService.isDeviceReady() || realScanService.loading() || realScanService.isCapturing()"
                     (click)="captureLeftFour()">
@@ -317,7 +323,7 @@
             @if (!leftThumbFinger) {
                 <button pButton pRipple type="button"
                     [label]="realScanService.isCapturing() ? 'Capturando...' : 'Capturar Pulgar Izquierdo'"
-                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-camera'"
+                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-thumbs-up-fill'"
                     class="w-full"
                     [disabled]="!realScanService.isDeviceReady() || realScanService.loading() || realScanService.isCapturing()"
                     (click)="captureLeftThumb()">
@@ -358,7 +364,7 @@
             @if (rightFourFingers.length === 0) {
                 <button pButton pRipple type="button"
                     [label]="realScanService.isCapturing() ? 'Capturando...' : 'Capturar 4 Dedos Derechos'"
-                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-camera'"
+                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-thumbs-up-fill'"
                     class="w-full"
                     [disabled]="!realScanService.isDeviceReady() || realScanService.loading() || realScanService.isCapturing()"
                     (click)="captureRightFour()">
@@ -401,7 +407,7 @@
             @if (!rightThumbFinger) {
                 <button pButton pRipple type="button"
                     [label]="realScanService.isCapturing() ? 'Capturando...' : 'Capturar Pulgar Derecho'"
-                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-camera'"
+                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-thumbs-up-fill'"
                     class="w-full"
                     [disabled]="!realScanService.isDeviceReady() || realScanService.loading() || realScanService.isCapturing()"
                     (click)="captureRightThumb()">

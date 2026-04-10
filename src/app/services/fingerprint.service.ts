@@ -48,7 +48,7 @@ export interface EnrollFingerprintRequest {
     occupation?: string;
     alias?: string;
     birthDate?: Date;
-    peopleAddress?: any[];
+    peopleAddresses?: any[];
     fingers: TenFingerCapture;
 }
 

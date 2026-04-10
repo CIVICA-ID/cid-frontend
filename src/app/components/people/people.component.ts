@@ -31,6 +31,7 @@ import { FingerprintService } from '../../services/fingerprint.service';
 import { FingerprintEnrollDialogComponent } from './dialogs/components/fingerprint-enroll-dialog/fingerprint-enroll-dialog.component';
 import { FingerprintCaptureDialogComponent } from './dialogs/components/fingerprint-capture-dialog/fingerprint-capture-dialog.component';
 import { ADD_PERSON_FIELDS, buildImageDataUrl, countCapturedFingers, FINGER_SEARCH_OPTIONS, FingerKey, formatElapsedTime, formatPageRange, getScoreColorClass, LEFT_FINGER_SEARCH_OPTIONS, LEFT_FINGER_THUMBNAILS, RIGHT_FINGER_SEARCH_OPTIONS, RIGHT_FINGER_THUMBNAILS, SEARCH_FIELDS, TenFingerCapture } from './models';
+import { Tooltip } from "primeng/tooltip";
 
 @Component({
     selector: 'app-people',
@@ -65,7 +66,8 @@ import { ADD_PERSON_FIELDS, buildImageDataUrl, countCapturedFingers, FINGER_SEAR
     TabPanels,
     TabPanel,
     FingerprintCaptureDialogComponent,
-    FingerprintEnrollDialogComponent
+    FingerprintEnrollDialogComponent,
+    Tooltip
 ],
     standalone: true
 })
@@ -411,6 +413,19 @@ export class PeopleComponent implements OnInit {
         this.enrolledFingersCount = countCapturedFingers(this.enrolledFingers);
     }
 
+    removeEnrolledFinger(fingerKey: FingerKey): void{
+        const updated = {
+            ...this.enrolledFingers
+        };
+        delete updated[fingerKey];
+        this.enrolledFingers = updated;
+        this.enrolledFingersCount = countCapturedFingers(this.enrolledFingers);
+    }
+
+    isFingerAlreadyEnrolled(fingerKey: FingerKey): boolean{
+        return !!this.enrolledFingers[fingerKey];
+    }
+
     savePersonWithFingerprints(): void {
         this.miscService.startRequest();
 
@@ -439,7 +454,7 @@ export class PeopleComponent implements OnInit {
             occupation: formData.occupation,
             alias: formData.alias,
             birthDate: formData.birthDate,
-            peopleAddress: cleanAddresses,
+            peopleAddresses: cleanAddresses,
             fingers: this.enrolledFingers,
         };
 

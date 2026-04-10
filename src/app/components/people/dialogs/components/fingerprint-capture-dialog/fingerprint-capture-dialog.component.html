@@ -3,7 +3,7 @@
     <!-- Info del dedo seleccionado -->
     @if (selectedFingerLabel) {
         <div class="mb-4 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700 flex items-center">
-            <i class="pi pi-tag mr-2"></i>
+            <i class="pi pi-search mr-2"></i>
             Buscando: <strong class="ml-1">{{ selectedFingerLabel }}</strong>
         </div>
     }
@@ -55,7 +55,7 @@
                 <i class="pi pi-check-circle mr-1"></i> Huella capturada
             </p>
             <p class="text-xs text-gray-500">
-                {{ capturedFinger.width }}×{{ capturedFinger.height }} px
+                {{ capturedFinger.width }}x{{ capturedFinger.height }} px
             </p>
         </div>
     }
@@ -64,7 +64,7 @@
         @if (!capturedFinger) {
             <button pButton pRipple type="button"
                 [label]="realScanService.isCapturing() ? 'Capturando...' : 'Capturar Huella'"
-                [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-camera'"
+                [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-thumbs-up-fill'"
                 class="w-full"
                 [disabled]="!realScanService.isDeviceReady() || realScanService.loading() || realScanService.isCapturing()"
                 (click)="captureSingle()">

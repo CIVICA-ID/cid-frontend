@@ -2,7 +2,7 @@ import { CaptureMode, Segment, SegmentedFinger } from "@/api/realscan";
 import { All_FINGERS, assignSlapFingersToCapture, buildImageDataUrl, CaptureQueueItem, EnrollMode, FingerKey, FULL_CAPTURE_STEP_INDICATORS, FULL_CAPTURE_STEP_ORDER, FullCaptureStep, LEFT_FINGER_DEFINITIONS, LEFT_SLAP_FINGER_NAMES, RIGHT_FINGER_DEFINITIONS, RIGHT_SLAP_FINGER_NAMES, rotateImageFormat, TenFingerCapture } from "@/components/people/models/fingerprint.models";
 import { RealScanService } from "@/services/realscan.service";
 import { CommonModule } from "@angular/common";
-import { Component, EventEmitter, inject, Output } from "@angular/core";
+import { Component, EventEmitter, inject, Input, Output } from "@angular/core";
 import { ButtonModule } from "primeng/button";
 import { DialogModule } from "primeng/dialog";
 
@@ -16,6 +16,7 @@ import { DialogModule } from "primeng/dialog";
 export class FingerprintEnrollDialogComponent{
     // Emite el resultado de la captura cuando se completa
     @Output() fingersEnrolled = new EventEmitter<TenFingerCapture>();
+    @Input() alreadyEnrolledFingers: TenFingerCapture = {};
 
     public realScanService = inject(RealScanService);
     //Estado del dialog
@@ -222,6 +223,9 @@ export class FingerprintEnrollDialogComponent{
     isFingerSelected(fingerKey: FingerKey): boolean {
         return this.selectedFingerKeys.has(fingerKey);
     }
+    isFingerAlreadyEnrolled(fingerKey: FingerKey): boolean{
+        return !!this.alreadyEnrolledFingers[fingerKey];
+    }
     selectAllFingers(): void {
         this.selectedFingerKeys = new Set(All_FINGERS.map(finger => finger.key));
     }
@@ -261,10 +265,17 @@ export class FingerprintEnrollDialogComponent{
 
         this.realScanService.quickCapture(CaptureMode.FLAT_SINGLE_FINGER, 12000, Segment.ENABLED).subscribe({
             next: response => {
-                if (!response.success) { this.realScanService.lastError.set(response.message || 'Error en captura'); return; }
+                if (!response.success) {
+                    this.realScanService.lastError.set(response.message || 'Error en captura');
+                    return;
+                }
                 const segmentedFinger = this.extractSingleFinger(response, currentItem.finger.label);
-                if (segmentedFinger) { this.updateCurrentQueueCapture(segmentedFinger); }
-                else { this.realScanService.lastError.set('No se recibió imagen.'); }
+                if (segmentedFinger) {
+                    this.updateCurrentQueueCapture(segmentedFinger);
+                }
+                else {
+                    this.realScanService.lastError.set('No se recibió imagen.');
+                }
             },
             error: error => console.error('Error captura dedo:', error),
         });
@@ -302,7 +313,12 @@ export class FingerprintEnrollDialogComponent{
         return null;
     }
     private updateCurrentQueueCapture(captured: SegmentedFinger | undefined): void {
-        this.captureQueue = this.captureQueue.map((item, index) => index === this.currentQueueIndex ? { ...item, captured } : item);
+        this.captureQueue = this.captureQueue.map((item, index) => index === this.currentQueueIndex ?
+        {
+            ...item,
+            captured
+        }
+        : item);
     }
     private finishCustomCapture(): void {
         const capturedFingers: TenFingerCapture = {};
