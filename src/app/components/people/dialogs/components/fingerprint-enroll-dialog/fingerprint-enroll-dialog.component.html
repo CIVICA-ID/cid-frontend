@@ -57,7 +57,7 @@
     }
 
     <!-- Modo personalizado -->
-    @if (enrollMode === 'custom' && captureQueue.length === 0) {
+    @if (enrollMode === 'custom' && captureGroups.length === 0) {
         <div class="flex items-center justify-between mb-3">
             <button pButton pRipple type="button"
                 label="Volver"
@@ -90,7 +90,7 @@
                 <div class="flex flex-col gap-1.5">
                     @for (fingerDef of leftFingerDefinitions; track fingerDef.key) {
                         <button pButton pRipple type="button"
-                            [label]="isFingerAlreadyEnrolled(fingerDef.key) ? fingerDef.label : fingerDef.label"
+                            [label]="fingerDef.label"
                             [class]="isFingerAlreadyEnrolled(fingerDef.key)
                                 ? 'p-button-outlined opacity-50'
                                 : isFingerSelected(fingerDef.key)
@@ -112,7 +112,7 @@
                 <div class="flex flex-col gap-1.5">
                     @for (fingerDef of rightFingerDefinitions; track fingerDef.key) {
                         <button pButton pRipple type="button"
-                            [label]="isFingerAlreadyEnrolled(fingerDef.key) ? fingerDef.label : fingerDef.label"
+                            [label]="fingerDef.label"
                             [class]="isFingerAlreadyEnrolled(fingerDef.key)
                                 ? 'p-button-outlined opacity-50'
                                 : isFingerSelected(fingerDef.key)
@@ -143,14 +143,14 @@
         </button>
     }
     <!-- Modo seleccion -->
-    @if (enrollMode === 'custom' && captureQueue.length > 0) {
+    @if (enrollMode === 'custom' && captureGroups.length > 0) {
         <!-- Barra de progreso -->
         <div class="mb-4">
             <div class="flex items-center justify-between text-sm mb-1">
                 <span class="font-semibold text-gray-700">
-                    Paso {{ currentQueueIndex + 1 }} de {{ captureQueue.length }}
-                    @if (getCurrentQueueItem()) {
-                        — <span class="text-purple-700">{{ getCurrentQueueItem()!.finger.label }}</span>
+                    Paso {{ currentGroupIndex + 1 }} de {{ captureGroups.length }}
+                    @if (getCurrentGroup()) {
+                        — <span class="text-purple-700">{{ getCurrentGroup()!.label }}</span>
                     }
                 </span>
                 <button pButton pRipple type="button"
@@ -159,11 +159,17 @@
                     (click)="returnModeSelection()">
                 </button>
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-2">
-                <div class="bg-purple-500 h-2 rounded-full transition-all"
-                    [style.width.%]="(currentQueueIndex) / captureQueue.length * 100">
-                </div>
+            <div class="flex gap-1.5 mb-2">
+                @for (group of captureGroups; track $index) {
+                    <span class="flex-1 h-2 rounded-full transition-all" [ngClass]="{
+                    'bg-green-500': $index < currentGroupIndex,
+                    'bg-purple-500 animate-pulse': $index === currentGroupIndex,
+                    'bg-gray-200': $index > currentGroupIndex
+                    }">
+                    </span>
+                }
             </div>
+            <p class="text-xs text-gray-500 text-center">{{groupSummary}}</p>
         </div>
 
         <!-- SDK del dispositivo -->
@@ -188,28 +194,49 @@
             </button>
         }
         <!-- Preview del dedo actual -->
-        @if (getCurrentQueueItem()?.captured) {
-            <div class="mb-3 border-2 border-purple-300 rounded-lg p-3 bg-purple-50 text-center">
-                <img [src]="getCurrentQueueImageUrl()"
-                    (error)="onCurrentQueueImageError()"
-                    [alt]="getCurrentQueueItem()!.finger.label"
+        @if (getCurrentGroup()?.type === 'single' && getCurrentGroup()?.capturedSingle) {
+            <div class="mb-3 border-2 rounded-lg p-3 text-center" [ngClass]="[getGroupBorderColor(), getGroupBgColor()]">
+                <img [src]="getGroupSingleImageUrl()"
+                    (error)="onGroupSingleImageError()"
+                    [alt]="getCurrentGroup()!.label"
                     class="mx-auto max-h-44 object-contain bg-white p-1 rounded" />
-                <p class="text-sm text-purple-700 mt-1 font-semibold">
-                    {{ getCurrentQueueItem()!.finger.label }} capturado
+                <p class="text-sm mt-1 font-semibold" [class]="getGroupTextColor()">
+                    {{ getCurrentGroup()!.label }} capturado
                 </p>
             </div>
         }
+        <!-- Preview grupo multiples dedos -->
+         @if(getCurrentGroup()?.type !== 'single' && getCurrentGroup()?.capturedFingers?.length){
+            <div class="mb-3">
+                <p class="text-sm font-medium text-gray-700 mb-2">
+                    {{ getCurrentGroup()!.label }} - {{ getCurrentGroup()!.capturedFingers!.length }} dedo(s)
+                </p>
+                <div class="grid gap-2" [ngClass]="{
+                'grid-cols-4': getCurrentGroup()!.type === 'left-four' || getCurrentGroup()!.type === 'right-four',
+                'grid-cols-2': getCurrentGroup()!.type === 'two-thumbs'
+                }">
+                @for (finger of getCurrentGroup()!.capturedFingers; track finger.fingerIndex; let fingerIndex = $index){
+                    <div class="border-2 rounded-lg p-2 text-center" [ngClass]="[getGroupBorderColor(), getGroupBgColor()]">
+                    <img [src]="'data:image/bmp;base64,' + finger.imageBase64" class="mx-auto max-h-28 object-contain bg-white rounded mb-1"/>
+                    <p class="text-xs font-semibold" [class]="getGroupTextColor()">
+                        {{ getGroupFingerNames()[fingerIndex] }}
+                    </p>
+                    </div>
+                }
+                </div>
+            </div>
+         }
         <!-- Botones de accion -->
         <div class="flex flex-col gap-2">
-            @if (!getCurrentQueueItem()?.captured) {
+            @if (!isGroupCaptured()) {
                 <button pButton pRipple type="button"
                     [label]="realScanService.isCapturing()
                         ? 'Capturando...'
-                        : 'Capturar ' + (getCurrentQueueItem()?.finger?.label || '')"
-                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-thumbs-up-fill'"
+                        : 'Capturar ' + (getCurrentGroup()?.label || '')"
+                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : getGroupIcon()"
                     class="w-full"
                     [disabled]="!realScanService.isDeviceReady() || realScanService.loading() || realScanService.isCapturing()"
-                    (click)="captureCurrentQueueFinger()">
+                    (click)="captureCurrentGroup()">
                 </button>
             } @else {
                 <div class="grid grid-cols-2 gap-3">
@@ -217,13 +244,13 @@
                         label="Repetir"
                         icon="pi pi-refresh"
                         class="p-button-danger"
-                        (click)="retakeCurrentQueueFinger()">
+                        (click)="retakeCurrentGroup()">
                     </button>
                     <button pButton pRipple type="button"
-                        [label]="currentQueueIndex + 1 < captureQueue.length ? 'Siguiente' : 'Finalizar'"
+                        [label]="currentGroupIndex + 1 < captureGroups.length ? 'Siguiente' : 'Finalizar'"
                         icon="pi pi-check"
                         class="p-button-success"
-                        (click)="acceptCurrentQueueFinger()">
+                        (click)="acceptCurrentGroup()">
                     </button>
                 </div>
             }
@@ -346,7 +373,7 @@
                         (click)="retakeLeftThumb()">
                     </button>
                     <button pButton pRipple type="button"
-                        label="Aceptar → Mano Derecha"
+                        label="Aceptar -> Mano Derecha"
                         icon="pi pi-check"
                         class="p-button-success"
                         (click)="acceptLeftThumb()">

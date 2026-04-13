@@ -1,4 +1,4 @@
-import { SegmentedFinger } from "@/api/realscan";
+import { CaptureMode, SegmentedFinger } from "@/api/realscan";
 
 export interface TenFingerCapture{
     leftThumb?: string;
@@ -44,6 +44,104 @@ export interface FullStepIndicator {
 export interface FingerThumbnail {
     key: FingerKey;
     label: string;
+}
+
+export type GroupCaptureType = 'left-four' | 'right-four' | 'two-thumbs' | 'single';
+
+export interface CaptureGroup{
+    type: GroupCaptureType;
+    label: string;
+    fingers: FingerDef[];
+    captureMode: CaptureMode;
+    capturedFingers?: SegmentedFinger[];
+    capturedSingle?: SegmentedFinger;
+    imageFormat?: string;
+}
+
+const LEFT_FOUR_KEYS: FingerKey[] = ['leftIndex', 'leftMiddle', 'leftRing', 'leftLittle'];
+const RIGHT_FOUR_KEYS: FingerKey[] = ['rightIndex', 'rightMiddle', 'rightRing', 'rightLittle'];
+
+export function buildGroups(selectedKeys: Set<FingerKey>): CaptureGroup[]{
+    const groups: CaptureGroup[] = [];
+    const consumed = new Set<FingerKey>();
+
+    const hasAllLeftFour = LEFT_FOUR_KEYS.every(k => selectedKeys.has(k));
+    if(hasAllLeftFour){
+        const fingers = All_FINGERS.filter(f => LEFT_FOUR_KEYS.includes(f.key));
+        groups.push({
+            type: 'left-four',
+            label: '4 Dedos Izquierdos',
+            fingers,
+            captureMode: CaptureMode.FLAT_LEFT_FOUR_FINGERS,
+            imageFormat: 'bmp'
+        });
+        LEFT_FOUR_KEYS.forEach(k => consumed.add(k));
+    }
+
+    const hasAllRightFour = RIGHT_FOUR_KEYS.every(k => selectedKeys.has(k));
+    if(hasAllRightFour){
+        const fingers = All_FINGERS.filter(f => RIGHT_FOUR_KEYS.includes(f.key));
+        groups.push({
+            type: 'right-four',
+            label: '4 Dedos Derechos',
+            fingers,
+            captureMode: CaptureMode.FLAT_RIGHT_FOUR_FINGERS,
+            imageFormat: 'bmp'
+        });
+        RIGHT_FOUR_KEYS.forEach(k => consumed.add(k));
+    }
+
+    const hasLeftThumb = selectedKeys.has('leftThumb') && !consumed.has('leftThumb');
+    const hasRightThumb = selectedKeys.has('rightThumb') && !consumed.has('rightThumb');
+    if(hasLeftThumb && hasRightThumb){
+        const fingers = All_FINGERS.filter(f => f.key === 'leftThumb' || f.key === 'rightThumb');
+        groups.push({
+            type: 'two-thumbs',
+            label: '2 Pulgares',
+            fingers,
+            captureMode: CaptureMode.FLAT_TWO_FINGERS,
+            imageFormat: 'bmp'
+        });
+        consumed.add('leftThumb');
+        consumed.add('rightThumb');
+    }
+
+    const remaining = All_FINGERS.filter(f => selectedKeys.has(f.key) && !consumed.has(f.key));
+
+    const leftRemaining = remaining.filter(f => f.hand === 'left');
+    const rightRemaining = remaining.filter(f => f.hand === 'right');
+
+    for(const finger of [...leftRemaining, ...rightRemaining]){
+        groups.push({
+            type: 'single',
+            label: finger.label,
+            fingers: [finger],
+            captureMode: CaptureMode.FLAT_SINGLE_FINGER,
+            imageFormat: 'bmp'
+        });
+    }
+
+    const leftGroups = groups.filter(
+        g => g.type === 'left-four' ||
+        (g.type === 'single' && g.fingers[0].hand === 'left')
+    );
+    const rightGroups = groups.filter(
+        g => g.type === 'right-four' ||
+        (g.type === 'single' && g.fingers[0].hand === 'right')
+    );
+    const thumbsGroup = groups.filter(g => g.type === 'two-thumbs');
+
+    return [
+        ...leftGroups,
+        ...rightGroups,
+        ...thumbsGroup
+    ];
+}
+
+export function describeGroups(groups: CaptureGroup[]): string{
+    const totalCaptures = groups.length;
+    const totalFingers = groups.reduce((sum, g) => sum + g.fingers.length, 0);
+    return `${totalFingers} dedos en ${totalCaptures} captura(s)`;
 }
 
 export const All_FINGERS: FingerDef[] = [
@@ -170,7 +268,7 @@ export function assignSlapFingersToCapture(
         }
     }
 
-    // Fallback: cuando fingerType=0 (Unknown), asignar por posición física del sensor G10
+    // cuando fingerType=0 (Unknown), asignar por la posicion fisica del sensor G10
     const leftUnknownFingers = leftFourFingers.filter(finger => !finger.fingerType);
     const rightUnknownFingers = rightFourFingers.filter(finger => !finger.fingerType);
 
