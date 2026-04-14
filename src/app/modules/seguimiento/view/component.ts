@@ -60,8 +60,19 @@ export class ViewComponent implements OnInit {
     }
   }
 
+  toggleWorkflowState(): void {
+    if (!this.seguimiento?.id) {
+      return;
+    }
+    this.backToList();
+  }
+
   backToList() {
     this.router.navigate(['/seguimiento']);
+  }
+
+  getWorkflowActionLabel(): string {
+    return 'Regresar';
   }
 
   getOffenderName(): string {

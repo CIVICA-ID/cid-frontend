@@ -3,6 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { Seguimiento } from '@/api/seguimiento';
+import { serializeDateTimeFields } from '@/lib/date-time';
+
+const SEGUIMIENTO_DATE_FIELDS = ['followDate'] as const;
 
 @Injectable({
   providedIn: 'root'
@@ -23,11 +26,11 @@ export class SeguimientoService {
   }
 
   create(data: Partial<Seguimiento>) {
-    return this.http.post(this.url, data);
+    return this.http.post(this.url, serializeDateTimeFields(data, SEGUIMIENTO_DATE_FIELDS));
   }
 
   update(id: string, data: Partial<Seguimiento>) {
-    return this.http.put(`${this.url}/${id}`, data);
+    return this.http.put(`${this.url}/${id}`, serializeDateTimeFields(data, SEGUIMIENTO_DATE_FIELDS));
   }
 
   disable(id: string) {

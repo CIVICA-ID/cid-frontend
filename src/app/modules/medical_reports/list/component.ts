@@ -1,19 +1,21 @@
-import { TableTemplateComponent } from '@/components/table-template/table-template.component';
-import { MiscService } from '@/services/misc.service';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { RippleModule } from 'primeng/ripple';
 import { ToastModule } from 'primeng/toast';
-import { ToolbarModule } from 'primeng/toolbar';
 import { TooltipModule } from 'primeng/tooltip';
 import { catchError, finalize, forkJoin, Observable, of, Subject, switchMap, takeUntil, tap } from 'rxjs';
+import { MedicalReport } from '@/api/medical-report';
+import { PageSectionHeaderComponent } from '@/components/page-section-header/page-section-header.component';
+import { TableTemplateComponent } from '@/components/table-template/table-template.component';
+import { MiscService } from '@/services/misc.service';
 import { MedicalReportsService } from '../module/service';
+import { getWorkflowStage } from '@/lib/workflow';
 
 @Component({
   selector: 'app-list-medical-reports',
@@ -23,19 +25,19 @@ import { MedicalReportsService } from '../module/service';
     ButtonModule,
     InputTextModule,
     TooltipModule,
-    ToolbarModule,
     ConfirmDialogModule,
     DialogModule,
     RippleModule,
     ToastModule,
     TableTemplateComponent,
+    PageSectionHeaderComponent,
     RouterModule
   ],
   providers: [MedicalReportsService, MessageService, ConfirmationService],
   templateUrl: './template.html'
 })
 export class ListComponent implements OnInit, OnDestroy {
-  columns = [
+  readonly columns = [
     {
       field: 'staff.full_name',
       column: 'Responsable',
@@ -55,20 +57,25 @@ export class ListComponent implements OnInit, OnDestroy {
       fieldType: 'datetime'
     }
   ];
-  totalRows = signal<number>(0);
-  data = signal<any[]>([]);
-  configTable = computed(() => ({
+
+  readonly totalRows = signal<number>(0);
+  readonly data = signal<MedicalReport[]>([]);
+  readonly configTable = computed(() => ({
     module: 'Reportes médicos',
     route: 'medical-reports',
     view: true,
+    hideAdd: true,
+    hideDelete: true,
     totalRows: this.totalRows()
   }));
+  readonly workflowStage = getWorkflowStage('medical-reports');
   limit = 10;
   search = {};
   sort: string[][] = [];
   page = 1;
-  ids = signal<string[]>([]);
-  isLoading = signal<boolean>(false);
+  readonly ids = signal<string[]>([]);
+  readonly isLoading = signal<boolean>(false);
+  readonly selectedRows = computed(() => this.ids().length);
   searchTerm = '';
   list: Observable<any>;
   confirmDisplay = false;
@@ -76,10 +83,10 @@ export class ListComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   constructor(
-    private medicalReportsService: MedicalReportsService,
-    private messageService: MessageService,
-    private miscsService: MiscService,
-    private confirmationService: ConfirmationService
+    private readonly medicalReportsService: MedicalReportsService,
+    private readonly messageService: MessageService,
+    private readonly miscsService: MiscService,
+    private readonly confirmationService: ConfirmationService
   ) {}
 
   ngOnInit(): void {
@@ -94,7 +101,13 @@ export class ListComponent implements OnInit, OnDestroy {
             catchError((error: any) => {
               this.data.set([]);
               this.totalRows.set(0);
-              this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error cargando la lista de reportes médicos', detail: error?.error?.message || error.message });
+              this.messageService.add({
+                life: 5000,
+                key: 'message',
+                severity: 'error',
+                summary: 'Error cargando la lista de reportes médicos',
+                detail: error?.error?.message || error.message
+              });
               return of(null);
             }),
             finalize(() => {
@@ -139,6 +152,36 @@ export class ListComponent implements OnInit, OnDestroy {
     this.listTable();
   }
 
+  private getRecordDescription(id: string | null): string {
+    if (!id) {
+      return 'el registro seleccionado';
+    }
+
+    const row = this.data().find((item) => item?.id === id);
+    if (!row) {
+      return `el registro con ID ${id}`;
+    }
+
+    const candidateFields = this.columns.map((column) => column.field).filter((field) => field !== 'id' && field !== 'active');
+    for (const field of candidateFields) {
+      const value = this.getDeepValue(row, field);
+      if (value === null || value === undefined || `${value}`.trim() === '') {
+        continue;
+      }
+      return `el registro "${value}"`;
+    }
+
+    return `el registro con ID ${id}`;
+  }
+
+  private getDeepValue(obj: any, path: string): any {
+    return path.split('.').reduce((acc, key) => (acc || {})[key], obj);
+  }
+
+  getIdsDeleted(ids: string[]) {
+    this.ids.set(ids);
+  }
+
   delete(id: string | null, deleteType: number) {
     const message =
       deleteType === 1
@@ -166,46 +209,19 @@ export class ListComponent implements OnInit, OnDestroy {
                 this.messageService.add({ severity: 'success', key: 'message', summary: 'Operación exitosa', life: 3000 });
               },
               (error) => {
-                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el reporte médico', detail: error?.error?.message || error.message });
+                this.messageService.add({
+                  life: 5000,
+                  key: 'message',
+                  severity: 'error',
+                  summary: 'Error al eliminar el reporte médico',
+                  detail: error?.error?.message || error.message
+                });
               }
             );
             break;
         }
       }
     });
-  }
-
-  private getRecordDescription(id: string | null): string {
-    if (!id) {
-      return 'el registro seleccionado';
-    }
-
-    const row = this.data().find((item) => item?.id === id);
-    if (!row) {
-      return `el registro con ID ${id}`;
-    }
-
-    const candidateFields = this.columns
-      .map((column) => column.field)
-      .filter((field) => field !== 'id' && field !== 'active');
-
-    for (const field of candidateFields) {
-      const value = this.getDeepValue(row, field);
-      if (value === null || value === undefined || `${value}`.trim() === '') {
-        continue;
-      }
-      return `el registro "${value}"`;
-    }
-
-    return `el registro con ID ${id}`;
-  }
-
-  private getDeepValue(obj: any, path: string): any {
-    return path.split('.').reduce((acc, key) => (acc || {})[key], obj);
-  }
-
-  getIdsDeleted(ids: string[]) {
-    this.ids.set(ids);
   }
 
   deleteSelected() {

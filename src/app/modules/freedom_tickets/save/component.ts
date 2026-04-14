@@ -64,7 +64,8 @@ export class SaveComponent implements OnInit {
     paymentTicketFolio: [null, [Validators.maxLength(50)]],
     observations: [null, [Validators.maxLength(500)]],
     civilJudge: [null, [Validators.required, this.trimRequiredValidator(), Validators.maxLength(150)]],
-    custodian: [null, [Validators.required, this.trimRequiredValidator(), Validators.maxLength(150)]]
+    custodian: [null, [Validators.required, this.trimRequiredValidator(), Validators.maxLength(150)]],
+    processed: [false]
   });
 
   isEditMode = false;
@@ -128,7 +129,8 @@ export class SaveComponent implements OnInit {
             paymentTicketFolio: (data as any).paymentTicketFolio ?? null,
             observations: (data as any).observations ?? null,
             civilJudge: (data as any).civilJudge ?? null,
-            custodian: (data as any).custodian ?? null
+            custodian: (data as any).custodian ?? null,
+            processed: (data as any).processed ?? false
           });
         } else {
           this.messageService.add({ severity: 'error', key: 'msg', summary: 'No se pudo encontrar la boleta de libertad', life: 3000 });
@@ -156,8 +158,8 @@ export class SaveComponent implements OnInit {
       return;
     }
 
-    const raw = this.form.value;
-    const payload = {
+    const raw = this.form.value as any;
+    const payload: any = {
       ...raw,
       arrestHours: raw.arrestHours !== null && raw.arrestHours !== '' ? Number(raw.arrestHours) : null,
       exitReason: String(raw.exitReason ?? '').trim(),
@@ -167,6 +169,7 @@ export class SaveComponent implements OnInit {
       civilJudge: String(raw.civilJudge ?? '').trim(),
       custodian: String(raw.custodian ?? '').trim()
     };
+    delete payload.processed;
 
     this.miscService.startRequest();
 

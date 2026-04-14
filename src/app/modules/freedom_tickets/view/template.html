@@ -6,6 +6,15 @@
         <h2 class="text-xl font-semibold">Detalle de boleta de libertad</h2>
         <div class="flex gap-2">
           <button pButton pRipple label="Editar" icon="pi pi-pencil" class="p-button-info" (click)="editFreedomTicket()" [disabled]="!freedomTicket"></button>
+          <button
+            pButton
+            pRipple
+            [label]="getWorkflowActionLabel()"
+            [icon]="freedomTicket?.processed ? 'pi pi-arrow-left' : 'pi pi-arrow-right'"
+            class="p-button-success"
+            (click)="toggleWorkflowState()"
+            [disabled]="!freedomTicket || loading"
+          ></button>
           <button pButton pRipple label="Regresar" icon="pi pi-arrow-left" class="p-button-outlined" (click)="backToList()"></button>
         </div>
       </div>
@@ -25,12 +34,8 @@
             <span class="text-base">{{ offenderName }}</span>
           </div>
           <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Fecha libertad</span>
-            <span class="text-base">{{ freedomTicket?.releaseDate ? (freedomTicket?.releaseDate | date: 'dd/MM/yyyy') : '-' }}</span>
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-sm text-slate-500">Hora libertad</span>
-            <span class="text-base">{{ freedomTicket?.releaseDate ? (freedomTicket?.releaseDate | date: 'HH:mm:ss') : '-' }}</span>
+            <span class="text-sm text-slate-500">Fecha y hora de libertad</span>
+            <span class="text-base">{{ freedomTicket?.releaseDate ? (freedomTicket?.releaseDate | date: 'dd/MM/yyyy HH:mm') : '-' }}</span>
           </div>
           <div class="flex flex-col gap-1">
             <span class="text-sm text-slate-500">Horas de arresto</span>

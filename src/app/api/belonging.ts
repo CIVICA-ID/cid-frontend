@@ -1,6 +1,7 @@
 export interface Belonging {
   id: string;
   active?: boolean;
+  processed?: boolean;
   createdAt?: Date | string;
   updatedAt?: Date | string;
   id_cell_stay: string;

@@ -6,6 +6,15 @@
         <h2 class="text-xl font-semibold">Detalle de pertenencia</h2>
         <div class="flex gap-2">
           <button pButton pRipple label="Editar" icon="pi pi-pencil" class="p-button-info" (click)="editBelonging()" [disabled]="!belonging"></button>
+          <button
+            pButton
+            pRipple
+            [label]="getWorkflowActionLabel()"
+            [icon]="belonging?.processed ? 'pi pi-arrow-left' : 'pi pi-arrow-right'"
+            class="p-button-success"
+            (click)="toggleWorkflowState()"
+            [disabled]="!belonging || loading"
+          ></button>
           <button pButton pRipple label="Regresar" icon="pi pi-arrow-left" class="p-button-outlined" (click)="backToList()"></button>
         </div>
       </div>

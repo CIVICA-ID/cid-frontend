@@ -1,6 +1,7 @@
 export interface CellStay {
   id: string;
   active?: boolean;
+  processed?: boolean;
   createdAt?: Date | string;
   updatedAt?: Date | string;
   cellRegister: string;

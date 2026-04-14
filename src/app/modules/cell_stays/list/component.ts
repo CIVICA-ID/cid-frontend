@@ -1,4 +1,5 @@
 import { CellStay } from '@/api/cell-stay';
+import { PageSectionHeaderComponent } from '@/components/page-section-header/page-section-header.component';
 import { TableTemplateComponent } from '@/components/table-template/table-template.component';
 import { MiscService } from '@/services/misc.service';
 import { CommonModule } from '@angular/common';
@@ -9,9 +10,9 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
-import { ToolbarModule } from 'primeng/toolbar';
 import { catchError, finalize, forkJoin, of, Subject, switchMap, tap } from 'rxjs';
 import { CellStaysService } from '../module/service';
+import { getWorkflowStage } from '@/lib/workflow';
 
 type SortExpression = string[][];
 type SearchFilters = Record<string, string>;
@@ -44,7 +45,7 @@ type DeleteType = 1 | 2;
 @Component({
   selector: 'app-list-cell-stays',
   standalone: true,
-  imports: [CommonModule, ButtonModule, ToolbarModule, ConfirmDialogModule, ToastModule, TableTemplateComponent, RouterModule],
+  imports: [CommonModule, ButtonModule, ConfirmDialogModule, ToastModule, TableTemplateComponent, PageSectionHeaderComponent, RouterModule],
   providers: [CellStaysService, MessageService, ConfirmationService],
   templateUrl: './template.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -74,6 +75,12 @@ export class ListComponent implements OnInit {
       column: 'Observaciones',
       columnType: 'text',
       fieldType: 'text'
+    },
+    {
+      field: 'processed',
+      column: 'Procesado',
+      columnType: 'boolean',
+      fieldType: 'boolean'
     }
   ];
 
@@ -83,8 +90,11 @@ export class ListComponent implements OnInit {
     module: 'Estadías en celda',
     route: 'cell-stays',
     view: true,
+    hideAdd: true,
+    hideDelete: true,
     totalRows: this.totalRows()
   }));
+  readonly workflowStage = getWorkflowStage('cell-stays');
 
   limit = 10;
   search: SearchFilters = {};
@@ -95,6 +105,7 @@ export class ListComponent implements OnInit {
 
   private readonly reloadList$ = new Subject<void>();
   private readonly destroyRef = inject(DestroyRef);
+  private readonly processedFilter = { processed: '$eq:true' };
 
   constructor(
     private readonly cellStaysService: CellStaysService,
@@ -129,7 +140,10 @@ export class ListComponent implements OnInit {
   handleParamsList(event: ListParamsEvent): void {
     this.page = event.page;
     this.limit = event.limit;
-    this.search = event.search;
+    this.search = {
+      ...event.search,
+      ...this.processedFilter
+    };
     this.sort = event.sort;
     this.listTable();
   }

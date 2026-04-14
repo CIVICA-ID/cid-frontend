@@ -54,7 +54,8 @@ export class SaveComponent implements OnInit {
     id_offender: [null],
     cellRegister: [null, [Validators.required, this.trimRequiredValidator(), Validators.maxLength(50)]],
     entryDate: [null],
-    observations: [null, [Validators.maxLength(500)]]
+    observations: [null, [Validators.maxLength(500)]],
+    processed: [false]
   });
 
   isEditMode = false;
@@ -114,7 +115,8 @@ export class SaveComponent implements OnInit {
             id_offender: (data as any).offender?.id ?? (data as any).id_offender ?? null,
             cellRegister: (data as any).cellRegister ?? null,
             entryDate: deserializeApiDateTime((data as any).entryDate),
-            observations: (data as any).observations ?? null
+            observations: (data as any).observations ?? null,
+            processed: (data as any).processed ?? false
           });
         } else {
           this.messageService.add({ severity: 'error', key: 'msg', summary: 'No se pudo encontrar la estadía en celda', life: 3000 });
@@ -142,13 +144,14 @@ export class SaveComponent implements OnInit {
       return;
     }
 
-    const raw = this.form.value;
-    const payload = {
+    const raw = this.form.value as any;
+    const payload: any = {
       ...raw,
       id_offender: raw.id_offender || null,
       cellRegister: String(raw.cellRegister ?? '').trim(),
       observations: raw.observations ? String(raw.observations).trim() : null
     };
+    delete payload.processed;
 
     this.miscService.startRequest();
 

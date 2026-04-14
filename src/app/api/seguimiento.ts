@@ -1,6 +1,7 @@
 export interface Seguimiento {
   id: string;
   active?: boolean;
+  processed?: boolean;
   createdAt?: Date | string;
   updatedAt?: Date | string;
   idOffender?: string | null;
