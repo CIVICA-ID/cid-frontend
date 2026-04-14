@@ -14,6 +14,11 @@ export class AuthService {
     login(data: Auth): Observable<Object> {
         return this.http.post(this.url+"/login", data);
     }
+    renovateToken()
+    {
+        return this.http.post(`${this.url}/renovate-token`,"" );
+    }
+
     // getAddresses(search: string) {
     //     return this.http.get<Address>(this.url + "/" + search);
     // }

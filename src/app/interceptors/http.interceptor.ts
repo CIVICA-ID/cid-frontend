@@ -5,19 +5,34 @@ import { environment } from '../../environments/environment'; // Ajusta la ruta
 import { SessionService } from '@/services/session.service';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { AuthService } from '@/services/auth.service';
+
+let isRenovated:boolean = false;
 
 export const httpInterceptorService: HttpInterceptorFn = (req, next) => {
     const sessionService = inject(SessionService);
     const router = inject(Router);
+    const authService: AuthService = inject(AuthService);
     let tkn='';
     let branch = '';
     const rawToken = sessionService.getToken();
-
     if (rawToken) {
         try {
             const decoded: any = jwtDecode(rawToken);
             const now = Math.floor(Date.now() / 1000);
-
+            const activity = (decoded.exp - now) / 60;
+            if (activity <= 15 && !isRenovated) {
+                isRenovated = true;
+                authService.renovateToken().subscribe({
+                    next: (data: any) => {
+                        sessionService.setToken(data.token);
+                        isRenovated = false;
+                    },
+                    error: (err: any) => {
+                        isRenovated = false;
+                    }
+                });
+            }
             if (decoded.exp && now >= decoded.exp) {
                 localStorage.clear();
             } else {
