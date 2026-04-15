@@ -6,7 +6,9 @@ import { CardModule } from 'primeng/card';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { BelongingsService } from '../module/service';
+import { FreedomTicketsService } from '@/modules/freedom_tickets/module/service';
 import { Belonging } from '@/api/belonging';
+import { extractCreatedRecordId, getNextWorkflowStage, getPreviousWorkflowStage, getWorkflowActionLabel, getWorkflowSeed, WorkflowSeed } from '@/lib/workflow';
 
 @Component({
   selector: 'app-belongings-view',
@@ -19,8 +21,11 @@ export class ViewComponent implements OnInit {
   belonging: Belonging | null = null;
   loading = true;
   error = false;
+  readonly nextStage = getNextWorkflowStage('belongings');
+  readonly previousStage = getPreviousWorkflowStage('belongings');
 
   private readonly belongingsService = inject(BelongingsService);
+  private readonly freedomTicketsService = inject(FreedomTicketsService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly messageService = inject(MessageService);
@@ -60,8 +65,71 @@ export class ViewComponent implements OnInit {
     }
   }
 
+  toggleWorkflowState(): void {
+    if (!this.belonging?.id) {
+      return;
+    }
+
+    const workflowSeed = getWorkflowSeed('belongings', this.belonging);
+    if (!workflowSeed) {
+      this.messageService.add({
+        severity: 'error',
+        key: 'msg',
+        summary: 'Error',
+        detail: 'No se pudo preparar el siguiente módulo para este caso.',
+        life: 3000
+      });
+      return;
+    }
+
+    this.openOrCreateNextRecord(workflowSeed);
+  }
+
   backToList() {
     this.router.navigate(['/belongings']);
+  }
+
+  getWorkflowActionLabel(): string {
+    return getWorkflowActionLabel('belongings', this.belonging?.processed);
+  }
+
+  private openOrCreateNextRecord(workflowSeed: WorkflowSeed): void {
+    this.freedomTicketsService.getList(1, 1, [], workflowSeed.lookupFilter).subscribe({
+      next: (response) => {
+        const rows = response?.data ?? response ?? [];
+        const existing = Array.isArray(rows) ? rows[0] : null;
+        const existingId = existing?.id ?? null;
+
+        if (existingId) {
+          this.router.navigate(['/freedom-tickets/edit', existingId]);
+          return;
+        }
+
+        this.freedomTicketsService.create(workflowSeed.payload as any).subscribe({
+          next: (created) => {
+            const createdId = extractCreatedRecordId(created);
+            if (!createdId) {
+              this.messageService.add({
+                severity: 'error',
+                key: 'msg',
+                summary: 'Error',
+                detail: 'No se pudo obtener el ID de la boleta de libertad creada.',
+                life: 3000
+              });
+              return;
+            }
+
+            this.router.navigate(['/freedom-tickets/edit', createdId]);
+          },
+          error: (error) => {
+            this.messageService.add({ severity: 'error', key: 'msg', summary: 'Error', detail: error?.error?.message || error.message, life: 3000 });
+          }
+        });
+      },
+      error: (error) => {
+        this.messageService.add({ severity: 'error', key: 'msg', summary: 'Error', detail: error?.error?.message || error.message, life: 3000 });
+      }
+    });
   }
 
   get offenderName(): string {

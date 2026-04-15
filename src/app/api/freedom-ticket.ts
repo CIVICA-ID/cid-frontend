@@ -1,6 +1,7 @@
 export interface FreedomTicket {
   id: string;
   active?: boolean;
+  processed?: boolean;
   createdAt?: Date | string;
   updatedAt?: Date | string;
   idCellStay: string;

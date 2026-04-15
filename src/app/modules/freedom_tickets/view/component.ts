@@ -6,7 +6,9 @@ import { CardModule } from 'primeng/card';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { FreedomTicketsService } from '../module/service';
+import { SeguimientoService } from '@/modules/seguimiento/module/service';
 import { FreedomTicket } from '@/api/freedom-ticket';
+import { extractCreatedRecordId, getNextWorkflowStage, getPreviousWorkflowStage, getWorkflowActionLabel, getWorkflowSeed, WorkflowSeed } from '@/lib/workflow';
 
 @Component({
   selector: 'app-freedom-tickets-view',
@@ -19,8 +21,11 @@ export class ViewComponent implements OnInit {
   freedomTicket: FreedomTicket | null = null;
   loading = true;
   error = false;
+  readonly nextStage = getNextWorkflowStage('freedom-tickets');
+  readonly previousStage = getPreviousWorkflowStage('freedom-tickets');
 
   private readonly freedomTicketsService = inject(FreedomTicketsService);
+  private readonly seguimientoService = inject(SeguimientoService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly messageService = inject(MessageService);
@@ -60,8 +65,71 @@ export class ViewComponent implements OnInit {
     }
   }
 
+  toggleWorkflowState(): void {
+    if (!this.freedomTicket?.id) {
+      return;
+    }
+
+    const workflowSeed = getWorkflowSeed('freedom-tickets', this.freedomTicket);
+    if (!workflowSeed) {
+      this.messageService.add({
+        severity: 'error',
+        key: 'msg',
+        summary: 'Error',
+        detail: 'No se pudo preparar el siguiente módulo para este caso.',
+        life: 3000
+      });
+      return;
+    }
+
+    this.openOrCreateNextRecord(workflowSeed);
+  }
+
   backToList() {
     this.router.navigate(['/freedom-tickets']);
+  }
+
+  getWorkflowActionLabel(): string {
+    return getWorkflowActionLabel('freedom-tickets', this.freedomTicket?.processed);
+  }
+
+  private openOrCreateNextRecord(workflowSeed: WorkflowSeed): void {
+    this.seguimientoService.getList(1, 1, [], workflowSeed.lookupFilter).subscribe({
+      next: (response) => {
+        const rows = response?.data ?? response ?? [];
+        const existing = Array.isArray(rows) ? rows[0] : null;
+        const existingId = existing?.id ?? null;
+
+        if (existingId) {
+          this.router.navigate(['/seguimiento/edit', existingId]);
+          return;
+        }
+
+        this.seguimientoService.create(workflowSeed.payload as any).subscribe({
+          next: (created) => {
+            const createdId = extractCreatedRecordId(created);
+            if (!createdId) {
+              this.messageService.add({
+                severity: 'error',
+                key: 'msg',
+                summary: 'Error',
+                detail: 'No se pudo obtener el ID del seguimiento creado.',
+                life: 3000
+              });
+              return;
+            }
+
+            this.router.navigate(['/seguimiento/edit', createdId]);
+          },
+          error: (error) => {
+            this.messageService.add({ severity: 'error', key: 'msg', summary: 'Error', detail: error?.error?.message || error.message, life: 3000 });
+          }
+        });
+      },
+      error: (error) => {
+        this.messageService.add({ severity: 'error', key: 'msg', summary: 'Error', detail: error?.error?.message || error.message, life: 3000 });
+      }
+    });
   }
 
   get offenderName(): string {

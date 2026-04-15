@@ -1,4 +1,5 @@
 import { FreedomTicket } from '@/api/freedom-ticket';
+import { PageSectionHeaderComponent } from '@/components/page-section-header/page-section-header.component';
 import { TableTemplateComponent } from '@/components/table-template/table-template.component';
 import { MiscService } from '@/services/misc.service';
 import { CommonModule } from '@angular/common';
@@ -9,10 +10,10 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
-import { ToolbarModule } from 'primeng/toolbar';
 import { catchError, finalize, forkJoin, of, Subject, switchMap, tap } from 'rxjs';
 import { FreedomTicketsService } from '../module/service';
 import { deserializeApiDateTime } from '@/lib/date-time';
+import { getWorkflowStage } from '@/lib/workflow';
 
 type SortExpression = string[][];
 type SearchFilters = Record<string, string>;
@@ -45,7 +46,7 @@ type DeleteType = 1 | 2;
 @Component({
   selector: 'app-list-freedom-tickets',
   standalone: true,
-  imports: [CommonModule, ButtonModule, ToolbarModule, ConfirmDialogModule, ToastModule, TableTemplateComponent, RouterModule],
+  imports: [CommonModule, ButtonModule, ConfirmDialogModule, ToastModule, TableTemplateComponent, PageSectionHeaderComponent, RouterModule],
   providers: [FreedomTicketsService, MessageService, ConfirmationService],
   templateUrl: './template.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -59,22 +60,22 @@ export class ListComponent implements OnInit {
       fieldType: 'text'
     },
     {
-      field: 'releaseDateDate',
-      column: 'Fecha libertad',
-      columnType: 'text',
-      fieldType: 'text'
-    },
-    {
-      field: 'releaseDateTime',
-      column: 'Hora libertad',
-      columnType: 'text',
-      fieldType: 'text'
+      field: 'releaseDate',
+      column: 'Fecha y hora de libertad',
+      columnType: 'date',
+      fieldType: 'datetime'
     },
     {
       field: 'exitReason',
       column: 'Motivo de egreso',
       columnType: 'text',
       fieldType: 'text'
+    },
+    {
+      field: 'processed',
+      column: 'Procesado',
+      columnType: 'boolean',
+      fieldType: 'boolean'
     }
   ];
 
@@ -84,8 +85,11 @@ export class ListComponent implements OnInit {
     module: 'Boletas de libertad',
     route: 'freedom-tickets',
     view: true,
+    hideAdd: true,
+    hideDelete: true,
     totalRows: this.totalRows()
   }));
+  readonly workflowStage = getWorkflowStage('freedom-tickets');
 
   limit = 10;
   search: SearchFilters = {};
@@ -96,6 +100,7 @@ export class ListComponent implements OnInit {
 
   private readonly reloadList$ = new Subject<void>();
   private readonly destroyRef = inject(DestroyRef);
+  private readonly processedFilter = { processed: '$eq:true' };
 
   constructor(
     private readonly freedomTicketsService: FreedomTicketsService,
@@ -130,7 +135,10 @@ export class ListComponent implements OnInit {
   handleParamsList(event: ListParamsEvent): void {
     this.page = event.page;
     this.limit = event.limit;
-    this.search = event.search;
+    this.search = {
+      ...event.search,
+      ...this.processedFilter
+    };
     this.sort = event.sort;
     this.listTable();
   }
@@ -193,21 +201,7 @@ export class ListComponent implements OnInit {
     return {
       ...row,
       offenderName: this.getOffenderName(row),
-      releaseDateDate: releaseDate && !Number.isNaN(releaseDate.getTime())
-        ? new Intl.DateTimeFormat('es-MX', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          }).format(releaseDate)
-        : '-',
-      releaseDateTime: releaseDate && !Number.isNaN(releaseDate.getTime())
-        ? new Intl.DateTimeFormat('es-MX', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-          }).format(releaseDate)
-        : '-'
+      releaseDate: releaseDate ?? row.releaseDate
     };
   }
 

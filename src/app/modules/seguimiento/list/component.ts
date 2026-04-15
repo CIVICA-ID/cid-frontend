@@ -12,6 +12,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 import { catchError, finalize, forkJoin, of, Subject, switchMap, tap } from 'rxjs';
 import { SeguimientoService } from '../module/service';
+import { getWorkflowStage } from '@/lib/workflow';
 
 type SortExpression = string[][];
 type SearchFilters = Record<string, string>;
@@ -19,8 +20,8 @@ type SearchFilters = Record<string, string>;
 interface TableColumn {
   field: string;
   column: string;
-  columnType: 'text' | 'date' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
-  fieldType: 'text' | 'date' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
+  columnType: 'text' | 'date' | 'datetime' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
+  fieldType: 'text' | 'date' | 'datetime' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
 }
 
 interface ListParamsEvent {
@@ -73,7 +74,13 @@ export class ListComponent implements OnInit {
       field: 'followDate',
       column: 'Fecha y Hora',
       columnType: 'date',
-      fieldType: 'date'
+      fieldType: 'datetime'
+    },
+    {
+      field: 'processed',
+      column: 'Procesado',
+      columnType: 'boolean',
+      fieldType: 'boolean'
     }
   ];
   readonly totalRows = signal<number>(0);
@@ -82,8 +89,11 @@ export class ListComponent implements OnInit {
     module: 'Seguimiento',
     route: 'seguimiento',
     view: true,
+    hideAdd: true,
+    hideDelete: true,
     totalRows: this.totalRows()
   }));
+  readonly workflowStage = getWorkflowStage('seguimiento');
   limit = 10;
   search: SearchFilters = {};
   sort: SortExpression = [];
@@ -93,6 +103,7 @@ export class ListComponent implements OnInit {
   readonly isLoading = signal<boolean>(false);
   private readonly reloadList$ = new Subject<void>();
   private readonly destroyRef = inject(DestroyRef);
+  private readonly processedFilter = { processed: '$eq:true' };
 
   constructor(
     private readonly seguimientoService: SeguimientoService,
@@ -127,7 +138,10 @@ export class ListComponent implements OnInit {
   handleParamsList(event: ListParamsEvent): void {
     this.page = event.page;
     this.limit = event.limit;
-    this.search = event.search;
+    this.search = {
+      ...event.search,
+      ...this.processedFilter
+    };
     this.sort = event.sort;
     this.listTable();
   }

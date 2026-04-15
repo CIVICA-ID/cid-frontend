@@ -64,7 +64,8 @@ export class SaveComponent implements OnInit {
     description: [null, [Validators.maxLength(500)]],
     quantity: [null, [Validators.required, Validators.min(1)]],
     measurementUnit: [null, [Validators.required, this.trimRequiredValidator(), Validators.maxLength(50)]],
-    observation: [null, [Validators.maxLength(500)]]
+    observation: [null, [Validators.maxLength(500)]],
+    processed: [false]
   });
 
   isEditMode = false;
@@ -131,7 +132,8 @@ export class SaveComponent implements OnInit {
             description: (data as any).description ?? null,
             quantity: (data as any).quantity ?? null,
             measurementUnit: (data as any).measurementUnit ?? null,
-            observation: (data as any).observation ?? null
+            observation: (data as any).observation ?? null,
+            processed: (data as any).processed ?? false
           });
         } else {
           this.messageService.add({ severity: 'error', key: 'msg', summary: 'No se pudo encontrar la pertenencia', life: 3000 });
@@ -159,8 +161,8 @@ export class SaveComponent implements OnInit {
       return;
     }
 
-    const raw = this.form.value;
-    const payload = {
+    const raw = this.form.value as any;
+    const payload: any = {
       ...raw,
       belonging: String(raw.belonging ?? '').trim(),
       recipient: String(raw.recipient ?? '').trim(),
@@ -172,6 +174,7 @@ export class SaveComponent implements OnInit {
       measurementUnit: String(raw.measurementUnit ?? '').trim(),
       observation: raw.observation ? String(raw.observation).trim() : null
     };
+    delete payload.processed;
 
     this.miscService.startRequest();
 

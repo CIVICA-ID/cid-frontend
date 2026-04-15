@@ -62,7 +62,8 @@ export class SaveComponent implements OnInit {
     weight: [null, [Validators.min(0)]],
     height: [null, [Validators.min(0)]],
     dictation: [null, [Validators.maxLength(2000)]],
-    observations: [null, [Validators.maxLength(1000)]]
+    observations: [null, [Validators.maxLength(1000)]],
+    processed: [false]
   });
 
   isEditMode = false;
@@ -161,7 +162,8 @@ export class SaveComponent implements OnInit {
             weight: (data as any).weight ?? null,
             height: (data as any).height ?? null,
             dictation: (data as any).dictation ?? null,
-            observations: (data as any).observations ?? null
+            observations: (data as any).observations ?? null,
+            processed: (data as any).processed ?? false
           });
         } else {
           this.messageService.add({ severity: 'error', key: 'msg', summary: 'No se pudo encontrar el reporte médico', life: 3000 });
@@ -189,8 +191,8 @@ export class SaveComponent implements OnInit {
       return;
     }
 
-    const raw = this.form.value;
-    const payload = {
+    const raw = this.form.value as any;
+    const payload: any = {
       ...raw,
       id_offender: raw.id_offender || null,
       id_staff: raw.id_staff || null,
@@ -203,6 +205,7 @@ export class SaveComponent implements OnInit {
       dictation: raw.dictation ? String(raw.dictation).trim() : null,
       observations: raw.observations ? String(raw.observations).trim() : null
     };
+    delete payload.processed;
 
     this.miscService.startRequest();
 

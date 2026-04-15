@@ -57,7 +57,8 @@ export class SaveComponent implements OnInit {
     id_staff: [null, [Validators.required]],
     dictation_date: [null, [Validators.required]],
     dictation: [null, [Validators.required, this.trimRequiredValidator(), Validators.maxLength(200)]],
-    observations: [null, [Validators.maxLength(1000)]]
+    observations: [null, [Validators.maxLength(1000)]],
+    processed: [false]
   });
 
   isEditMode = false;
@@ -143,7 +144,8 @@ export class SaveComponent implements OnInit {
             id_staff: (data as any).staff?.id ?? (data as any).id_staff ?? null,
             dictation_date: deserializeApiDateTime((data as any).dictation_date),
             dictation: (data as any).dictation ?? null,
-            observations: (data as any).observations ?? null
+            observations: (data as any).observations ?? null,
+            processed: (data as any).processed ?? false
           });
         } else {
           this.messageService.add({ severity: 'error', key: 'msg', summary: 'No se pudo encontrar el reporte psicosocial', life: 3000 });
@@ -171,11 +173,13 @@ export class SaveComponent implements OnInit {
       return;
     }
 
-    const payload = {
-      ...this.form.value,
+    const raw = this.form.value as any;
+    const payload: any = {
+      ...raw,
       dictation: String(this.form.value.dictation ?? '').trim(),
-      observations: this.form.value.observations ? String(this.form.value.observations).trim() : null
+      observations: this.form.value.observations ? String(this.form.value.observations).trim() : null,
     };
+    delete payload.processed;
 
     this.miscService.startRequest();
 

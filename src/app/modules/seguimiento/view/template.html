@@ -19,6 +19,15 @@
 
           <div class="flex flex-col sm:flex-row gap-2">
             <button pButton pRipple label="Editar" icon="pi pi-pencil" class="p-button-info" (click)="editSeguimiento()" [disabled]="!seguimiento"></button>
+            <button
+              pButton
+              pRipple
+              [label]="getWorkflowActionLabel()"
+              icon="pi pi-arrow-left"
+              class="p-button-success"
+              (click)="toggleWorkflowState()"
+              [disabled]="!seguimiento || loading"
+            ></button>
             <button pButton pRipple label="Regresar" icon="pi pi-arrow-left" class="p-button-outlined" (click)="backToList()"></button>
           </div>
         </div>

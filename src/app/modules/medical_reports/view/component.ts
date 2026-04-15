@@ -6,7 +6,9 @@ import { MessageService } from 'primeng/api';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { MedicalReportsService } from '../module/service';
+import { PsychosocialReportsService } from '@/modules/psychosocial_reports/module/service';
 import { MedicalReport } from '@/api/medical-report';
+import { extractCreatedRecordId, getNextWorkflowStage, getPreviousWorkflowStage, getWorkflowActionLabel, getWorkflowSeed, WorkflowSeed } from '@/lib/workflow';
 
 @Component({
   selector: 'app-medical-reports-view',
@@ -19,8 +21,11 @@ export class ViewComponent implements OnInit {
   medicalReport: MedicalReport | null = null;
   loading = true;
   error = false;
+  readonly nextStage = getNextWorkflowStage('medical-reports');
+  readonly previousStage = getPreviousWorkflowStage('medical-reports');
 
   private readonly medicalReportsService = inject(MedicalReportsService);
+  private readonly psychosocialReportsService = inject(PsychosocialReportsService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly messageService = inject(MessageService);
@@ -60,8 +65,71 @@ export class ViewComponent implements OnInit {
     }
   }
 
+  toggleWorkflowState(): void {
+    if (!this.medicalReport?.id) {
+      return;
+    }
+
+    const workflowSeed = getWorkflowSeed('medical-reports', this.medicalReport);
+    if (!workflowSeed) {
+      this.messageService.add({
+        severity: 'error',
+        key: 'msg',
+        summary: 'Error',
+        detail: 'No se pudo preparar el siguiente módulo para este caso.',
+        life: 3000
+      });
+      return;
+    }
+
+    this.openOrCreateNextRecord(workflowSeed);
+  }
+
   backToList() {
     this.router.navigate(['/medical-reports']);
+  }
+
+  getWorkflowActionLabel(): string {
+    return getWorkflowActionLabel('medical-reports', this.medicalReport?.processed);
+  }
+
+  private openOrCreateNextRecord(workflowSeed: WorkflowSeed): void {
+    this.psychosocialReportsService.getList(1, 1, [], workflowSeed.lookupFilter).subscribe({
+      next: (response) => {
+        const rows = response?.data ?? response ?? [];
+        const existing = Array.isArray(rows) ? rows[0] : null;
+        const existingId = existing?.id ?? null;
+
+        if (existingId) {
+          this.router.navigate(['/psychosocial-reports/edit', existingId]);
+          return;
+        }
+
+        this.psychosocialReportsService.create(workflowSeed.payload as any).subscribe({
+          next: (created) => {
+            const createdId = extractCreatedRecordId(created);
+            if (!createdId) {
+              this.messageService.add({
+                severity: 'error',
+                key: 'msg',
+                summary: 'Error',
+                detail: 'No se pudo obtener el ID del reporte psicosocial creado.',
+                life: 3000
+              });
+              return;
+            }
+
+            this.router.navigate(['/psychosocial-reports/edit', createdId]);
+          },
+          error: (error) => {
+            this.messageService.add({ severity: 'error', key: 'msg', summary: 'Error', detail: error?.error?.message || error.message, life: 3000 });
+          }
+        });
+      },
+      error: (error) => {
+        this.messageService.add({ severity: 'error', key: 'msg', summary: 'Error', detail: error?.error?.message || error.message, life: 3000 });
+      }
+    });
   }
 
   getStatusLabel(active?: boolean): string {
