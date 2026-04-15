@@ -8,6 +8,7 @@
                             <div class="flex flex-col gap-2">
                                 <label for="description" class="font-semibold">Descripción</label>
                                 <input pInputText id="description" formControlName="description" />
+                                <small class="text-slate-500 text-xs">Añadir la descripción del servicio.</small>
                                 @if (form.get('description')?.hasError('required')) {
                                     <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
                                 }
@@ -15,6 +16,7 @@
                             <div class="flex flex-col gap-2">
                                 <label for="externalFolio" class="font-semibold">Folio externo</label>
                                 <input pInputText id="externalFolio" formControlName="externalFolio" />
+                                <small class="text-slate-500 text-xs">Añadir folio externo.</small>
                                 <div class="h-4">
                                     @if (form.get('externalFolio')?.hasError('required')) {
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
@@ -26,6 +28,7 @@
                             <div class="flex flex-col gap-2">
                                 <label for="iphFolio" class="font-semibold">IPH</label>
                                 <input pInputText id="iphFolio" formControlName="iphFolio" />
+                                <small class="text-slate-500 text-xs">Añadir iph al que hace referencia.</small>
                                 <div class="h-4">
                                     @if (form.get('iphFolio')?.hasError('required')) {
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
@@ -37,6 +40,7 @@
                             <div class="flex flex-col gap-2">
                                 <label for="captureDate" class="font-semibold">Fecha de captura</label>
                                 <app-date-time-picker inputId="captureDate" formControlName="captureDate" [invalid]="!!form.get('captureDate')?.invalid" />
+                                <small class="text-slate-500 text-xs">Añadir la fecha en el momento de la captura.</small>
                                 @if (form.get('captureDate')?.invalid) {
                                     <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
                                 }
@@ -44,6 +48,7 @@
                             <div class="flex flex-col gap-2">
                                 <label for="serviceDate" class="font-semibold">Fecha de servicio</label>
                                 <app-date-time-picker inputId="serviceDate" formControlName="serviceDate" [invalid]="!!form.get('serviceDate')?.invalid" />
+                                <small class="text-slate-500 text-xs">Añadir la fecha en el momento del servicio.</small>
                                 <div class="h-4">
                                     @if (form.get('serviceDate')?.invalid) {
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
@@ -53,6 +58,7 @@
                             <div class="flex flex-col gap-2">
                                 <label for="dateReception" class="font-semibold">Fecha de recepción</label>
                                 <app-date-time-picker inputId="dateReception" formControlName="dateReception" [invalid]="!!form.get('dateReception')?.invalid" />
+                                <small class="text-slate-500 text-xs">Añadir la fecha de la recepción.</small>
                                 <div class="h-4">
                                     @if (form.get('dateReception')?.invalid) {
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
@@ -62,6 +68,7 @@
                             <div class="flex flex-col gap-2">
                                 <label for="arrivalDate" class="font-semibold">Fecha de arribo</label>
                                 <app-date-time-picker inputId="arrivalDate" formControlName="arrivalDate" [invalid]="!!form.get('arrivalDate')?.invalid" />
+                                <small class="text-slate-500 text-xs">Añadir la fecha de arribo de la persona.</small>
                                 <div class="h-4">
                                     @if (form.get('arrivalDate')?.invalid) {
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
@@ -72,6 +79,7 @@
                             <div class="flex flex-col gap-2">
                                 <label for="endDate" class="font-semibold">Fecha de término</label>
                                 <app-date-time-picker inputId="endDate" formControlName="endDate" [invalid]="!!form.get('endDate')?.invalid" />
+                                <small class="text-slate-500 text-xs">Añadir la fecha de término del servicio.</small>
                                 <div class="h-4">
                                     @if (form.get('endDate')?.invalid) {
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
@@ -82,6 +90,7 @@
                             <div class="flex flex-col gap-2">
                                 <label for="arrestDate" class="font-semibold">Fecha de arresto</label>
                                 <app-date-time-picker inputId="arrestDate" formControlName="arrestDate" [invalid]="!!form.get('arrestDate')?.invalid" />
+                                <small class="text-slate-500 text-xs">Añadir la fecha de arresto de la persona.</small>
                                 <div class="h-4">
                                     @if (form.get('arrestDate')?.invalid) {
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
@@ -92,6 +101,7 @@
                             <div class="flex flex-col gap-2">
                                 <label for="submissionDate" class="font-semibold">Fecha de puesta a disposición</label>
                                 <app-date-time-picker inputId="submissionDate" formControlName="submissionDate" [invalid]="!!form.get('submissionDate')?.invalid" />
+                                <small class="text-slate-500 text-xs">Añadir la fecha de arresto de la persona.</small>
                                 <div class="h-4">
                                     @if (form.get('submissionDate')?.invalid) {
                                         <small class="text-red-600 text-right block text-xs">*Campo requerido</small>

@@ -1,17 +1,19 @@
 <div class="flex flex-col gap-4">
     <form [formGroup]="form">
         <p-card styleClass="shadow-2 border-left-3 border-primary">
-            <div class="grid p-fluid flex flex-col gap-2">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                 <div class="col-12 md:col-4">
                     <label class="font-semibold block mb-2 ">Grado</label>
                     <input pInputText formControlName="grade" placeholder="Ej. Oficial" />
+                    <small class="text-slate-500 text-xs">Nombre del grado del oficial.</small>
                     @if (form.get('grade')?.hasError('required')) {
                         <small class="text-red-600 block mt-1">* Campo requerido</small>
                     }
                 </div>
-                <div class="col-12 md:col-4 flex flex-col gap-2">
+                <div class="col-12 md:col-4 ">
                     <label class="font-semibold block mb-2 ">Nombre(s)</label>
                     <input id="firstName" pInputText formControlName="firstName"  />
+                    <small class="text-slate-500 text-xs">Nombres del oficial.</small>
                     @if (form.get('firstName')?.hasError('required')) {
                         <small class="text-red-600 block mt-1">* Campo requerido</small>
                     }
@@ -33,6 +35,7 @@
                 <div class="col-12 md:col-4">
                     <label class="font-semibold block mb-2">Unidad</label>
                     <input pInputText formControlName="unit" />
+                    <small class="text-slate-500 text-xs">Nombre de la unidad.</small>
                     @if (form.get('unit')?.hasError('required')) {
                         <small class="text-red-600 block mt-1">* Campo requerido</small>
                     }

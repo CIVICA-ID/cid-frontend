@@ -15,11 +15,13 @@ import { TooltipModule } from 'primeng/tooltip';
 import { catchError, of, forkJoin, Observable } from 'rxjs';
 import { UserService } from '@/services/user.service';
 import { CourtEntryService } from '@/services/court-entry.service';
+import { PageSectionHeaderComponent } from '@/components/page-section-header/page-section-header.component';
+import { getWorkflowStage } from '@/lib/workflow';
 
 @Component({
     selector: 'app-list-court-entry',
     standalone: true,
-    imports: [CommonModule, ButtonModule, InputTextModule, TooltipModule, ToolbarModule, ConfirmDialogModule, DialogModule, RippleModule, ToastModule, TableTemplateComponent, RouterModule],
+    imports: [CommonModule, ButtonModule, InputTextModule, TooltipModule, ToolbarModule, ConfirmDialogModule, DialogModule, RippleModule, ToastModule, TableTemplateComponent, RouterModule, PageSectionHeaderComponent],
     providers: [UserService, MessageService, ConfirmationService], // Providers locales
     templateUrl: './list.court-entry.component.html'
 })
@@ -42,7 +44,7 @@ export class ListCourtEntryComponent {
             column: 'Nombre del infractor',
             columnType: 'text',
             fieldType: 'text'
-        },
+        }
     ];
     totalRows: number = 0;
     configTable: any = {};
