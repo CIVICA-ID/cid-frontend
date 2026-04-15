@@ -1,0 +1,332 @@
+import { Belonging } from '@/api/belonging';
+import { PageSectionHeaderComponent } from '@/components/page-section-header/page-section-header.component';
+import { TableTemplateComponent } from '@/components/table-template/table-template.component';
+import { MiscService } from '@/services/misc.service';
+import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterModule } from '@angular/router';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { ButtonModule } from 'primeng/button';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ToastModule } from 'primeng/toast';
+import { catchError, finalize, forkJoin, of, Subject, switchMap, tap } from 'rxjs';
+import { BelongingsService } from '../module/service';
+import { getWorkflowStage } from '@/lib/workflow';
+
+type SortExpression = string[][];
+type SearchFilters = Record<string, string>;
+
+type TableFieldType = 'text' | 'date' | 'datetime' | 'numeric' | 'boolean' | 'states' | 'image' | 'uuid';
+
+interface TableColumn {
+  field: string;
+  column: string;
+  columnType: TableFieldType;
+  fieldType: TableFieldType;
+}
+
+interface ListParamsEvent {
+  page: number;
+  limit: number;
+  search: SearchFilters;
+  sort: SortExpression;
+}
+
+interface BelongingsListResponse {
+  data?: Belonging[];
+  meta?: {
+    totalItems?: number;
+  };
+}
+
+type DeleteType = 1 | 2;
+
+@Component({
+  selector: 'app-list-belongings',
+  standalone: true,
+  imports: [CommonModule, ButtonModule, ConfirmDialogModule, ToastModule, TableTemplateComponent, PageSectionHeaderComponent, RouterModule],
+  providers: [BelongingsService, MessageService, ConfirmationService],
+  templateUrl: './template.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class ListComponent implements OnInit {
+  readonly columns: TableColumn[] = [
+    {
+      field: 'offenderName',
+      column: 'Nombre del infractor',
+      columnType: 'text',
+      fieldType: 'text'
+    },
+    {
+      field: 'cellStay.entryDate',
+      column: 'Fecha de ingreso',
+      columnType: 'date',
+      fieldType: 'datetime'
+    },
+    {
+      field: 'belonging',
+      column: 'Pertenencias',
+      columnType: 'text',
+      fieldType: 'text'
+    },
+    {
+      field: 'recipient',
+      column: 'Recibe',
+      columnType: 'text',
+      fieldType: 'text'
+    },
+    {
+      field: 'processed',
+      column: 'Procesado',
+      columnType: 'boolean',
+      fieldType: 'boolean'
+    }
+  ];
+
+  readonly totalRows = signal<number>(0);
+  readonly data = signal<Belonging[]>([]);
+  readonly configTable = computed(() => ({
+    module: 'Pertenencias',
+    route: 'belongings',
+    view: true,
+    hideAdd: true,
+    hideDelete: true,
+    totalRows: this.totalRows()
+  }));
+  readonly workflowStage = getWorkflowStage('belongings');
+
+  limit = 10;
+  search: SearchFilters = {};
+  sort: SortExpression = [];
+  page = 1;
+  readonly ids = signal<string[]>([]);
+  readonly isLoading = signal<boolean>(false);
+
+  private readonly reloadList$ = new Subject<void>();
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly processedFilter = { processed: '$eq:true' };
+
+  constructor(
+    private readonly belongingsService: BelongingsService,
+    private readonly messageService: MessageService,
+    private readonly miscService: MiscService,
+    private readonly confirmationService: ConfirmationService
+  ) {}
+
+  ngOnInit(): void {
+    this.reloadList$
+      .pipe(
+        tap(() => this.setLoadingState(true)),
+        switchMap(() =>
+          this.belongingsService.getList(this.limit, this.page, this.sort, this.search).pipe(
+            catchError((error: unknown) => {
+              this.resetList();
+              this.showErrorMessage('Error cargando la lista de pertenencias', error);
+              return of<BelongingsListResponse | null>(null);
+            }),
+            finalize(() => this.setLoadingState(false))
+          )
+        ),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((response) => this.handleListResponse(response));
+  }
+
+  listTable(): void {
+    this.reloadList$.next();
+  }
+
+  handleParamsList(event: ListParamsEvent): void {
+    this.page = event.page;
+    this.limit = event.limit;
+    this.search = {
+      ...event.search,
+      ...this.processedFilter
+    };
+    this.sort = event.sort;
+    this.listTable();
+  }
+
+  delete(id: string | null, deleteType: DeleteType): void {
+    const idsToDelete = this.resolveIdsToDelete(id, deleteType);
+
+    if (idsToDelete.length === 0) {
+      return;
+    }
+
+    const message =
+      deleteType === 1
+        ? `Se eliminarán ${idsToDelete.length} registros seleccionados. ¿Desea continuar?`
+        : `Se eliminará ${this.getRecordDescription(id)}. ¿Desea continuar?`;
+
+    this.confirmationService.confirm({
+      message,
+      header: 'Confirmar',
+      icon: 'pi pi-info-circle',
+      acceptLabel: 'Aceptar',
+      rejectLabel: 'Cancelar',
+      accept: () => this.deleteRecords(idsToDelete, deleteType)
+    });
+  }
+
+  getIdsDeleted(ids: string[]): void {
+    this.ids.set(Array.from(new Set(ids)));
+  }
+
+  private handleListResponse(response: BelongingsListResponse | null): void {
+    if (!response) {
+      return;
+    }
+
+    const rows = Array.isArray(response.data)
+      ? response.data.map((row) => ({
+          ...row,
+          offenderName: this.getOffenderName(row)
+        }))
+      : [];
+    const totalItems = response.meta?.totalItems ?? rows.length;
+
+    if (totalItems > 0 || rows.length > 0) {
+      this.data.set(rows);
+      this.totalRows.set(totalItems > 0 ? totalItems : rows.length);
+      return;
+    }
+
+    this.messageService.add({
+      life: 5000,
+      key: 'message',
+      severity: 'warn',
+      summary: 'No se encontraron pertenencias',
+      detail: ''
+    });
+    this.resetList();
+  }
+
+  private getOffenderName(row: any): string {
+    const people = row?.cellStay?.offender?.people;
+    const fullName = [people?.paternalName, people?.maternalName, people?.firstName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    return fullName || row?.cellStay?.id_offender || row?.id_cell_stay || '-';
+  }
+
+  private resolveIdsToDelete(id: string | null, deleteType: DeleteType): string[] {
+    if (deleteType === 1) {
+      return this.ids();
+    }
+    return id ? [id] : [];
+  }
+
+  private deleteRecords(idsToDelete: string[], deleteType: DeleteType): void {
+    this.setLoadingState(true);
+
+    const requests = idsToDelete.map((itemId) =>
+      this.belongingsService.disable(itemId).pipe(
+        catchError((error: unknown) => {
+          this.messageService.add({
+            life: 5000,
+            key: 'message',
+            severity: 'error',
+            summary: 'Error al eliminar',
+            detail: this.getErrorDetail(error, `No se pudo eliminar el registro con ID: ${itemId}`)
+          });
+          return of(null);
+        })
+      )
+    );
+
+    forkJoin(requests)
+      .pipe(
+        finalize(() => {
+          this.setLoadingState(false);
+          this.listTable();
+          if (deleteType === 1) {
+            this.ids.set([]);
+          }
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((results) => {
+        const successes = results.reduce<number>((acc, result) => (result !== null ? acc + 1 : acc), 0);
+
+        if (successes > 0) {
+          this.messageService.add({
+            severity: 'success',
+            key: 'message',
+            summary: 'Operación exitosa',
+            detail: `${successes} registro(s) procesado(s) correctamente`,
+            life: 3000
+          });
+        }
+      });
+  }
+
+  private getRecordDescription(id: string | null): string {
+    if (!id) {
+      return 'el registro seleccionado';
+    }
+
+    const row = this.data().find((item) => item?.id === id);
+    if (!row) {
+      return `el registro con ID ${id}`;
+    }
+
+    const candidateFields = this.columns
+      .map((column) => column.field)
+      .filter((field) => field !== 'id' && field !== 'active');
+
+    for (const field of candidateFields) {
+      const value = this.getDeepValue(row, field);
+      if (value === null || value === undefined || `${value}`.trim() === '') {
+        continue;
+      }
+      return `el registro "${value}"`;
+    }
+
+    return `el registro con ID ${id}`;
+  }
+
+  private getDeepValue(obj: unknown, path: string): unknown {
+    return path.split('.').reduce<unknown>((acc, key) => {
+      if (acc && typeof acc === 'object') {
+        return (acc as Record<string, unknown>)[key];
+      }
+      return undefined;
+    }, obj);
+  }
+
+  private setLoadingState(loading: boolean): void {
+    this.isLoading.set(loading);
+    if (loading) {
+      this.miscService.startRequest();
+      return;
+    }
+    this.miscService.endRquest();
+  }
+
+  private resetList(): void {
+    this.data.set([]);
+    this.totalRows.set(0);
+  }
+
+  private showErrorMessage(summary: string, error: unknown): void {
+    this.messageService.add({
+      life: 5000,
+      key: 'message',
+      severity: 'error',
+      summary,
+      detail: this.getErrorDetail(error, 'Ocurrió un error inesperado')
+    });
+  }
+
+  private getErrorDetail(error: unknown, fallback: string): string {
+    if (error && typeof error === 'object') {
+      const typedError = error as { error?: { message?: string }; message?: string };
+      return typedError.error?.message || typedError.message || fallback;
+    }
+    return fallback;
+  }
+}

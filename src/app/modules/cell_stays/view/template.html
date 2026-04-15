@@ -1,0 +1,72 @@
+<p-toast [breakpoints]="{ '920px': { width: '100%', right: '0', left: '0' } }" key="msg" />
+<div class="flex justify-center p-4">
+  <div class="w-full md:max-w-4xl">
+    <div class="card p-6 bg-white shadow-md rounded-lg">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-semibold">Detalle de estadía en celda</h2>
+        <div class="flex gap-2">
+          <button pButton pRipple label="Editar" icon="pi pi-pencil" class="p-button-info" (click)="editCellStay()" [disabled]="!cellStay"></button>
+          <button
+            pButton
+            pRipple
+            [label]="getWorkflowActionLabel()"
+            [icon]="cellStay?.processed ? 'pi pi-arrow-left' : 'pi pi-arrow-right'"
+            class="p-button-success"
+            (click)="toggleWorkflowState()"
+            [disabled]="!cellStay || loading"
+          ></button>
+          <button pButton pRipple label="Regresar" icon="pi pi-arrow-left" class="p-button-outlined" (click)="backToList()"></button>
+        </div>
+      </div>
+
+      @if (loading) {
+        <div class="py-6 text-center text-slate-600">Cargando...</div>
+      } @else if (error) {
+        <div class="py-6 text-center text-red-600">No se pudo cargar la información.</div>
+      } @else {
+        <div class="grid gap-4">
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">ID</span>
+            <span class="text-base">{{ cellStay?.id || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Nombre del infractor</span>
+            <span class="text-base">{{ offenderName }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Celda de resguardo</span>
+            <span class="text-base">{{ cellStay?.cellRegister || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Fecha y hora de ingreso</span>
+            <span class="text-base">{{ cellStay?.entryDate ? (cellStay?.entryDate | date: 'dd/MM/yyyy HH:mm') : '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Observaciones</span>
+            <span class="text-base whitespace-pre-line">{{ cellStay?.observations || '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Pertenencias asociadas</span>
+            <span class="text-base whitespace-pre-line">{{ cellStay?.belongings ? (cellStay?.belongings | json) : '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Boletas de libertad asociadas</span>
+            <span class="text-base whitespace-pre-line">{{ cellStay?.freedomTickets ? (cellStay?.freedomTickets | json) : '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Creado</span>
+            <span class="text-base">{{ cellStay?.createdAt ? (cellStay?.createdAt | date: 'medium') : '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Actualizado</span>
+            <span class="text-base">{{ cellStay?.updatedAt ? (cellStay?.updatedAt | date: 'medium') : '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-sm text-slate-500">Activo</span>
+            <span class="text-base">{{ cellStay?.active === true ? 'Sí' : (cellStay?.active === false ? 'No' : '-') }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

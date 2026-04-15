@@ -1,131 +1,87 @@
 import { Routes } from '@angular/router';
 import { AppLayout } from '@/layout/components/app.layout';
 import { Notfound } from '@/pages/notfound/notfound';
-import { LandingLayout } from '@/layout/components/app.landinglayout';
-import { AuthLayout } from '@/layout/components/app.authlayout';
+import { authGuard } from '@/guards/auth.guard';
 
 export const appRoutes: Routes = [
     {
         path: '',
         component: AppLayout,
+        canActivateChild: [authGuard],
         children: [
             {
-                path: '',
-                loadComponent: () => import('@/pages/dashboards/ecommerce/ecommercedashboard').then((c) => c.EcommerceDashboard),
-                data: { breadcrumb: 'E-Commerce Dashboard' }
+                path: 'services',
+                loadChildren: () => import('./app/modules/services/services.routes').then((m) => m.SERVICES_ROUTES),
+                data: { breadcrumb: 'Servicios', module: 'services' }
             },
             {
-                path: 'dashboard-banking',
-                loadComponent: () => import('@/pages/dashboards/banking/bankingdashboard').then((c) => c.BankingDashboard),
-                data: { breadcrumb: 'Banking Dashboard' }
+                path: 'roles',
+                data: { breadcrumb: 'Roles', module: 'roles' },
+                loadChildren: () => import('@/modules/roles/roles.routes').then((m) => m.ROLES_ROUTES)
             },
             {
-                path: 'dashboard-marketing',
-                loadComponent: () => import('@/pages/dashboards/marketing/marketingdashboard').then((c) => c.MarketingDashboard),
-                data: { breadcrumb: 'Marketing Dashboard' }
+                path: 'modules',
+                data: { breadcrumb: 'Módulos', module: 'modules' },
+                loadChildren: () => import('@/modules/modules/modules.routes').then((m) => m.MODULES_ROUTES)
             },
             {
-                path: 'uikit',
-                data: { breadcrumb: 'UI Kit' },
-                loadChildren: () => import('@/pages/uikit/uikit.routes')
+                path: 'users',
+                loadChildren: () => import('@/modules/users/users.routes').then((m) => m.USERS_ROUTES),
+                data: { breadcrumb: 'Usuarios', module: 'users' }
             },
             {
-                path: 'documentation',
-                data: { breadcrumb: 'Documentation' },
-                loadComponent: () => import('@/pages/documentation/documentation').then((c) => c.Documentation)
+                path: 'staff',
+                loadChildren: () => import('@/modules/staff/module/routes').then((m) => m.STAFF_ROUTES),
+                data: { breadcrumb: 'Staff', module: 'staff' }
             },
             {
-                path: 'pages',
-                loadChildren: () => import('@/pages/pages.routes'),
-                data: { breadcrumb: 'Pages' }
+                path: 'branches',
+                loadChildren: () => import('@/modules/branches/branches.routes').then((m) => m.BRANCHES_ROUTES),
+                data: { breadcrumb: 'Sucursales', module: 'branches' }
             },
             {
-                path: 'apps',
-                loadChildren: () => import('@/apps/apps.routes'),
-                data: { breadcrumb: 'Apps' }
+                path: 'medical-reports',
+                loadChildren: () => import('@/modules/medical_reports/module/routes').then((m) => m.MEDICAL_REPORTS_ROUTES),
+                data: { breadcrumb: 'Reportes médicos', module: 'medical_reports' }
+            },
+            {
+                path: 'psychosocial-reports',
+                loadChildren: () => import('@/modules/psychosocial_reports/module/routes').then((m) => m.PSYCHOSOCIAL_REPORTS_ROUTES),
+                data: { breadcrumb: 'Reportes psicosociales', module: 'psychosocial_reports' }
+            },
+            {
+                path: 'cell-stays',
+                loadChildren: () => import('@/modules/cell_stays/module/routes').then((m) => m.CELL_STAYS_ROUTES),
+                data: { breadcrumb: 'Estadías en celda', module: 'cell_stays' }
+            },
+            {
+                path: 'belongings',
+                loadChildren: () => import('@/modules/belongings/module/routes').then((m) => m.BELONGINGS_ROUTES),
+                data: { breadcrumb: 'Pertenencias', module: 'belongings' }
+            },
+            {
+                path: 'freedom-tickets',
+                loadChildren: () => import('@/modules/freedom_tickets/module/routes').then((m) => m.FREEDOM_TICKETS_ROUTES),
+                data: { breadcrumb: 'Boletas de libertad', module: 'freedom_tickets' }
             },
 
             {
-                path: 'blocks',
-                data: { breadcrumb: 'Free Blocks' },
-                loadChildren: () => import('@/pages/blocks/blocks.routes')
+                path: 'court-entry',
+                data: { breadcrumb: 'Registros del Juez' },
+                loadChildren: () => import('@/modules/court-entries/court-entry.routes').then(m=>m.COURT_ENTRY_ROUTES)
             },
             {
-                path: 'ecommerce',
-                loadChildren: () => import('@/pages/ecommerce/ecommerce.routes'),
-                data: { breadcrumb: 'E-Commerce' }
+                path: 'seguimiento',
+                loadChildren: () => import('@/modules/seguimiento/module/routes').then((m) => m.SEGUIMIENTO_ROUTES),
+                data: { breadcrumb: 'Seguimiento', module: 'seguimiento' }
             },
-            {
-                path: 'profile',
-                loadChildren: () => import('@/pages/usermanagement/usermanagement.routes')
-            }
         ]
     },
-    {
-        path: 'landing',
-        component: LandingLayout,
-        children: [
-            {
-                path: '',
-                loadComponent: () => import('@/pages/landing/landingpage').then((c) => c.LandingPage)
-            },
-            {
-                path: 'features',
-                loadComponent: () => import('@/pages/landing/featurespage').then((c) => c.FeaturesPage)
-            },
-            {
-                path: 'pricing',
-                loadComponent: () => import('@/pages/landing/pricingpage').then((c) => c.PricingPage)
-            },
-            {
-                path: 'contact',
-                loadComponent: () => import('@/pages/landing/contactpage').then((c) => c.ContactPage)
-            }
-        ]
-    },
-
-    { path: 'notfound', component: Notfound },
     {
         path: 'auth',
-        component: AuthLayout,
-        children: [
-            {
-                path: 'login',
-                loadComponent: () => import('@/pages/auth/login').then((c) => c.Login)
-            },
-            {
-                path: 'register',
-                loadComponent: () => import('@/pages/auth/register').then((c) => c.Register)
-            },
-            {
-                path: 'verification',
-                loadComponent: () => import('@/pages/auth/verification').then((c) => c.Verification)
-            },
-            {
-                path: 'forgot-password',
-                loadComponent: () => import('@/pages/auth/forgotpassword').then((c) => c.ForgotPassword)
-            },
-            {
-                path: 'new-password',
-                loadComponent: () => import('@/pages/auth/newpassword').then((c) => c.NewPassword)
-            },
-            {
-                path: 'lock-screen',
-                loadComponent: () => import('@/pages/auth/lockscreen').then((c) => c.LockScreen)
-            },
-            {
-                path: 'access',
-                loadComponent: () => import('@/pages/auth/access').then((c) => c.Access)
-            },
-            {
-                path: 'oops',
-                loadComponent: () => import('@/pages/oops/oops').then((c) => c.Oops)
-            },
-            {
-                path: 'error',
-                loadComponent: () => import('@/pages/notfound/notfound').then((c) => c.Notfound)
-            }
-        ]
+        loadChildren: () => import('./app/modules/auth/auth.routes').then((c) => c.AUTH_ROUTES)
     },
-    { path: '**', redirectTo: '/notfound' }
+    { path: '**', redirectTo: '/notfound' },
+    { path: 'error', component: Notfound },
+    { path: 'notfound', component: Notfound }
 ];

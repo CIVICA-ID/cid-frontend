@@ -1,0 +1,210 @@
+<p-toast [breakpoints]="{ '920px': { width: '100%', right: '0', left: '0' } }" key="msg" />
+<div class="px-4 py-4 md:px-8">
+  <div class="mx-auto w-full max-w-[96rem] flex flex-col gap-5">
+    <div class="card overflow-hidden border border-slate-200 shadow-md">
+      <div class="bg-slate-50 px-6 py-5 md:px-8 border-b border-slate-200">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h2 class="text-2xl font-semibold leading-tight m-0">{{ isEditMode ? 'Actualizar Boleta de Libertad' : 'Alta de Boleta de Libertad' }}</h2>
+            <p class="text-sm text-slate-600 mt-2 mb-0">Documenta la liberación para dejar respaldo legal y administrativo del egreso.</p>
+          </div>
+          <span class="inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+            {{ isEditMode ? 'Edición' : 'Nuevo' }}
+          </span>
+        </div>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="p-6 md:p-8">
+        <p-fluid>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="flex flex-col gap-2 md:col-span-2">
+              <label for="idCellStay" class="font-semibold">Nombre del infractor</label>
+              <p-select
+                [options]="cellStayOptions"
+                formControlName="idCellStay"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar infractor"
+                [filter]="true"
+                [showClear]="true"
+                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('idCellStay') }"
+              ></p-select>
+              <small class="text-slate-500 text-xs">El valor guardado sigue siendo la estadía en celda vinculada.</small>
+              @if (isInvalid('idCellStay') && form.get('idCellStay')?.hasError('required')) {
+                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="releaseDate" class="font-semibold">Fecha y hora de libertad</label>
+              <app-date-time-picker inputId="releaseDate" formControlName="releaseDate" [invalid]="isInvalid('releaseDate')" />
+              @if (isInvalid('releaseDate') && form.get('releaseDate')?.hasError('required')) {
+                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="arrestHours" class="font-semibold">Horas de arresto</label>
+              <p-iconfield>
+                <p-inputicon class="pi pi-clock" />
+                <input
+                  pInputText
+                  id="arrestHours"
+                  type="number"
+                  step="1"
+                  formControlName="arrestHours"
+                  placeholder="Ej. 24"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('arrestHours') }"
+                />
+              </p-iconfield>
+              <small class="text-slate-500 text-xs">Captura la duración total del arresto.</small>
+              @if (isInvalid('arrestHours') && form.get('arrestHours')?.hasError('required')) {
+                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+              }
+              @if (isInvalid('arrestHours') && form.get('arrestHours')?.hasError('min')) {
+                <small class="text-red-600 text-right block text-xs">*Debe ser mayor o igual a 0</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="exitReason" class="font-semibold">Motivo de egreso</label>
+              <p-iconfield>
+                <p-inputicon class="pi pi-sign-out" />
+                <input
+                  pInputText
+                  id="exitReason"
+                  formControlName="exitReason"
+                  placeholder="Ej. Cumplimiento de arresto"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('exitReason') }"
+                />
+              </p-iconfield>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Motivo oficial del egreso.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('exitReason') }}/100</small>
+              </div>
+              @if (isInvalid('exitReason') && (form.get('exitReason')?.hasError('required') || form.get('exitReason')?.hasError('whitespace'))) {
+                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+              }
+              @if (isInvalid('exitReason') && form.get('exitReason')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 100 caracteres</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="civilJudge" class="font-semibold">Juez cívico municipal</label>
+              <p-iconfield>
+                <p-inputicon class="pi pi-briefcase" />
+                <input
+                  pInputText
+                  id="civilJudge"
+                  formControlName="civilJudge"
+                  placeholder="Nombre del juez cívico"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('civilJudge') }"
+                />
+              </p-iconfield>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Autoridad que avala la boleta.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('civilJudge') }}/150</small>
+              </div>
+              @if (isInvalid('civilJudge') && (form.get('civilJudge')?.hasError('required') || form.get('civilJudge')?.hasError('whitespace'))) {
+                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+              }
+              @if (isInvalid('civilJudge') && form.get('civilJudge')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 150 caracteres</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="custodian" class="font-semibold">Custodio</label>
+              <p-iconfield>
+                <p-inputicon class="pi pi-shield" />
+                <input
+                  pInputText
+                  id="custodian"
+                  formControlName="custodian"
+                  placeholder="Nombre del custodio"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('custodian') }"
+                />
+              </p-iconfield>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Personal responsable de la entrega/liberación.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('custodian') }}/150</small>
+              </div>
+              @if (isInvalid('custodian') && (form.get('custodian')?.hasError('required') || form.get('custodian')?.hasError('whitespace'))) {
+                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+              }
+              @if (isInvalid('custodian') && form.get('custodian')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 150 caracteres</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="fineAmount" class="font-semibold">Monto de multa</label>
+              <p-iconfield>
+                <p-inputicon class="pi pi-money-bill" />
+                <input
+                  pInputText
+                  id="fineAmount"
+                  type="number"
+                  step="0.01"
+                  formControlName="fineAmount"
+                  placeholder="0.00"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('fineAmount') }"
+                />
+              </p-iconfield>
+              <small class="text-slate-500 text-xs">Opcional: monto económico relacionado al proceso.</small>
+              @if (isInvalid('fineAmount') && form.get('fineAmount')?.hasError('min')) {
+                <small class="text-red-600 text-right block text-xs">*Debe ser mayor o igual a 0</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="paymentTicketFolio" class="font-semibold">Folio de boleta de pago</label>
+              <p-iconfield>
+                <p-inputicon class="pi pi-receipt" />
+                <input
+                  pInputText
+                  id="paymentTicketFolio"
+                  formControlName="paymentTicketFolio"
+                  placeholder="Ej. FOL-2026-0001"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('paymentTicketFolio') }"
+                />
+              </p-iconfield>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Número de referencia del pago.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('paymentTicketFolio') }}/50</small>
+              </div>
+              @if (isInvalid('paymentTicketFolio') && form.get('paymentTicketFolio')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 50 caracteres</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2 md:col-span-2">
+              <label for="observations" class="font-semibold">Observaciones</label>
+              <textarea
+                pInputTextarea
+                id="observations"
+                formControlName="observations"
+                rows="4"
+                placeholder="Anota información adicional de la liberación o incidencias relevantes."
+                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('observations') }"
+              ></textarea>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Campo opcional de seguimiento.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('observations') }}/500</small>
+              </div>
+              @if (isInvalid('observations') && form.get('observations')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 500 caracteres</small>
+              }
+            </div>
+          </div>
+        </p-fluid>
+
+        <div class="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+          <button pButton pRipple label="Cancelar" (click)="onCancel($event)" class="p-button-outlined sm:!w-32"></button>
+          <button pButton pRipple type="submit" [label]="isEditMode ? 'Actualizar' : 'Guardar'" class="sm:!w-32"></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,206 @@
+<div class="flex flex-col w-full gap-4">
+    <div class="w-full max-w-1xl">
+        <div class="flex items-stretch p-inputgroup shadow-sm border border-gray-300 rounded-lg overflow-hidden">
+            <span class="p-inputgroup-addon bg-gray-100 text-gray-700 font-semibold px-4 flex items-center border-none" [style.minWidth.px]="120"> Persona{{ people ? ':' : '' }} </span>
+            <button
+                pButton
+                pRipple
+                type="button"
+                icon="pi pi-search"
+                [label]="people ? (people.firstName || '') + (people.paternalName ? ' ' + people.paternalName : '') + (people.maternalName ? ' ' + people.maternalName : '') : 'Seleccionar Persona'"
+                [class]="people ? 'p-button-primary' : 'p-button-outlined p-button-secondary'"
+                class="flex-grow border-none text-left justify-start px-4"
+                (click)="openDialog()"
+            ></button>
+            @if (people) {
+                <button pButton pRipple icon="pi pi-times" class="p-button-danger p-button-text border-none bg-gray-50" (click)="deletePeople()" type="button" pTooltip="Quitar selección"></button>
+            }
+        </div>
+    </div>
+    @if (people) {
+        <div class="w-full animate-fade-in">
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-2 mb-1 text-gray-700">
+                    <i class="pi pi-id-card"></i>
+                    <span class="font-bold">Detalles de la persona seleccionada</span>
+                </div>
+                <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-md">
+                    <p-table [value]="[people]" [responsiveLayout]="'scroll'" styleClass="p-datatable-gridlines p-datatable-sm">
+                        <ng-template pTemplate="header">
+                            <tr class="bg-gray-50">
+                                <th class="text-xs uppercase tracking-wider font-bold text-gray-500 py-3">Ocupación</th>
+                                <th class="text-xs uppercase tracking-wider font-bold text-gray-500 py-3">CURP</th>
+                                <th class="text-xs uppercase tracking-wider font-bold text-gray-500 py-3">Alias / Otros</th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-person>
+                            <tr>
+                                <td class="text-sm text-gray-800 font-medium px-4">
+                                    {{ person.occupation || '-' }}
+                                </td>
+                                <td class="text-sm text-gray-700 font-mono px-4">
+                                    <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100">
+                                        {{ person.curp || 'NO REGISTRADO' }}
+                                    </span>
+                                </td>
+                                <td class="text-sm text-gray-600 px-4italic">
+                                    {{ person.alias || '-' }}
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+<p-dialog [(visible)]="visibleDialog" [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }" [modal]="true" [style]="{ width: '55vw' }" [draggable]="false" [resizable]="false" [header]="getDialogHeader()">
+    <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center gap-2">
+            <button pButton type="button" pRipple icon="pi pi-arrow-left" class="p-button-outlined" (click)="previousStep()" [disabled]="currentStep === 1"></button>
+            <span class="text-sm font-medium text-gray-700"> {{ currentStep }} de {{ steps }} </span>
+        </div>
+    </div>
+    @switch (currentStep) {
+        @case (1) {
+            <form [formGroup]="formSearch" class="flex flex-col gap-y-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                    @for (field of searchFields; track field.controlName) {
+                        <div class="flex flex-col gap-1.5">
+                            <label [for]="field.id" class="font-semibold ">
+                                {{ field.label }}
+                            </label>
+                            <input pInputText [id]="field.id" [formControlName]="field.controlName" class="w-full" [class.uppercase]="field.controlName === 'curp'" />
+                            <div class="min-h-5">
+                                @if (formSearch.get(field.controlName)?.hasError('required')) {
+                                    <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                } @else if (formSearch.get(field.controlName)?.hasError('maxlength')) {
+                                    <small class="text-red-600 text-right block text-xs">*Longitud máxima {{ field.maxLength }}</small>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="flex justify-end">
+                    <button pButton pRipple type="button" [label]="getNextButtonLabel()" (click)="searchPerson()" class="!w-32"></button>
+                </div>
+            </form>
+        }
+        @case (2) {
+            <div class="flex flex-col gap-4">
+                <div class="flex justify-end">
+                    <button pButton type="button" pRipple [label]="getNextButtonLabel()" type="button" icon="pi pi-plus" (click)="addPerson()" class="p-button-outlined !w-32"></button>
+                </div>
+                <div class="mt-2 card">
+                    <p-table
+                        #dt
+                        [value]="listPerson"
+                        [lazy]="true"
+                        [resetPageOnSort]="false"
+                        dataKey="id"
+                        [rows]="limit"
+                        [paginator]="true"
+                        (onLazyLoad)="loadTable($event)"
+                        [lazyLoadOnInit]="true"
+                        [totalRecords]="totalRows"
+                        [rowsPerPageOptions]="[10, 25, 50]"
+                        [showCurrentPageReport]="true"
+                        currentPageReportTemplate="{{ getPageRange(page, limit, totalRows) }}"
+                        [responsive]="true"
+                        [rowHover]="true"
+                        responsiveLayout="scroll"
+                    >
+                        <ng-template pTemplate="header">
+                            <tr>
+                                @for (field of searchFields; track field.controlName) {
+                                    <th class="px-2 py-1">{{ field.label }}</th>
+                                }
+                                <th></th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-person>
+                            <tr class="hover:bg-gray-50">
+                                @for (field of searchFields; track field.controlName) {
+                                    @if (field.controlName == 'curp') {
+                                        <td class="px-2 py-1">{{ person[field.controlName] | uppercase }}</td>
+                                    } @else {
+                                        @if (person[field.controlName] != null && person[field.controlName]) {
+                                            <td class="px-2 py-1">{{ person[field.controlName] }}</td>
+                                        } @else {
+                                            <td class="px-2 py-1">-</td>
+                                        }
+                                    }
+                                }
+                                <td class="px-2 py-1 text-center">
+                                    <button pButton pRipple icon="pi pi-check" class="p-button-rounded p-button-info" (click)="selectPerson(person)"></button>
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+            </div>
+        }
+        @case (3) {
+            <form [formGroup]="form" class="flex flex-col gap-y-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                    @for (field of addFields; track field.controlName) {
+                        <div class="flex flex-col gap-1.5">
+                            <label [for]="field.id" class="font-semibold ">
+                                {{ field.label }}
+                            </label>
+                            @if (field.type == 'text') {
+                                <input pInputText [id]="field.id" [formControlName]="field.controlName" [fluid]="true" [class.uppercase]="field.controlName === 'curp'" />
+                            } @else if (field.type == 'date') {
+                                <p-datepicker [inputId]="field.id" [formControlName]="field.controlName" [fluid]="true" [showTime]="false" [showIcon]="true" />
+                            }
+                            @else if (field.type == 'list') {
+                                <p-select [formControlName]="field.controlName" [options]="field.options" optionLabel="label" optionValue="value" placeholder="Seleccionar uno" [showClear]="true" [group]="field.group" />
+                            }
+                            <div class="min-h-5">
+                                @if (form.get(field.controlName)?.hasError('required')) {
+                                    <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                } @else if (form.get(field.controlName)?.hasError('maxlength')) {
+                                    <small class="text-red-600 text-right block text-xs">*Longitud máxima {{ field.maxLength }}</small>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div formArrayName="peopleAddresses">
+                    <div class="flex flex-col ">
+                        @if (form.get('peopleAddresses')?.hasError('required')) {
+                            <p-message severity="warn" text="Debe agregar al menos un domicilio."></p-message>
+                        }
+                    </div>
+                    <div class="flex flex-col ">
+                        @for (elementGroup of getPeopleAddressArray().controls; track elementGroup; let i = $index) {
+                            <p-card [formGroupName]="i" class="mt-6">
+                                <ng-template pTemplate="title">
+                                    <div class="flex justify-content-between align-items-center">
+                                        <div class="flex align-items-center gap-2">
+                                            <i class="pi pi-map-marker text-primary"></i>
+                                            <span class="text-xl font-bold">Domicilio #{{ i + 1 }}</span>
+                                        </div>
+                                        <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="removeRow(getPeopleAddressArray(), i)" pTooltip="Eliminar este domicilio"></button>
+                                    </div>
+                                </ng-template>
+                                <app-addresses (sendAddress)="getAddresses($event, $index, getPeopleAddressArray())" [newAddress]="elementGroup.get('address_data')?.value"></app-addresses>
+                                <div class="mt-2">
+                                    @if (elementGroup.get('address')?.invalid) {
+                                        <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                    }
+                                </div>
+                            </p-card>
+                        }
+                    </div>
+                    <div class="mt-4 flex justify-content-center ">
+                        <button pButton type="button" label="Añadir Domicilio" icon="pi pi-plus-circle" class="p-button-raised p-button-secondary w-full" (click)="addRow(getPeopleAddressArray(), newPeopleAddress())"></button>
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button pButton pRipple type="button" [label]="getNextButtonLabel()" (click)="saveForm()" class="!w-32"></button>
+                </div>
+            </form>
+        }
+    }
+</p-dialog>

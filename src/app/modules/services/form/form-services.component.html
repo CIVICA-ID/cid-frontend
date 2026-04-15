@@ -1,0 +1,264 @@
+<div class="flex justify-center p-4">
+    <div class="w-full md:max-w-6xl">
+        <div class="card p-6 bg-white shadow-md rounded-lg">
+            <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
+                <p-fluid>
+                    <div class="flex flex-col gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                            <div class="flex flex-col gap-2">
+                                <label for="description" class="font-semibold">Descripción</label>
+                                <input pInputText id="description" formControlName="description" />
+                                @if (form.get('description')?.hasError('required')) {
+                                    <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                }
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label for="externalFolio" class="font-semibold">Folio externo</label>
+                                <input pInputText id="externalFolio" formControlName="externalFolio" />
+                                <div class="h-4">
+                                    @if (form.get('externalFolio')?.hasError('required')) {
+                                        <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                    } @else if (form.get('externalFolio')?.hasError('maxlength')) {
+                                        <small class="block text-right text-xs text-red-600">*Longitud máxima 50</small>
+                                    }
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label for="iphFolio" class="font-semibold">IPH</label>
+                                <input pInputText id="iphFolio" formControlName="iphFolio" />
+                                <div class="h-4">
+                                    @if (form.get('iphFolio')?.hasError('required')) {
+                                        <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                    } @else if (form.get('iphFolio')?.hasError('maxlength')) {
+                                        <small class="block text-right text-xs text-red-600">*Longitud máxima 50</small>
+                                    }
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label for="captureDate" class="font-semibold">Fecha de captura</label>
+                                <app-date-time-picker inputId="captureDate" formControlName="captureDate" [invalid]="!!form.get('captureDate')?.invalid" />
+                                @if (form.get('captureDate')?.invalid) {
+                                    <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                }
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label for="serviceDate" class="font-semibold">Fecha de servicio</label>
+                                <app-date-time-picker inputId="serviceDate" formControlName="serviceDate" [invalid]="!!form.get('serviceDate')?.invalid" />
+                                <div class="h-4">
+                                    @if (form.get('serviceDate')?.invalid) {
+                                        <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                    }
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label for="dateReception" class="font-semibold">Fecha de recepción</label>
+                                <app-date-time-picker inputId="dateReception" formControlName="dateReception" [invalid]="!!form.get('dateReception')?.invalid" />
+                                <div class="h-4">
+                                    @if (form.get('dateReception')?.invalid) {
+                                        <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                    }
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label for="arrivalDate" class="font-semibold">Fecha de arribo</label>
+                                <app-date-time-picker inputId="arrivalDate" formControlName="arrivalDate" [invalid]="!!form.get('arrivalDate')?.invalid" />
+                                <div class="h-4">
+                                    @if (form.get('arrivalDate')?.invalid) {
+                                        <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col gap-2">
+                                <label for="endDate" class="font-semibold">Fecha de término</label>
+                                <app-date-time-picker inputId="endDate" formControlName="endDate" [invalid]="!!form.get('endDate')?.invalid" />
+                                <div class="h-4">
+                                    @if (form.get('endDate')?.invalid) {
+                                        <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col gap-2">
+                                <label for="arrestDate" class="font-semibold">Fecha de arresto</label>
+                                <app-date-time-picker inputId="arrestDate" formControlName="arrestDate" [invalid]="!!form.get('arrestDate')?.invalid" />
+                                <div class="h-4">
+                                    @if (form.get('arrestDate')?.invalid) {
+                                        <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col gap-2">
+                                <label for="submissionDate" class="font-semibold">Fecha de puesta a disposición</label>
+                                <app-date-time-picker inputId="submissionDate" formControlName="submissionDate" [invalid]="!!form.get('submissionDate')?.invalid" />
+                                <div class="h-4">
+                                    @if (form.get('submissionDate')?.invalid) {
+                                        <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4" formArrayName="elements">
+                            <div class="flex flex-col mb-3">
+                                <!-- @if (form.get('elements')?.hasError('duplicated')) {
+                                        <p-message severity="error" text="Elemento duplicado" styleClass="mb-2"></p-message>
+                                    } -->
+                                @if (form.get('elements')?.hasError('required')) {
+                                    <p-message severity="warn" text="Debe agregar al menos un elemento."></p-message>
+                                }
+                            </div>
+                            <div class="flex flex-col gap-4">
+                                @for (elementGroup of getElementArray().controls; track elementGroup; let i = $index) {
+                                    <p-card [formGroupName]="i" styleClass="shadow-2 border-left-3 border-primary">
+                                        <ng-template pTemplate="title">
+                                            <div class="flex justify-content-between align-items-center">
+                                                <div class="flex align-items-center gap-2">
+                                                    <i class="pi pi-user text-primary"></i>
+                                                    <span class="text-xl font-bold">Oficial #{{ i + 1 }}</span>
+                                                </div>
+                                                <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="removeRow(getElementArray(), i)" pTooltip="Eliminar este oficial"></button>
+                                            </div>
+                                        </ng-template>
+                                        <app-element [form]="$any(elementGroup)"></app-element>
+                                    </p-card>
+                                }
+                            </div>
+                            <div class="mt-4 flex justify-content-center">
+                                <button pButton type="button" label="Añadir Oficial" icon="pi pi-plus-circle" class="p-button-raised p-button-secondary" (click)="addRow(getElementArray(), addElement())"></button>
+                            </div>
+                        </div>
+                        <div class="mt-4" formArrayName="affected">
+                            <div class="flex flex-col mb-3">
+                                @if (form.get('affected')?.hasError('required')) {
+                                    <p-message severity="warn" text="Debe agregar al menos un afectado."></p-message>
+                                }
+                                @if (form.hasError('duplicatePeople')) {
+                                    <p-message severity="error" text="Persona duplicada."></p-message>
+                                }
+                            </div>
+                            <div class="flex flex-col gap-4">
+                                @for (elementGroup of getAffectedArray().controls; track elementGroup; let i = $index) {
+                                    <p-card [formGroupName]="i" styleClass="shadow-2 border-left-3 border-primary">
+                                        <ng-template pTemplate="title">
+                                            <div class="flex justify-content-between align-items-center">
+                                                <div class="flex align-items-center gap-2">
+                                                    <i class="pi pi-user text-primary"></i>
+                                                    <span class="text-xl font-bold">Afectado #{{ i + 1 }}</span>
+                                                </div>
+                                                <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="removeRow(getAffectedArray(), i)" pTooltip="Eliminar este afectado"></button>
+                                            </div>
+                                        </ng-template>
+                                        <app-people (sendPeople)="getPeople($event, $index, getAffectedArray())" [newPeople]="elementGroup.get('idPeople')?.value"></app-people>
+                                        <div class="mt-2">
+                                            @if (form.get('affected')?.invalid) {
+                                                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                            }
+                                        </div>
+                                    </p-card>
+                                }
+                            </div>
+                            <div class="mt-4 flex justify-content-center">
+                                <button pButton type="button" label="Añadir Afectado" icon="pi pi-plus-circle" class="p-button-raised p-button-secondary" (click)="addRow(getAffectedArray(), addAffected())"></button>
+                            </div>
+                        </div>
+                        <div class="mt-4" formArrayName="offenders">
+                            <div class="flex flex-col mb-3">
+                                <!-- @if (form.get('elements')?.hasError('duplicated')) {
+                                        <p-message severity="error" text="Elemento duplicado" styleClass="mb-2"></p-message>
+                                    } -->
+                                @if (form.get('offenders')?.hasError('required')) {
+                                    <p-message severity="warn" text="Debe agregar al menos un infractor."></p-message>
+                                }
+                            </div>
+                            <div class="flex flex-col gap-4">
+                                @for (elementGroup of getOffenderArray().controls; track elementGroup; let i = $index) {
+                                    <p-card [formGroupName]="i" styleClass="shadow-2 border-left-3 border-primary">
+                                        <ng-template pTemplate="title">
+                                            <div class="flex justify-content-between align-items-center">
+                                                <div class="flex align-items-center gap-2">
+                                                    <i class="pi pi-user text-primary"></i>
+                                                    <span class="text-xl font-bold">Infractor #{{ i + 1 }}</span>
+                                                </div>
+                                                <button pButton icon="pi pi-trash" class="p-button-rounded p-button-danger p-button-text" (click)="removeRow(getOffenderArray(), i)" pTooltip="Eliminar este afectado"></button>
+                                            </div>
+                                        </ng-template>
+                                        <app-people (sendPeople)="getPeople($event, $index, getOffenderArray())" [newPeople]="elementGroup.get('idPeople')?.value"></app-people>
+                                        <div class="mt-2">
+                                            @if (elementGroup.get('idPeople')?.invalid) {
+                                                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                            }
+                                        </div>
+                                        <div class="flex flex-col mt-3">
+                                            <label for="arrestReason" class="font-semibold mb-3"> Categoría </label>
+                                            <p-select formControlName="id_administrative_fault_category" [options]="listAdministrativeFaultsCategory" optionLabel="label" optionValue="value" placeholder="Seleccionar uno" [filter]="true" [showClear]="true">
+                                                <ng-template pTemplate="item" let-item>
+                                                    {{ item.label | titlecase }}
+                                                </ng-template>
+                                            </p-select>
+                                        </div>
+                                        <div class="flex flex-col mt-3">
+                                            <label for="arrestReason" class="font-semibold mb-3"> Falta Administrativa </label>
+                                            <p-select formControlName="id_administrative_fault" [options]="getOffenderGroup(elementGroup).dynamicOptions()" [loading]="getOffenderGroup(elementGroup).isLoading()" optionLabel="label" optionValue="value" placeholder="Seleccionar uno" [filter]="true" [showClear]="true">
+                                                <ng-template pTemplate="item" let-item>
+                                                    {{ item.label | titlecase }}
+                                                </ng-template>
+                                            </p-select>
+                                        </div>
+                                        <div class="flex flex-col mt-3">
+                                            <label for="arrestType" class="font-semibold mb-3"> Tipo de arresto </label>
+                                            <p-select formControlName="arrestType" [options]="arrestTypeList" optionLabel="label" optionValue="value" placeholder="Seleccionar uno" [filter]="true" [showClear]="true">
+                                                <ng-template pTemplate="item" let-item>
+                                                    {{ item.label | titlecase }}
+                                                </ng-template>
+                                            </p-select>
+                                            @if (elementGroup.get('arrestType')?.invalid) {
+                                                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                            }
+                                        </div>
+                                    </p-card>
+                                }
+                            </div>
+                            <div class="mt-4 flex justify-content-center">
+                                <button pButton type="button" label="Añadir infractor" icon="pi pi-plus-circle" class="p-button-raised p-button-secondary" (click)="addRow(getOffenderArray(), addOffender())"></button>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <app-addresses (sendAddress)="getAddress($event)" [newAddress]="newAddress"></app-addresses>
+                            <div class="mt-2">
+                                @if (form.get('address')?.invalid) {
+                                    <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                                }
+                            </div>
+                        </div>
+                        <p-card styleClass="shadow-2 border-left-3 border-primary">
+                            <ng-template pTemplate="title">
+                                <div class="flex justify-content-between align-items-center">
+                                    <div class="flex align-items-center gap-2">
+                                        <i class="pi pi-car text-primary"></i>
+                                        <span class="text-xl font-bold">Vehículo</span>
+                                    </div>
+                                </div>
+                            </ng-template>
+                            <div class="flex flex-col gap-4" formGroupName="involvedVehicle">
+                                <app-vehicles (sendVehicle)="getVehicle($event)" [newVehicle]="form.get('involvedVehicle.idVehicle')?.value"></app-vehicles>
+                                <div class="flex flex-col gap-2">
+                                    <label for="deposit" class="font-semibold">Depósito</label>
+                                    <input pInputText id="deposit" formControlName="deposit" />
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <label for="theftReport" class="font-semibold">Reporte de robo</label>
+                                    <input pInputText id="theftReport" formControlName="theftReport" />
+                                </div>
+                            </div>
+                        </p-card>
+                    </div>
+                </p-fluid>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button pButton pRipple label="Cancelar" (click)="onCancel($event)" class="p-button-outlined !w-32"></button>
+                    <button pButton pRipple type="button" label="Guardar" type="submit" class="!w-32"></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

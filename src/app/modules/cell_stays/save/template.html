@@ -1,0 +1,93 @@
+<p-toast [breakpoints]="{ '920px': { width: '100%', right: '0', left: '0' } }" key="msg" />
+<div class="px-4 py-4 md:px-8">
+  <div class="mx-auto w-full max-w-[96rem] flex flex-col gap-5">
+    <div class="card overflow-hidden border border-slate-200 shadow-md">
+      <div class="bg-slate-50 px-6 py-5 md:px-8 border-b border-slate-200">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h2 class="text-2xl font-semibold leading-tight m-0">{{ isEditMode ? 'Actualizar Estadía en Celda' : 'Alta de Estadía en Celda' }}</h2>
+            <p class="text-sm text-slate-600 mt-2 mb-0">Registra y documenta la permanencia en celda para mantener trazabilidad operativa.</p>
+          </div>
+          <span class="inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+            {{ isEditMode ? 'Edición' : 'Nuevo' }}
+          </span>
+        </div>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="p-6 md:p-8">
+        <p-fluid>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="flex flex-col gap-2 md:col-span-2">
+              <label for="id_offender" class="font-semibold">Nombre del infractor</label>
+              <p-select
+                [options]="offenderOptions"
+                formControlName="id_offender"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccionar infractor"
+                [filter]="true"
+                [showClear]="true"
+                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('id_offender') }"
+              ></p-select>
+              <small class="text-slate-500 text-xs">Vincula la estadía al expediente del infractor correspondiente.</small>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="cellRegister" class="font-semibold">Celda de resguardo</label>
+              <p-iconfield>
+                <p-inputicon class="pi pi-home" />
+                <input
+                  pInputText
+                  id="cellRegister"
+                  formControlName="cellRegister"
+                  placeholder="Ej. CELDA-03-A"
+                  [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('cellRegister') }"
+                />
+              </p-iconfield>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Identificador interno del área o celda.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('cellRegister') }}/50</small>
+              </div>
+              @if (isInvalid('cellRegister') && (form.get('cellRegister')?.hasError('required') || form.get('cellRegister')?.hasError('whitespace'))) {
+                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+              }
+              @if (isInvalid('cellRegister') && form.get('cellRegister')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 50 caracteres</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="entryDate" class="font-semibold">Fecha y hora de ingreso</label>
+              <app-date-time-picker inputId="entryDate" formControlName="entryDate" [invalid]="isInvalid('entryDate')" />
+              <small class="text-slate-500 text-xs">Si no se captura, quedará pendiente para actualización posterior.</small>
+            </div>
+
+            <div class="flex flex-col gap-2 md:col-span-2">
+              <label for="observations" class="font-semibold">Observaciones</label>
+              <textarea
+                pInputTextarea
+                id="observations"
+                formControlName="observations"
+                rows="5"
+                placeholder="Notas relevantes sobre la estancia, comportamiento o incidencias."
+                [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('observations') }"
+              ></textarea>
+              <div class="flex items-center justify-between gap-2">
+                <small class="text-slate-500 text-xs">Campo opcional para seguimiento operativo.</small>
+                <small class="text-slate-500 text-xs">{{ textLength('observations') }}/500</small>
+              </div>
+              @if (isInvalid('observations') && form.get('observations')?.hasError('maxlength')) {
+                <small class="text-red-600 text-right block text-xs">*Máximo 500 caracteres</small>
+              }
+            </div>
+          </div>
+        </p-fluid>
+
+        <div class="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+          <button pButton pRipple label="Cancelar" (click)="onCancel($event)" class="p-button-outlined sm:!w-32"></button>
+          <button pButton pRipple type="submit" [label]="isEditMode ? 'Actualizar' : 'Guardar'" class="sm:!w-32"></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
