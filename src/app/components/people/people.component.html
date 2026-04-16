@@ -379,27 +379,173 @@
                                 Agregar nueva persona con huellas
                             </span>
                         </div>
-                        <ng-container *ngTemplateOutlet="addPersonFormTpl; context: { includeFingerprints: true }"></ng-container>
+                        <ng-container *ngTemplateOutlet="addPersonFormTpl"></ng-container>
                     }
                 </div>
             </p-tabpanel>
             <!-- Tab 3 -->
             <p-tabpanel value="2">
                 <div class="pt-4">
-                    <div class="flex flex-col items-center justify-center py-12 text-gray-400">
-                        <i class="pi pi-camera text-5xl mb-4"></i>
-                        <p class="text-lg font-semibold">Pendiente</p>
-                        <p class="text-sm">
-                            Apartado de Busqueda Facial
-                        </p>
-                    </div>
+                    <!-- Busqueda por reconocimiento facial -->
+                     @if(faceStep === 1){
+                        <div class="flex items-center gap-2 mb-4">
+                            <i class="pi pi-face-smile text-blue-600"></i>
+                            <span class="text-sm font-medium text-gray-700">
+                                Agrega imagen de persona a buscar
+                            </span>
+                        </div>
+                        <!-- Boton para subir imagen -->
+                         <div class="mb-4">
+                            <div class="relative">
+                                <input
+                                type="file",
+                                accept="image/png, image/jpeg, image/jpg, image/bmp, image/webp"
+                                (change)="onFaceSearchFileSelected($event)"
+                                class="hidden"
+                                #faceFileInput/>
+                                <button pButton pRipple type="button"
+                                label="Subir imagen"
+                                icon="pi pi-upload"
+                                class="p-button-outlined w-full"
+                                (click)="faceFileInput.click()">
+                                </button>
+                            </div>
+                         </div>
+                         <!-- Preview de la imagen -->
+                          @if(faceSearchPreviewUrl) {
+                            <div class="border-2 border-blue-300 rounded-lg p-4 bg-blue-50 text-center mb-4">
+                                <img [src]="faceSearchPreviewUrl"
+                                    alt="Imagen de busqueda"
+                                    class="mx-auto max-h-52 object-contain bg-white p-2 rounded-lg shadow"/>
+                                <p class="text-sm text-blue-700 mt-2 font-semibold">
+                                    <i class="pi pi-check-circle mr-1"></i>Imagen cargada correctamente
+                                </p>
+                            </div>
+                            <!-- Boton de buscar persona -->
+                             <button pButton pRipple type="button"
+                                label="Buscar Persona"
+                                icon="pi pi-search"
+                                class="w-full"
+                                [disabled]="isFaceSearchLoading"
+                                [loading]="isFaceSearchLoading"
+                                (click)="searchByFace()">
+                             </button>
+                          }
+                          <!-- Match encontrado, se confirma -->
+                           @if(faceSearchResult?.isMatch && isAwaitingFaceConfirmation){
+                            <div class="border-t border-gray-200 pt-4 mt-4">
+                                <div class="border-2 border-green-300 rounded-lg p-4 bg-green-50">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <i class="pi pi-check-circle text-green-600 text-xl"></i>
+                                        <span class="font-bold text-green-800 text-lg">
+                                            Persona encontrada
+                                        </span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3 text-sm mb-3">
+                                        <div>
+                                            <span class="text-gray-500">Nombre:</span>
+                                            <span class="font-semibold ml-1">
+                                                {{ faceSearchResult.firstName }}
+                                                {{ faceSearchResult.paternalName }}
+                                                {{ faceSearchResult.maternalName }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">CURP:</span>
+                                            <span class="font-mono font-semibold ml-1 uppercase">
+                                                {{ faceSearchResult.curp || 'N/A' }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500">Similitud</span>
+                                            <span class="font-bold ml-1 text-blue-600">
+                                                {{ (faceSearchResult.similarity! * 100) | number: '1.1-1' }}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p class="text-sm text-blue-700 mb-4 font-medium">
+                                        Es la persona que se busca?
+                                    </p>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <button pButton pRipple type="button"
+                                            label="Si, es correcta"
+                                            icon="pi pi-check"
+                                            class="p-button-success"
+                                            (click)="confirmFaceMatch(true)">
+                                        </button>
+                                        <button pButton pRipple type="button"
+                                            label="No, no lo es"
+                                            icon="pi pi-times"
+                                            class="p-button-danger p-button-outlined"
+                                            (click)="confirmFaceMatch(false)">
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                           }
+                           <!-- Resultado del match confirmado -->
+                            @if(faceSearchResult?.isMatch && !isAwaitingFaceConfirmation){
+                                <div class="border-t border-gray-200 pt-4 mt-4">
+                                    <div class="border-2 border-green-300 rounded-lg p-4 bg-green-50">
+                                        <div class="flex items-center gap-2">
+                                            <i class="pi pi-check-circle text-green-600 text-xl"></i>
+                                            <span class="font-bold text-green-800">
+                                                Persona seleccionada correctamente
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            <!-- Sin coincidencias -->
+                           @if(faceNoMatchFound){
+                            <div class="border-t border-gray-200 pt-4 mt-4">
+                                <div class="border-2 border-yellow-300 rounded-lg p-4 bg-yellow-50 mb-4">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <i class="pi pi-exclamation-triangle text-yellow-600 text-xl"></i>
+                                        <span class="font-bold text-yellow-800">
+                                            No se encontraron coincidencias
+                                        </span>
+                                    </div>
+                                    <p class="text-sm text-yellow-700 mb-3">
+                                        No se encontro ninguna persona con el rostro proporcionado
+                                    </p>
+                                    <button pButton pRipple type="button"
+                                        label="Agregar Persona"
+                                        icon="pi pi-user-plus"
+                                        class="p-button-warning w-full"
+                                        (click)="goToAddPersonFromFace()">
+                                    </button>
+                                </div>
+                            </div>
+                           }
+                           <!-- Error -->
+                            @if(faceSearchError){
+                                <div class="mt-3 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm flex items-start">
+                                    <i class="pi pi-exclamation-circle mr-2 mt-0.5"></i>{{ faceSearchError }}
+                                </div>
+                            }
+                     }
+                     <!-- Agregar persona con fotos -->
+                      @if(faceStep === 3){
+                        <div class="flex items-center gap-2 mb-4">
+                            <button pButton pRipple type="button"
+                                icon="pi pi-arrow-left"
+                                class="p-button-outlined p-button-sm"
+                                (click)="goBackFromFaceAddPerson()">
+                            </button>
+                            <span class="text-sm font-medium text-gray-700">
+                                Agregar nueva persona con fotos
+                            </span>
+                        </div>
+                        <ng-container *ngTemplateOutlet="addPersonFormTpl"></ng-container>
+                      }
                 </div>
             </p-tabpanel>
         </p-tabpanels>
     </p-tabs>
 </p-dialog>
 
-<ng-template #addPersonFormTpl let-includeFingerprints="includeFingerprints">
+<ng-template #addPersonFormTpl>
     <form [formGroup]="form" class="flex flex-col gap-y-5">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
             @for (field of addPersonFields; track field.controlName) {
@@ -456,86 +602,190 @@
                 <button pButton type="button" label="Añadir Domicilio" icon="pi pi-plus-circle" class="p-button-raised p-button-secondary w-full" (click)="addAddressRow(getAddressFormArray())"></button>
             </div>
         </div>
-        @if(includeFingerprints){
-            <div class="mt-4">
-                <!-- Boton añadir huellas -->
-                <button pButton type="button"
-                    label="Añadir Huellas Dactilares"
-                    icon="pi pi-plus-circle"
-                    class="p-button-raised p-button-secondary w-full"
-                    (click)="openEnrollDialog()">
-                </button>
-                <!-- Preview de huellas ya capturadas -->
-                @if (enrolledFingersCount > 0) {
-                    <div class="mt-4 p-4 border-2 border-blue-300 rounded-lg bg-blue-50">
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="flex items-center text-blue-700">
-                                <i class="pi pi-check-circle mr-2"></i>
-                                <span class="font-semibold">
-                                    {{ enrolledFingersCount }} Dedo(s) Capturados
-                                </span>
-                            </div>
+        <div class="mt-4">
+            <!-- Boton añadir huellas -->
+            <button pButton type="button"
+                label="Añadir Huellas Dactilares"
+                icon="pi pi-plus-circle"
+                class="p-button-raised p-button-secondary w-full"
+                (click)="openEnrollDialog()">
+            </button>
+            <!-- Preview de huellas ya capturadas -->
+            @if (enrolledFingersCount > 0) {
+                <div class="mt-4 p-4 border-2 border-blue-300 rounded-lg bg-blue-50">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center text-blue-700">
+                            <i class="pi pi-check-circle mr-2"></i>
+                            <span class="font-semibold">
+                                {{ enrolledFingersCount }} Dedo(s) Capturados
+                            </span>
                         </div>
-                        <!-- Mano izquierda -->
-                        @if (hasLeftHandFingers()){
-                            <p class="text-xs font-semibold text-green-700 mb-1">Mano Izquierda</p>
-                            <div class="flex flex-wrap gap-2 mb-3">
-                                @for (thumbnail of leftFingerThumbnails; track thumbnail.key) {
-                                    @if (getEnrolledFingerImage(thumbnail.key)) {
-                                        <div class="text-center relative group">
-                                            <button pButton pRipple type="button"
-                                                icon="pi pi-times"
-                                                class="p-button-rounded p-button-danger p-button-text absolute -top-2 -right-2 z-10 !w-6 !h-6 !p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                (click)="removeEnrolledFinger(thumbnail.key)"
-                                                pTooltip="Quitar este dedo"
-                                                >
-                                            </button>
-                                            <img [src]="'data:image/bmp;base64,' + getEnrolledFingerImage(thumbnail.key)"
-                                                [alt]="thumbnail.label"
-                                                class="w-16 max-h-20 object-contain bg-white rounded shadow border border-green-200" />
-                                            <p class="text-xs text-green-600 mt-0.5 font-medium">
-                                                {{ thumbnail.label }}
-                                            </p>
-                                        </div>
-                                    }
-                                }
-                            </div>
-                        }
-                        <!-- Mano derecha -->
-                        @if (hasRightHandFingers()) {
-                            <p class="text-xs font-semibold text-blue-700 mb-1">Mano Derecha</p>
-                            <div class="flex flex-wrap gap-2">
-                                @for (thumbnail of rightFingerThumbnails; track thumbnail.key) {
-                                    @if (getEnrolledFingerImage(thumbnail.key)) {
-                                        <div class="text-center relative group">
-                                            <button pButton pRipple type="button"
-                                                icon="pi pi-times"
-                                                class="p-button-rounded p-button-danger p-button-text absolute -top-2 -right-2 z-10 !w-6 !h-6 !p=0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                (click)="removeEnrolledFinger(thumbnail.key)"
-                                                pTooltip="Quitar este dedo"
-                                                >
-                                            </button>
-                                            <img [src]="'data:image/bmp;base64,' + getEnrolledFingerImage(thumbnail.key)"
-                                                [alt]="thumbnail.label"
-                                                class="w-16 max-h-20 object-contain bg-white rounded shadow border border-blue-200" />
-                                            <p class="text-xs text-blue-600 mt-0.5 font-medium">
-                                                {{ thumbnail.label }}
-                                            </p>
-                                        </div>
-                                    }
-                                }
-                            </div>
-                        }
                     </div>
-                }
+                    <!-- Mano izquierda -->
+                    @if (hasLeftHandFingers()){
+                        <p class="text-xs font-semibold text-green-700 mb-1">Mano Izquierda</p>
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            @for (thumbnail of leftFingerThumbnails; track thumbnail.key) {
+                                @if (getEnrolledFingerImage(thumbnail.key)) {
+                                    <div class="text-center relative group">
+                                        <button pButton pRipple type="button"
+                                            icon="pi pi-times"
+                                            class="p-button-rounded p-button-danger p-button-text absolute -top-2 -right-2 z-10 !w-6 !h-6 !p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            (click)="removeEnrolledFinger(thumbnail.key)"
+                                            pTooltip="Quitar este dedo"
+                                            >
+                                        </button>
+                                        <img [src]="'data:image/bmp;base64,' + getEnrolledFingerImage(thumbnail.key)"
+                                            [alt]="thumbnail.label"
+                                            class="w-16 max-h-20 object-contain bg-white rounded shadow border border-green-200" />
+                                        <p class="text-xs text-green-600 mt-0.5 font-medium">
+                                            {{ thumbnail.label }}
+                                        </p>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                    <!-- Mano derecha -->
+                    @if (hasRightHandFingers()) {
+                        <p class="text-xs font-semibold text-blue-700 mb-1">Mano Derecha</p>
+                        <div class="flex flex-wrap gap-2">
+                            @for (thumbnail of rightFingerThumbnails; track thumbnail.key) {
+                                @if (getEnrolledFingerImage(thumbnail.key)) {
+                                    <div class="text-center relative group">
+                                        <button pButton pRipple type="button"
+                                            icon="pi pi-times"
+                                            class="p-button-rounded p-button-danger p-button-text absolute -top-2 -right-2 z-10 !w-6 !h-6 !p=0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            (click)="removeEnrolledFinger(thumbnail.key)"
+                                            pTooltip="Quitar este dedo"
+                                            >
+                                        </button>
+                                        <img [src]="'data:image/bmp;base64,' + getEnrolledFingerImage(thumbnail.key)"
+                                            [alt]="thumbnail.label"
+                                            class="w-16 max-h-20 object-contain bg-white rounded shadow border border-blue-200" />
+                                        <p class="text-xs text-blue-600 mt-0.5 font-medium">
+                                            {{ thumbnail.label }}
+                                        </p>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+        <!-- Fotos -->
+         <div class="mt-4">
+            <button pButton type="button"
+                label="Agregar Fotografias"
+                icon="pi pi-camera"
+                class="p-button-raised p-button-secondary w-full"
+                (click)="togglePhotosSection()">
+            </button>
+            @if (showPhotosSection) {
+            <div class="mt-4 p-4 border-2 border-gray-200 rounded-lg">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Foto Frontañ -->
+                     <div class="flex flex-col items-center gap-2">
+                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            Frontal
+                        </label>
+                        @if(faceEnrollFrontPreview) {
+                            <div class="relative-group">
+                                <img [src]="faceEnrollFrontPreview"
+                                    alt="Foto Frontal"
+                                    class="w-32 h-40 object-cover rounded-lg shadow border-2 border-green-300">
+                                <button pButton pRipple type="button"
+                                    icon="pi pi-times"
+                                    class="p-button-rounded p-button-danger p-button-text absolute -top-2 -right-2 !w-7 !h-7 !p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    (click)="removeFaceEnrollPhoto('front')">
+                                </button>
+                            </div>
+                        }@else {
+                            <div class="relative">
+                                <input type="file" accept="image/png, image/jpeg, image/jpg, image/bmp, image/webp"
+                                    (change)="onFaceEnrollPhotoSelected($event, 'front')"
+                                    class="hidden"
+                                    #frontPhotoInput/>
+                                <button pButton pRipple
+                                    type="button"
+                                    icon="pi pi-camera"
+                                    label="Subir"
+                                    class="p-button-outlined p-button-secondary p-button-sm"
+                                    (click)="frontPhotoInput.click()">
+                                </button>
+                            </div>
+                        }
+                     </div>
+                     <!-- foto perfil izquierdo -->
+                      <div class="flex flex-col items-center gap-2">
+                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            Perfil Izquierdo
+                        </label>
+                        @if(faceEnrollLeftProfilePreview){
+                            <div class="relative group">
+                                <img [src]="faceEnrollLeftProfilePreview"
+                                    alt="Perfil Izquierdo"
+                                    class="w-32 h-40 object-cover rounded-lg shadow border-2 border-blue-300"/>
+                                <button pButton pRipple type="button"
+                                    icon="pi pi-times"
+                                    class="p-button-rounded p-button-danger p-button-text absolute -top-2 -right-2 !w-7 !h-7 !p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    (click)="removeFaceEnrollPhoto('leftProfile')">
+                                </button>
+                            </div>
+                        } @else{
+                            <div class="relative">
+                                <input type="file" accept="image/png, image/jpeg, image/jpg, image/bmp, image/webp"
+                                    (change)="onFaceEnrollPhotoSelected($event, 'leftProfile')"
+                                    class="hidden"
+                                    #leftProfileInput/>
+                                <button pButton pRipple type="button"
+                                    icon="pi pi-camera"
+                                    label="Subir"
+                                    class="p-button-outlined p-button-secondary p-button-sm"
+                                    (click)="leftProfileInput.click()">
+                                </button>
+                            </div>
+                        }
+                      </div>
+                     <!-- Foto perfil derecho -->
+                      <div class="flex flex-col items-center gap-2">
+                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            Perfil Derecho
+                        </label>
+                        @if(faceEnrollRightProfilePreview){
+                            <div class="relative group">
+                                <img [src]="faceEnrollRightProfilePreview"
+                                    alt="Perfil Derecho"
+                                    class="w-32 h-40 object-cover rounded-lg shadow border-2 border-blue-300"/>
+                                <button pButton pRipple type="button"
+                                    icon="pi pi-times"
+                                    class="p-button-rounded p-button-danger p-button-text absolute -top-2 -right-2 !w-7 !h-7 !p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    (click)="removeFaceEnrollPhoto('rightProfile')">
+                                </button>
+                            </div>
+                        }@else {
+                            <div class="relative">
+                                <input type="file" accept="image/png, image/jpeg, image/jpg, image/bmp, image/webp"
+                                (change)="onFaceEnrollPhotoSelected($event, 'rightProfile')"
+                                class="hidden"
+                                #rightProfileInput/>
+                                <button pButton pRipple type="button"
+                                    icon="pi pi-camera"
+                                    label="Subir"
+                                    class="p-button-outlined p-button-secondary p-button-sm"
+                                    (click)="rightProfileInput.click()">
+                                </button>
+                            </div>
+                        }
+                      </div>
+                </div>
             </div>
         }
+         </div>
+         <!-- Boton para guardar todo -->
         <div class="flex justify-end mt-4">
-            @if(includeFingerprints){
-                <button pButton pRipple type="button" label="Guardar Persona y Huellas" icon="pi pi-save" (click)="savePersonWithFingerprints()" class="!w-64"></button>
-            }@else {
-                <button pButton pRipple type="button" label="Guardar" (click)="savePersonWithoutFingerprints()" class="!w-32"></button>
-            }
+            <button pButton pRipple type="button" label="Guardar Persona y Huellas" icon="pi pi-save" (click)="savePersonComplete()" class="!w-64"></button>
         </div>
     </form>
 </ng-template>
