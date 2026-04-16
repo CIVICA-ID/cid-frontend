@@ -48,7 +48,7 @@
             </div>
 
             <div class="flex flex-col gap-2">
-              <label for="dictation_date" class="font-semibold">Fecha de dictamen</label>
+              <label for="dictation_date" class="font-semibold">Fecha y hora del dictamen</label>
               <app-date-time-picker inputId="dictation_date" formControlName="dictation_date" [invalid]="isInvalid('dictation_date')" />
                 <div class="h-4">
                     @if (form.get('dictation_date')?.invalid) {
