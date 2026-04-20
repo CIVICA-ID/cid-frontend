@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 // import { Address } from "../api/address";
@@ -10,9 +10,6 @@ import { environment } from 'src/environments/environment';
 export class UserBranchsService {
     url: string = `${environment.apiUrl}user-branches`;
     constructor(private http: HttpClient) {}
-    getUserBranches(userId: string): Observable<Object> {
-        return this.http.get(this.url + '/getByUserId/' + userId);
-    }
     // getAddresses(search: string) {
     //     return this.http.get<Address>(this.url + "/" + search);
     // }
