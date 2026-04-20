@@ -28,12 +28,6 @@ import { getWorkflowStage } from '@/lib/workflow';
 export class ListCourtEntryComponent {
     columns = [
         {
-            field: 'id',
-            column: 'ID',
-            columnType: 'text',
-            fieldType: 'text'
-        },
-        {
             field: 'entryDate',
             column: 'Fecha de entrada',
             columnType: 'date',
@@ -84,7 +78,8 @@ export class ListCourtEntryComponent {
                         module: 'Corte',
                         route: 'court-entry',
                         totalRows: this.totalRows,
-                        add: true
+                        add: true,
+                        view: true
                     };
                 }
                 this.miscsService.endRquest();

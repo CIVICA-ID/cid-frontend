@@ -383,6 +383,8 @@ export class FormServicesComponent implements OnInit, OnChanges {
         //si el elemento es nuevo no tendrá id
         if (properties.id == null) {
             delete properties.id;
+        }
+        if(properties.involvedVehicle.id == null) {
             delete properties.involvedVehicle.id;
         }
         this.formEmitted.emit(properties);

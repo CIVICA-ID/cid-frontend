@@ -26,12 +26,6 @@ import { PageSectionHeaderComponent } from '@/components/page-section-header/pag
 export class ListServicesComponent {
     columns = [
         {
-            field: 'id',
-            column: 'ID',
-            columnType: 'text',
-            fieldType: 'text'
-        },
-        {
             field: 'externalFolio',
             column: 'Folio externo',
             columnType: 'text',
@@ -83,7 +77,8 @@ export class ListServicesComponent {
                     this.configTable = {
                         module: 'Servicio',
                         route: 'services',
-                        totalRows: this.totalRows
+                        totalRows: this.totalRows,
+                        view: true
                     };
                 } else {
                     this.data = [];
