@@ -1,25 +1,20 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { CheckboxModule } from 'primeng/checkbox';
+import { Router } from '@angular/router';
 import { InputTextModule } from 'primeng/inputtext';
-import { LazyImageWidget } from '@/pages/landing/components/lazyimagewidget';
-import { LogoWidget } from '@/pages/landing/components/logowidget';
+import { Password } from 'primeng/password';
 import { Toast } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
-import { UserBranchsService } from '@/services/user-branchs.service';
-import { UserService } from '@/services/user.service';
-import { User } from '@/api/user';
-import { Branch } from '@/api/branch';
 import { Select } from 'primeng/select';
 import { AuthService } from '@/services/auth.service';
 import { SessionService } from '@/services/session.service';
+import { Auth } from '@/api/auth';
 
 @Component({
     selector: 'app-login',
     standalone: true,
-    imports: [LogoWidget, CommonModule, ReactiveFormsModule, InputTextModule, LazyImageWidget, CheckboxModule, RouterLink, Toast, Select],
+    imports: [CommonModule, ReactiveFormsModule, InputTextModule, Toast, Select, Password],
     templateUrl: './login.component.html',
     providers: [MessageService]
 })
@@ -27,15 +22,13 @@ export class LoginComponent {
     loginForm: FormGroup;
     currentYear: number = new Date().getFullYear();
     visibleBranches: boolean = false;
+    loginTicket: string | null = null;
     private messageService: MessageService = inject(MessageService);
     private fb: FormBuilder = inject(FormBuilder);
-    private userBranchsService: UserBranchsService = inject(UserBranchsService);
-    private userService: UserService = inject(UserService);
     private authService: AuthService = inject(AuthService);
     private sessionService: SessionService = inject(SessionService);
     private router: Router = inject(Router);
-    userId: string;
-    listBranchs: Branch[] = [];
+    listBranchs: { id: string; label: string }[] = [];
     constructor() {
         this.loginForm = this.fb.group({
             nickName: [null, Validators.required],
@@ -45,49 +38,11 @@ export class LoginComponent {
     }
 
     ngSubmitBranchs(): void {
-        if (this.loginForm.invalid) {
+        if (this.loginForm.get('nickName')?.invalid || this.loginForm.get('password')?.invalid) {
             this.messageService.add({ key: 'msg', severity: 'error', summary: 'Faltan campos por llenar', life: 3000 });
             return;
         }
-        this.userService.getUser(this.loginForm.get('nickName').value).subscribe({
-            next: (data: User) => {
-                if (data.id) {
-                    this.userId = data.id;
-                    this.userBranchsService.getUserBranches(this.userId).subscribe({
-                        next: (data: any) => {
-                            if (data.statusCode != 400) {
-                                this.listBranchs = data.map((branch: any) => {
-                                    return {
-                                        name: branch.branch.name,
-                                        id: branch.branch.id
-                                    };
-                                });
-                                if (this.listBranchs.length === 1) {
-                                    const branchControl = this.loginForm.get('branch');
-                                    branchControl.setValue(this.listBranchs[0]?.id);
-                                    this.login();
-                                } else {
-                                    if (this.sessionService.getBranch())
-                                    {
-                                        const branchControl = this.loginForm.get('branch');
-                                        branchControl.setValue(this.listBranchs[0]?.id);
-                                    }
-                                    this.visibleBranches = true;
-                                }
-                            }
-                        },
-                        error: (error) => {
-                            this.messageService.add({ severity: 'error', key: 'msg', summary: 'Hubo un error al consultar las sucursales del usuario', life: 3000 });
-                        }
-                    });
-                } else {
-                    this.messageService.add({ severity: 'error', key: 'msg', summary: 'No existe ese usuario', life: 3000 });
-                }
-            },
-            error: (error) => {
-                this.messageService.add({ severity: 'error', key: 'msg', summary: 'Hubo un error al consultar el usuario, error' + error.message, life: 3000 });
-            }
-        });
+        this.login();
     }
     ngSubmitLogin(): void {
         if (this.loginForm.get('branch').value == null) {
@@ -96,13 +51,48 @@ export class LoginComponent {
         }
         this.login();
     }
+
+    returnToCredentials(): void {
+        this.visibleBranches = false;
+        this.loginTicket = null;
+        this.listBranchs = [];
+        this.loginForm.get('branch')?.setValue(null);
+    }
+
     login(): void {
-        this.authService.login(this.loginForm.value).subscribe({
+        const isBranchSelection = this.visibleBranches && !!this.loginTicket;
+        const payload: Auth = isBranchSelection
+            ? {
+                  nickName: this.loginForm.get('nickName')?.value,
+                  branch: this.loginForm.get('branch')?.value,
+                  loginTicket: this.loginTicket ?? undefined
+              }
+            : {
+                  nickName: this.loginForm.get('nickName')?.value,
+                  password: this.loginForm.get('password')?.value
+              };
+
+        this.authService.login(payload).subscribe({
             next: (data: any) => {
+                if (data.requiresBranchSelection) {
+                    this.loginTicket = data.loginTicket;
+                    this.listBranchs = data.branches ?? [];
+                    this.visibleBranches = true;
+                    this.loginForm.get('branch')?.setValue(null);
+                    this.messageService.add({
+                        severity: 'info',
+                        key: 'msg',
+                        summary: 'Selecciona la sucursal para continuar',
+                        life: 3000
+                    });
+                    return;
+                }
                 if (data.statusCode != 404) {
                     this.messageService.add({ severity: 'success', key: 'msg', summary: 'Inicio de sesión exitoso', life: 3000 });
                     this.sessionService.setToken(data.token);
                     this.sessionService.setBranch(data.branch);
+                    this.visibleBranches = false;
+                    this.loginTicket = null;
                     this.router.navigate(['/']);
                 }
             },
