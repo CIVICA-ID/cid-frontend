@@ -223,7 +223,10 @@
                 </div>
 
                 <div class="flex justify-end mt-2">
-                    <button pButton pRipple class="p-button-raised shadow-lg !w-40" (click)="saveForm()" type="button" [disabled]="form.invalid" [icon]="form.invalid ? 'pi pi-lock' : 'pi pi-save'" [label]="getNextButtonLabel()"></button>
+                    <button pButton pRipple class="p-button-raised shadow-lg !w-40" (click)="saveForm()" type="button"
+                        [disabled]="form.invalid || miscService.loading"
+                        [icon]="miscService.loading ? 'pi pi-spin pi-spinner' : (form.invalid ? 'pi pi-lock' : 'pi pi-save')"
+                        [label]="miscService.loading ? 'Guardando...' : getNextButtonLabel()"></button>
                 </div>
             </div>
         }

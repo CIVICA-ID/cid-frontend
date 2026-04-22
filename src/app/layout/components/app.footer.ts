@@ -1,5 +1,4 @@
-import {Component, computed, inject} from '@angular/core';
-import {LayoutService} from '@/layout/service/layout.service';
+import {Component} from '@angular/core';
 
 @Component({
     selector: '[app-footer]',
@@ -7,15 +6,13 @@ import {LayoutService} from '@/layout/service/layout.service';
     template: `
         <div class="layout-footer">
             <div class="footer-logo-container">
-                <img src="/layout/images/logo-{{ isDarkTheme() ? 'white' : 'dark' }}.svg" alt="diamond-layout"/>
-                <span class="footer-app-name">DIAMOND</span>
+                <img src="/logos_blanco_negro/logo3x.png" alt="CIVICA ID Logo"/>
+                <span class="footer-app-name">CIVICA ID</span>
             </div>
-            <span class="footer-copyright">&#169; Your Organization - 2025</span>
+            <span class="footer-copyright">&#169; {{ currentYear }} CIVICA ID</span>
         </div>
     `
 })
 export class AppFooter {
-    layoutService = inject(LayoutService);
-
-    isDarkTheme = computed(() => this.layoutService.isDarkTheme());
+    currentYear = new Date().getFullYear();
 }

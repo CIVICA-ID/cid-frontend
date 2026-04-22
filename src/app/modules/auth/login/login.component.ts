@@ -10,6 +10,7 @@ import { Select } from 'primeng/select';
 import { AuthService } from '@/services/auth.service';
 import { SessionService } from '@/services/session.service';
 import { Auth } from '@/api/auth';
+import { AuthLoginResponse } from '@/services/auth-session.model';
 
 @Component({
     selector: 'app-login',
@@ -73,7 +74,7 @@ export class LoginComponent {
               };
 
         this.authService.login(payload).subscribe({
-            next: (data: any) => {
+            next: (data: AuthLoginResponse) => {
                 if (data.requiresBranchSelection) {
                     this.loginTicket = data.loginTicket;
                     this.listBranchs = data.branches ?? [];
@@ -87,10 +88,12 @@ export class LoginComponent {
                     });
                     return;
                 }
-                if (data.statusCode != 404) {
+                if (data.statusCode !== 404) {
                     this.messageService.add({ severity: 'success', key: 'msg', summary: 'Inicio de sesión exitoso', life: 3000 });
-                    this.sessionService.setToken(data.token);
-                    this.sessionService.setBranch(data.branch);
+                    this.sessionService.setSession(data);
+                    if (data.branch) {
+                        this.sessionService.setBranch(data.branch);
+                    }
                     this.visibleBranches = false;
                     this.loginTicket = null;
                     this.router.navigate(['/']);

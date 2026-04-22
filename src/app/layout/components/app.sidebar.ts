@@ -12,8 +12,8 @@ import {CommonModule} from "@angular/common";
     template: `<div class="layout-sidebar" (mouseenter)="onMouseEnter()" (mouseleave)="onMouseLeave()">
         <div class="sidebar-header">
             <a class="logo" [routerLink]="['/']">
-                <img class="logo-image" [src]="menuTheme() === 'light' ? '/layout/images/logo-dark.svg' : '/layout/images/logo-white.svg'" alt="diamond-layout" />
-                <span class="app-name title-h7">DIAMOND</span>
+                <img class="logo-image" src="/logos_blanco_negro/logo3x.png" alt="CIVICA ID Logo" />
+                <span class="app-name title-h7">CIVICA ID</span>
             </a>
             <button class="layout-sidebar-anchor z-2" type="button" (click)="anchor()"></button>
         </div>
@@ -28,8 +28,6 @@ export class AppSidebar {
     timeout: any = null;
 
     isHorizontal = computed(() => this.layoutService.isHorizontal());
-
-    menuTheme = computed(() => this.layoutService.layoutConfig().menuTheme);
 
     @ViewChild('menuContainer') menuContainer!: ElementRef;
 

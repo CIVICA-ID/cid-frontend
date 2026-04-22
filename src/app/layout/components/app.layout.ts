@@ -9,12 +9,11 @@ import { AppConfigurator } from './app.configurator';
 import { AppBreadcrumb } from '@/layout/components/app.breadcrumb';
 import { AppFooter } from '@/layout/components/app.footer';
 import { AppSearch } from '@/layout/components/app.search';
-import { AppRightMenu } from '@/layout/components/app.rightmenu';
 
 @Component({
     selector: 'app-layout',
     standalone: true,
-    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppConfigurator, AppBreadcrumb, AppFooter, AppSearch, AppRightMenu],
+    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppConfigurator, AppBreadcrumb, AppFooter, AppSearch],
     template: `<div class="layout-wrapper" [ngClass]="containerClass()">
         <div app-sidebar></div>
         <div class="layout-content-wrapper">
@@ -29,7 +28,6 @@ import { AppRightMenu } from '@/layout/components/app.rightmenu';
         </div>
         <app-configurator />
         <div app-search></div>
-        <div app-rightmenu></div>
         <div class="layout-mask animate-fadein"></div>
     </div> `
 })

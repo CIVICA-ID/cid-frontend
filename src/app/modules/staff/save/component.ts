@@ -38,7 +38,7 @@ export class SaveComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly messageService = inject(MessageService);
-  private readonly miscService = inject(MiscService);
+  readonly miscService = inject(MiscService);
   private readonly staffService = inject(StaffService);
 
   form: FormGroup = this.fb.group({
@@ -102,6 +102,10 @@ export class SaveComponent implements OnInit {
 
   onSubmit() {
     this.submitted = true;
+
+    if (this.miscService.loading) {
+      return;
+    }
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();

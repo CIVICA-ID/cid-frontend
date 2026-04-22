@@ -244,8 +244,16 @@
         </p-fluid>
 
         <div class="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
-          <button pButton pRipple label="Cancelar" (click)="onCancel($event)" class="p-button-outlined sm:!w-32"></button>
-          <button pButton pRipple type="submit" [label]="isEditMode ? 'Actualizar' : 'Guardar'" class="sm:!w-32"></button>
+          <button pButton pRipple label="Cancelar" (click)="onCancel($event)" class="p-button-outlined sm:!w-32" [disabled]="miscService.loading"></button>
+          <button
+            pButton
+            pRipple
+            type="submit"
+            [label]="miscService.loading ? 'Guardando...' : (isEditMode ? 'Actualizar' : 'Guardar')"
+            [icon]="miscService.loading ? 'pi pi-spin pi-spinner' : ''"
+            [disabled]="miscService.loading || form.invalid"
+            class="sm:!w-32"
+          ></button>
         </div>
       </form>
     </div>

@@ -240,6 +240,18 @@ export class LayoutService {
         this.updateLayoutState({ rightMenuVisible: !this.layoutState().rightMenuVisible });
     }
 
+    toggleDarkTheme() {
+        this.layoutConfig.update((state) => {
+            const darkTheme = !state.darkTheme;
+
+            return {
+                ...state,
+                darkTheme,
+                menuTheme: darkTheme ? 'dark' : 'light'
+            };
+        });
+    }
+
     isDesktop() {
         return window.innerWidth > 991;
     }
