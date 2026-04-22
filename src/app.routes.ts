@@ -67,7 +67,7 @@ export const appRoutes: Routes = [
 
             {
                 path: 'court-entry',
-                data: { breadcrumb: 'Registros del Juez' },
+                data: { breadcrumb: 'Registros del Juez', module: 'court_entries' },
                 loadChildren: () => import('@/modules/court-entries/court-entry.routes').then(m=>m.COURT_ENTRY_ROUTES)
             },
             {

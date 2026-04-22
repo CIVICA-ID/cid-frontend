@@ -204,7 +204,8 @@
 
         <div class="flex justify-end mt-2">
             <button pButton pRipple class="p-button-raised shadow-lg !w-32" (click)="saveForm()" type="button"
-                [label]="getNextButtonLabel()"></button>
+                [disabled]="miscService.loading" [icon]="miscService.loading ? 'pi pi-spin pi-spinner' : 'pi pi-save'"
+                [label]="miscService.loading ? 'Guardando...' : getNextButtonLabel()"></button>
         </div>
     </div>
     }

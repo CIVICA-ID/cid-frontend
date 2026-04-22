@@ -29,24 +29,32 @@ interface NotificationsBars {
             <a tabindex="0" #menubutton type="button" class="menu-button" (click)="onMenuButtonClick()">
                 <i class="pi pi-chevron-left"></i>
             </a>
-            <img class="horizontal-logo" src="/layout/images/logo-white.svg" alt="diamond-layout" />
+            <img class="horizontal-logo" src="/logos_blanco_negro/logo3x.png" alt="CIVICA ID Logo" />
             <span class="topbar-separator"></span>
             <div app-breadcrumb></div>
-            <img class="mobile-logo" src="/layout/images/logo-{{ isDarkTheme() ? 'white' : 'dark' }}.svg" alt="diamond-layout" />
+            <img class="mobile-logo" src="/logos_blanco_negro/logo3x.png" alt="CIVICA ID Logo" />
         </div>
 
         <div class="topbar-right">
             <ul class="topbar-menu">
-                <li class="right-sidebar-item">
+                <!-- <li class="right-sidebar-item">
                     <a class="right-sidebar-button" (click)="toggleSearchBar()">
                         <i class="pi pi-search"></i>
                     </a>
-                </li>
-                <li class="right-sidebar-item">
-                    <button class="app-config-button" (click)="onConfigButtonClick()"><i class="pi pi-cog"></i></button>
+                </li> -->
+                <li>
+                    <button
+                        class="app-config-button"
+                        type="button"
+                        [attr.aria-label]="layoutService.isDarkTheme() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+                        [attr.title]="layoutService.isDarkTheme() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+                        (click)="layoutService.toggleDarkTheme()"
+                    >
+                        <i [class]="layoutService.isDarkTheme() ? 'pi pi-sun' : 'pi pi-moon'"></i>
+                    </button>
                 </li>
                 <li class="right-sidebar-item static sm:relative">
-                    <a class="right-sidebar-button relative z-50" pStyleClass="@next" enterFromClass="hidden" enterActiveClass="animate-scalein" leaveActiveClass="animate-fadeout" leaveToClass="hidden" [hideOnOutsideClick]="true">
+                    <a class="relative z-50" pStyleClass="@next" enterFromClass="hidden" enterActiveClass="animate-scalein" leaveActiveClass="animate-fadeout" leaveToClass="hidden" [hideOnOutsideClick]="true">
                         <span class="w-2 h-2 rounded-full bg-red-500 absolute top-2 right-2.5"></span>
                         <i class="pi pi-bell"></i>
                     </a>
@@ -95,7 +103,7 @@ interface NotificationsBars {
                     </div>
                 </li>
                 <li class="profile-item static sm:relative">
-                    <a class="right-sidebar-button relative z-50" pStyleClass="@next" enterFromClass="hidden" enterActiveClass="animate-scalein" leaveActiveClass="animate-fadeout" leaveToClass="hidden" [hideOnOutsideClick]="true">
+                    <a class="relative z-50" pStyleClass="@next" enterFromClass="hidden" enterActiveClass="animate-scalein" leaveActiveClass="animate-fadeout" leaveToClass="hidden" [hideOnOutsideClick]="true">
                         <p-avatar styleClass="!w-10 !h-10">
                             <img src="/layout/images/profile.jpg" />
                         </p-avatar>
@@ -108,12 +116,6 @@ interface NotificationsBars {
                                 <a class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
                                     <i class="pi pi-user"></i>
                                     <span>Profile</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
-                                    <i class="pi pi-cog"></i>
-                                    <span>Settings</span>
                                 </a>
                             </li>
                             <li>
@@ -137,19 +139,17 @@ interface NotificationsBars {
                         </ul>
                     </div>
                 </li>
-                <li class="right-sidebar-item">
+                <!-- <li class="right-sidebar-item">
                     <a tabindex="0" class="right-sidebar-button" (click)="showRightMenu()">
                         <i class="pi pi-align-right"></i>
                     </a>
-                </li>
+                </li> -->
             </ul>
         </div>
     </div>`
 })
 export class AppTopbar {
     layoutService = inject(LayoutService);
-
-    isDarkTheme = computed(() => this.layoutService.isDarkTheme());
 
     @ViewChild('menubutton') menuButton!: ElementRef;
     private sessionService: SessionService=inject(SessionService);
@@ -250,15 +250,11 @@ export class AppTopbar {
         this.layoutService.toggleRightMenu();
     }
 
-    onConfigButtonClick() {
-        this.layoutService.showConfigSidebar();
-    }
-
     toggleSearchBar() {
         this.layoutService.layoutState.update((value) => ({ ...value, searchBarActive: !value.searchBarActive }));
     }
-    logOut(){
-        localStorage.clear();
-        this.router.navigate(["auth/login"]);
+    logOut() {
+        this.sessionService.logout();
+        this.router.navigate(['/auth/login']);
     }
 }

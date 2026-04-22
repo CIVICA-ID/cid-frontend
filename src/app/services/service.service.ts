@@ -2,6 +2,7 @@ import { Injectable, inject } from "@angular/core";
 import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
 import { Observable, firstValueFrom } from "rxjs";
 import { environment } from "@env/environment";
+import { SessionService } from '@/services/session.service';
 
 export interface ApiResponse<T> {
   success: number;
@@ -15,14 +16,18 @@ export type HttpMethod = "formdata" | "post" | "get" | "delete" | "patch";
 })
 export class ServiceService {
   private readonly httpClient = inject(HttpClient);
-  private readonly baseUrl = environment;
+  private readonly sessionService = inject(SessionService);
+  private readonly baseUrl = environment.apiUrl;
 
   private getHeaders(includeContentType = true): HttpHeaders {
-    const token = localStorage.getItem('token');
-    let headers: Record<string, string> = {
-      'raw': 'true',
-      'Authorization': `Bearer ${token}`
+    const token = this.sessionService.getAccessToken();
+    const headers: Record<string, string> = {
+      'raw': 'true'
     };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
 
     if (includeContentType) {
       headers['Content-Type'] = 'application/json';
@@ -133,10 +138,12 @@ export class ServiceService {
     url: string,
     method: "post" | "get" = "post"
   ): Promise<Blob> {
-    const token = localStorage.getItem('token');
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
+    const token = this.sessionService.getAccessToken();
+    const headerValues: Record<string, string> = {};
+    if (token) {
+      headerValues['Authorization'] = `Bearer ${token}`;
+    }
+    const headers = new HttpHeaders(headerValues);
 
     const finalUrl = `${this.baseUrl}${url}`;
 

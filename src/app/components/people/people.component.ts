@@ -194,7 +194,7 @@ export class PeopleComponent implements OnInit {
 
     constructor(
         private messageService: MessageService,
-        private miscService: MiscService,
+        public miscService: MiscService,
         private datePipe: DatePipe,
         private changeDetector: ChangeDetectorRef
     ) {}
@@ -291,6 +291,9 @@ export class PeopleComponent implements OnInit {
     }
 
     saveForm() {
+        if (this.miscService.loading) {
+            return;
+        }
         this.miscService.startRequest();
         if (this.form.invalid) {
             this.messageService.add({ severity: 'error', key: 'msg', summary: 'Faltan campos por añadir en el formulario', life: 3000 });

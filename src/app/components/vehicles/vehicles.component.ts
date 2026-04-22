@@ -163,7 +163,7 @@ export class VehiclesComponent implements OnInit {
     });
     listVehicles: Vehicle[];
     private messageService: MessageService = inject(MessageService);
-    private miscService: MiscService = inject(MiscService);
+    readonly miscService: MiscService = inject(MiscService);
     private changeDetector: ChangeDetectorRef = inject(ChangeDetectorRef);
     private vehiclesService: VehiclesService = inject(VehiclesService);
     private vehicleBrandsService: VehicleBrandsService = inject(VehicleBrandsService);
@@ -404,6 +404,9 @@ export class VehiclesComponent implements OnInit {
         return list.find((item) => item.value === id);
     }
     saveForm() {
+        if (this.miscService.loading) {
+            return;
+        }
         this.miscService.startRequest();
         if (this.form.invalid) {
             this.messageService.add({ life: 5000, key: 'msg', severity: 'error', summary: 'Formulario inválido' });

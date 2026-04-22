@@ -108,7 +108,7 @@ export class AddressesComponent implements OnInit {
     listAddresses: Address[];
     constructor(
         private messageService: MessageService,
-        private miscService: MiscService,
+        public miscService: MiscService,
         private addressService: AddressService,
         private changeDetector: ChangeDetectorRef,
         private stateService: StateService,
@@ -288,6 +288,9 @@ export class AddressesComponent implements OnInit {
         this.sendAddress.emit(this.address);
     }
     saveForm() {
+        if (this.miscService.loading) {
+            return;
+        }
         this.miscService.startRequest();
         if (this.form.invalid) {
             this.messageService.add({ life: 5000, key: 'msg', severity: 'error', summary: 'Formulario inválido' });

@@ -540,13 +540,7 @@ export class AppConfigurator implements OnInit {
     }
 
     executeDarkModeToggle() {
-        this.layoutService.layoutConfig.update((state) => ({
-            ...state,
-            darkTheme: !state.darkTheme
-        }));
-        if (this.darkTheme()) {
-            this.setMenuTheme('dark');
-        }
+        this.layoutService.toggleDarkTheme();
         this.updateMenuThemeOptions();
     }
 
