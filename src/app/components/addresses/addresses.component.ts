@@ -124,16 +124,18 @@ export class AddressesComponent implements OnInit {
             { id: 'externalNumber', controlName: 'externalNumber', label: 'Número externo', type: 'number' },
             { id: 'cross1', controlName: 'cross1', label: 'Cruce 1', maxLength: 150, type: 'text' },
             { id: 'cross2', controlName: 'cross2', label: 'Cruce 2', maxLength: 150, type: 'text' },
+            { id: 'country', controlName: 'country', label: 'País', maxLength: 100, type: 'list', options: this.countriesList },
             { id: 'state', controlName: 'state', label: 'Estado', maxLength: 150, type: 'list', options: this.statesList },
             { id: 'municipality', controlName: 'municipality', label: 'Municipios', maxLength: 150, type: 'list', options: this.municipalitiesSignal },
             { id: 'region', controlName: 'region', label: 'Region', maxLength: 150, type: 'text' },
             { id: 'colony', controlName: 'colony', label: 'Colonia', maxLength: 150, type: 'text' },
-            { id: 'country', controlName: 'country', label: 'País', maxLength: 100, type: 'list', options: this.countriesList },
             { id: 'operationalArea', controlName: 'operationalArea', label: 'Área Operativa', maxLength: 150, type: 'text' },
             { id: 'place', controlName: 'place', label: 'Lugar', maxLength: 150, type: 'text' },
             { id: 'principal', controlName: 'principal', label: '', type: 'boolean' },
             { id: 'addressType', controlName: 'type', label: 'Tipo de Dirección', type: 'list', options: this.typeAddressList }
         ];
+        this.form.get('state').setValue('jalisco');
+        this.form.get('country').setValue('méxico');
     }
     getLists() {
         this.stateService.getList().subscribe(
@@ -176,7 +178,7 @@ export class AddressesComponent implements OnInit {
             (countries: Country[]) => {
                 if (countries.length != 0) {
                     this.countriesList = countries.map((country) => ({
-                        label: country.name,
+                        label: country.name.toUpperCase(),
                         value: country.name
                     }));
                 } else {

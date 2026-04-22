@@ -1,0 +1,255 @@
+<p-toast [breakpoints]="{ '920px': { width: '100%', right: '0', left: '0' } }" key="msg" />
+
+<div class="flex justify-center p-4">
+    <div class="w-full md:max-w-4xl">
+        <div class="card p-6 bg-white shadow-md rounded-lg">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold">Detalle del Informe / Servicio</h2>
+                <div class="flex gap-2">
+                    <button pButton pRipple label="Editar" icon="pi pi-pencil" class="p-button-info" (click)="edit()" [disabled]="!service"></button>
+                    <button
+                        pButton
+                        pRipple
+                        [label]="service?.processed ? 'Revertir' : 'Procesar'"
+                        [icon]="service?.processed ? 'pi pi-arrow-left' : 'pi pi-arrow-right'"
+                        class="p-button-success"
+                        (click)="toggleWorkflowState()"
+                        [disabled]="!service || loading"
+                    ></button>
+                    <button pButton pRipple label="Regresar" icon="pi pi-arrow-left" class="p-button-outlined" (click)="backToList()"></button>
+                </div>
+            </div>
+
+            @if (loading) {
+            <div class="py-6 text-center text-slate-600">Cargando...</div>
+            } @else if (error) {
+            <div class="py-6 text-center text-red-600">No se pudo cargar la información.</div>
+            } @else {
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="flex flex-col gap-4">
+                    <h3 class="font-bold border-b pb-2 text-slate-700">Información General</h3>
+
+                    <div class="flex flex-col">
+                        <span class="text-sm text-slate-500">Folio IPH / Externo</span>
+                        <span class="text-base font-medium">{{ service?.iphFolio }} / {{ service?.externalFolio }}</span>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <span class="text-sm text-slate-500">Descripción</span>
+                        <span class="text-base whitespace-pre-line">{{ service?.description || '-' }}</span>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <span class="text-sm text-slate-500">Fecha del Servicio</span>
+                        <span class="text-base">{{ service?.serviceDate | date: 'dd/MM/yyyy HH:mm' }}</span>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <span class="text-sm text-slate-500">Fecha de Arribo / Recepción</span>
+                        <span class="text-base"> Arribo: {{ service?.arrivalDate | date: 'HH:mm' }} | Recepción: {{ service?.dateReception | date: 'HH:mm' }} </span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-4">
+                    <h3 class="font-bold border-b pb-2 text-slate-700">Ubicación ({{ service?.address?.type }})</h3>
+
+                    <div class="flex flex-col">
+                        <span class="text-sm text-slate-500">Calle y Números</span>
+                        <span class="text-base"> {{ service?.address?.street }} #{{ service?.address?.externalNumber }} @if(service?.address?.internalNumber){ (Int. {{ service?.address?.internalNumber }}) } </span>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <span class="text-sm text-slate-500">Cruces</span>
+                        <span class="text-base text-italic">{{ service?.address?.cross1 }} y {{ service?.address?.cross2 }}</span>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <span class="text-sm text-slate-500">Colonia y Municipio</span>
+                        <span class="text-base">{{ service?.address?.colony }}, {{ service?.address?.municipality }}</span>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <span class="text-sm text-slate-500">Área Operativa / Región</span>
+                        <span class="text-base">{{ service?.address?.operationalArea }} - {{ service?.address?.region }}</span>
+                    </div>
+                </div>
+
+                <div class="md:col-span-2 mt-4">
+                    <h3 class="font-bold border-b pb-2 text-slate-700 mb-2">Elementos Intervinientes</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        @for (element of service?.elements; track element.id) {
+                        <div class="p-3 bg-slate-50 rounded border">
+                            <div class="font-semibold text-blue-700">{{ element.grade }}</div>
+                            <div>{{ element.firstName }} {{ element.paternalName }} {{ element.maternalName }}</div>
+                            <div class="text-xs text-slate-500">{{ element.unit }}</div>
+                        </div>
+                        } @empty {
+                        <div class="text-slate-500 italic">No hay elementos registrados.</div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="md:col-span-2 mt-4">
+                <h3 class="font-bold border-b pb-2 text-slate-700 mb-4">Cronología del Incidente</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="flex flex-col p-3 bg-slate-50 rounded">
+                        <span class="text-xs font-bold text-slate-500 uppercase">Arresto</span>
+                        <span class="text-base">{{ service?.arrestDate ? (service?.arrestDate | date: 'dd/MM/yyyy HH:mm') : 'No registrada' }}</span>
+                    </div>
+
+                    <div class="flex flex-col p-3 bg-slate-50 rounded">
+                        <span class="text-xs font-bold text-slate-500 uppercase">Término de Servicio</span>
+                        <span class="text-base">{{ service?.endDate ? (service?.endDate | date: 'dd/MM/yyyy HH:mm') : 'En curso' }}</span>
+                    </div>
+
+                    <div class="flex flex-col p-3 bg-slate-50 rounded">
+                        <span class="text-xs font-bold text-slate-500 uppercase">Puesta a Disposición</span>
+                        <span class="text-base">{{ service?.submissionDate ? (service?.submissionDate | date: 'dd/MM/yyyy HH:mm') : 'Pendiente' }}</span>
+                    </div>
+
+                    <div class="flex flex-col p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
+                        <span class="text-xs font-bold text-blue-600 uppercase">Captura en Sistema</span>
+                        <span class="text-base">{{ service?.captureDate ? (service?.captureDate | date: 'dd/MM/yyyy HH:mm') : '-' }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="md:col-span-2 mt-6">
+                <h3 class="font-bold border-b pb-2 text-slate-700 mb-3 flex items-center gap-2"><i class="pi pi-users"></i> Personas Afectadas</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    @for (person of affected; track person.id) {
+                    <div class="p-4 border border-slate-200 rounded-lg bg-white shadow-sm hover:border-blue-300 transition-colors">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-lg font-medium text-slate-800 capitalize"> {{ person.firstName }} {{ person.paternalName || '' }} {{ person.maternalName || '' }} </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-y-2 gap-x-4">
+                            <div class="flex flex-col">
+                                <span class="text-xs text-slate-500 uppercase font-semibold">CURP</span>
+                                <span class="text-sm">{{ person.curp || 'No proporcionado' }}</span>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <span class="text-xs text-slate-500 uppercase font-semibold">Alias</span>
+                                <span class="text-sm">{{ person.alias || '-' }}</span>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <span class="text-xs text-slate-500 uppercase font-semibold">Ocupación</span>
+                                <span class="text-sm">{{ person.occupation || '-' }}</span>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <span class="text-xs text-slate-500 uppercase font-semibold">Género</span>
+                                <span class="text-sm">{{ person.gender || '-' }}</span>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <span class="text-xs text-slate-500 uppercase font-semibold">Estado Civil</span>
+                                <span class="text-sm">{{ person.maritalStatus || '-' }}</span>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <span class="text-xs text-slate-500 uppercase font-semibold">Nivel Educativo</span>
+                                <span class="text-sm">{{ person.educationLevel || '-' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    } @empty {
+                    <div class="col-span-2 p-4 bg-slate-50 border border-dashed border-slate-300 text-slate-500 text-center rounded-lg">No se encontraron personas afectadas registradas en este reporte.</div>
+                    }
+                </div>
+            </div>
+            <div class="md:col-span-2 mt-6">
+                <h3 class="font-bold border-b pb-2 text-slate-700 mb-3 flex items-center gap-2"><i class="pi pi-shield"></i> Personas Infractoras</h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    @for (offender of offenders; track offender.id) {
+                    <div class="p-4 border border-orange-200 rounded-lg bg-white shadow-sm hover:border-orange-400 transition-colors">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-lg font-medium text-slate-800 capitalize"> {{ offender.firstName }} {{ offender.paternalName || '' }} {{ offender.maternalName || '' }} </span>
+                            <span class="px-2 py-1 text-xs font-semibold bg-orange-100 text-orange-700 rounded-full">Detenido</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-y-2 gap-x-4">
+                            <div class="flex flex-col">
+                                <span class="text-xs text-slate-500 uppercase font-semibold">CURP</span>
+                                <span class="text-sm font-mono">{{ offender.curp || 'No proporcionado' }}</span>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <span class="text-xs text-slate-500 uppercase font-semibold">Alias</span>
+                                <span class="text-sm text-red-600 font-bold">{{ offender.alias || '-' }}</span>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <span class="text-xs text-slate-500 uppercase font-semibold">Ocupación</span>
+                                <span class="text-sm">{{ offender.occupation || '-' }}</span>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <span class="text-xs text-slate-500 uppercase font-semibold">Género</span>
+                                <span class="text-sm">{{ offender.gender || '-' }}</span>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <span class="text-xs text-slate-500 uppercase font-semibold">Estado Civil</span>
+                                <span class="text-sm">{{ offender.maritalStatus || '-' }}</span>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <span class="text-xs text-slate-500 uppercase font-semibold">Nivel Educativo</span>
+                                <span class="text-sm">{{ offender.educationLevel || '-' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    } @empty {
+                    <div class="col-span-2 p-4 bg-slate-50 border border-dashed border-slate-300 text-slate-500 text-center rounded-lg">No hay personas infractoras registradas en este reporte.</div>
+                    }
+                </div>
+            </div>
+            @if (involvedVehicle) {
+            <div class="md:col-span-2 mt-6">
+                <h3 class="font-bold border-b pb-2 text-slate-700 mb-3 flex items-center gap-2"><i class="pi pi-car"></i> Vehículo Involucrado</h3>
+
+                <div class="p-6 border-2 border-blue-100 rounded-xl bg-gradient-to-br from-white to-slate-50 shadow-sm">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Marca y Modelo</span>
+                            <h4 class="text-2xl font-black text-slate-800 uppercase">
+                                {{ involvedVehicle.brand?.name ||  'No especificada' }}
+                                <span class="text-blue-500">{{ involvedVehicle.model || '' }}</span>
+                            </h4>
+                        </div>
+                        <div class="bg-white border-2 border-slate-800 rounded px-4 py-2 shadow-inner">
+                            <span class="block text-[10px] text-center font-bold text-slate-400 uppercase">Placas</span>
+                            <span class="text-xl font-mono font-black tracking-widest text-slate-800"> {{ involvedVehicle.plates || 'SIN PLACAS' }} </span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                        <div class="flex flex-col">
+                            <span class="text-xs text-slate-500 uppercase font-semibold">Submarca</span>
+                            <span class="text-base border-b border-slate-200 pb-1">{{ involvedVehicle.subbrand?.name || '-' }}</span>
+                        </div>
+
+                        <div class="flex flex-col">
+                            <span class="text-xs text-slate-500 uppercase font-semibold">Estado de Origen</span>
+                            <span class="text-base border-b border-slate-200 pb-1 capitalize">{{ involvedVehicle.state?.name || '-' }}</span>
+                        </div>
+
+                        <div class="flex flex-col">
+                            <span class="text-xs text-slate-500 uppercase font-semibold">Color / Tonalidad</span>
+                            <span class="text-base border-b border-slate-200 pb-1">{{ involvedVehicle.tonality || '-' }}</span>
+                        </div>
+
+                        <div class="flex flex-col">
+                            <span class="text-xs text-slate-500 uppercase font-semibold">Número de Serie (VIN)</span>
+                            <span class="text-base border-b border-slate-200 pb-1 font-mono">{{ involvedVehicle.vin || '-' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            } }
+        </div>
+    </div>
+</div>

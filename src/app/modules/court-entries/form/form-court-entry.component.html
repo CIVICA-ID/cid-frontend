@@ -256,6 +256,7 @@
                 <div class="flex flex-col gap-2">
                     <label for="entryDate" class="font-semibold text-gray-700"> Fecha de entrada </label>
                     <app-date-time-picker inputId="entryDate" formControlName="entryDate" [invalid]="!!formCourtEntry.get('entryDate')?.invalid" />
+                    <small class="text-slate-500 text-xs">Fecha de entrada de la corte.</small>
                 </div>
                 <div class="mt-0" formArrayName="offensives">
                     <div class="flex flex-col mb-3"></div>

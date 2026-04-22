@@ -1,3 +1,6 @@
+import { Brand } from '@/api/brand';
+import { State } from '@/api/state';
+
 export interface Vehicle {
     id: string;
     idBrand: string;
@@ -12,8 +15,11 @@ export interface Vehicle {
     active: boolean;
     createdAt: Date | string;
     updatedAt: Date | string;
-    // involvedVehicle: InvolvedVehicle[];
     involvedVehicle: InvolvedVehicle[];
+    brand: Brand;
+    state: State;
+    otherBrand: string|null;
+    subbrand: Brand|null;
 }
 
 export interface InvolvedVehicle {

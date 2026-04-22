@@ -26,6 +26,7 @@ import { DatePicker } from 'primeng/datepicker';
 import { SelectModule } from 'primeng/select';
 import { AddressesComponent } from '../addresses/addresses.component';
 import { Address } from '@/api/address';
+import { DateTimePickerComponent } from '@/components/date-time-picker/date-time-picker.component';
 
 @Component({
     selector: 'app-people',
@@ -53,7 +54,8 @@ import { Address } from '@/api/address';
         InputMaskModule,
         DatePicker,
         SelectModule,
-        AddressesComponent
+        AddressesComponent,
+        DateTimePickerComponent
     ],
     standalone: true
 })
@@ -230,7 +232,7 @@ export class PeopleComponent implements OnInit {
     newPeopleAddress() {
         return this.formBuilder.group({
             address: [null, Validators.required],
-            address_data:[null]
+            address_data: [null]
         });
     }
     getPeopleAddressArray(): FormArray {
@@ -249,7 +251,7 @@ export class PeopleComponent implements OnInit {
         } else {
             array.at(index).patchValue({
                 address: null,
-                address_data: null,
+                address_data: null
             });
         }
     }
