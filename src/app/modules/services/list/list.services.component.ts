@@ -14,34 +14,17 @@ import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TooltipModule } from 'primeng/tooltip';
 import { catchError, of, forkJoin, Observable } from 'rxjs';
+import { PageSectionHeaderComponent } from '@/components/page-section-header/page-section-header.component';
 
 @Component({
     selector: 'app-list-services',
     standalone: true,
-    imports: [
-        CommonModule,
-        ButtonModule,
-        InputTextModule,
-        TooltipModule,
-        ToolbarModule,
-        ConfirmDialogModule,
-        DialogModule,
-        RippleModule,
-        ToastModule,
-        TableTemplateComponent,
-        RouterModule
-    ],
+    imports: [CommonModule, ButtonModule, InputTextModule, TooltipModule, ToolbarModule, ConfirmDialogModule, DialogModule, RippleModule, ToastModule, TableTemplateComponent, RouterModule, PageSectionHeaderComponent],
     providers: [ServicesService, MessageService, ConfirmationService], // Providers locales
     templateUrl: './list.services.component.html'
 })
 export class ListServicesComponent {
     columns = [
-        {
-            field: 'id',
-            column: 'ID',
-            columnType: 'text',
-            fieldType: 'text'
-        },
         {
             field: 'externalFolio',
             column: 'Folio externo',
@@ -88,17 +71,16 @@ export class ListServicesComponent {
         this.miscsService.startRequest();
         this.servicesService.getList(this.limit, this.page, this.sort, this.search).subscribe({
             next: (data) => {
-                if (data['meta']['totalItems'])
-                {
+                if (data['meta']['totalItems']) {
                     this.data = data['data'];
                     this.totalRows = data['meta']['totalItems'];
                     this.configTable = {
                         module: 'Servicio',
                         route: 'services',
-                        totalRows: this.totalRows
+                        totalRows: this.totalRows,
+                        view: true
                     };
-                }
-                else{
+                } else {
                     this.data = [];
                     this.totalRows = 0;
                     this.configTable = {
@@ -125,7 +107,7 @@ export class ListServicesComponent {
         this.listTable();
     }
     delete(id, deleteType: number) {
-        let message=deleteType==1?"los registros seleccionados":"el registro";
+        let message = deleteType == 1 ? 'los registros seleccionados' : 'el registro';
         // message=(deleteType)
         this.confirmationService.confirm({
             message: `¿Confirma eliminar ${message}?`,
@@ -140,14 +122,15 @@ export class ListServicesComponent {
                         break;
                     case 2:
                         // this.confirmDelete(id);
-                        this.servicesService.disable(id)
-                        .subscribe(()=>{
-                            this.listTable();
-                            this.messageService.add({ severity: 'success',key: 'message', summary: 'Operación exitosa', life: 3000 });
-                        },
-                        error=>{
-                            this.messageService.add({ life:5000, key: 'message', severity: 'error', summary: "Error al eliminar el servicio", detail:error.error.message });
-                        });
+                        this.servicesService.disable(id).subscribe(
+                            () => {
+                                this.listTable();
+                                this.messageService.add({ severity: 'success', key: 'message', summary: 'Operación exitosa', life: 3000 });
+                            },
+                            (error) => {
+                                this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error al eliminar el servicio', detail: error.error.message });
+                            }
+                        );
                         break;
                 }
             }

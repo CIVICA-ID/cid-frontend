@@ -272,6 +272,10 @@ export class VehiclesComponent implements OnInit {
                         label: element.name.toUpperCase(),
                         value: element.id
                     }));
+                    this.form.get('idState').setValue({
+                        label: 'JALISCO',
+                        value: '981189ac-8ced-4d25-9135-0858a13fb639'
+                    });
                 }
                 //cargar el elemento seleccionado, sólo si existe un vehículo
                 if (this.vehicle != null) {
@@ -329,6 +333,7 @@ export class VehiclesComponent implements OnInit {
         this.visibleDialog = false;
     }
     searchVehicle() {
+        console.log({ forkJoin:this.form });
         this.filter = {};
         if (!this.form.invalid) {
             this.miscService.startRequest();

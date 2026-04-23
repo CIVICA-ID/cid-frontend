@@ -1,57 +1,33 @@
 <p-toast [breakpoints]="{ '920px': { width: '100%', right: '0', left: '0' } }" key="message" />
 <p-confirmDialog [style]="{ width: '50vw' }" rejectButtonStyleClass="p-button-outlined"></p-confirmDialog>
 <div class="px-4 py-4 md:px-8">
-  <div class="mx-auto w-full max-w-[96rem] flex flex-col gap-5">
-    <app-page-section-header
-      title="Listado de Cédulas"
-      subtitle="Gestiona profesionales responsables para reportes médicos y psicosociales."
-    >
-      <span
-        header-meta
-        class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
-      >
-        <i class="pi pi-users text-[10px]"></i>
-        Seleccionados: {{ selectedRows() }}
-      </span>
-      @if (isLoading()) {
-        <span
-          header-meta
-          class="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
-        >
-          <i class="pi pi-spin pi-spinner text-[10px]"></i>
-          Actualizando información...
-        </span>
-      }
+    <div class="mx-auto w-full max-w-[96rem] flex flex-col gap-5">
+        <app-page-section-header title="Listado de Cédulas" subtitle="Gestiona profesionales responsables para reportes médicos y psicosociales.">
+            <span header-meta class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                <i class="pi pi-users text-[10px]"></i>
+                Seleccionados: {{ selectedRows() }}
+            </span>
+            @if (isLoading()) {
+            <span header-meta class="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                <i class="pi pi-spin pi-spinner text-[10px]"></i>
+                Actualizando información...
+            </span>
+            }
 
-      <button
-        header-actions
-        pButton
-        label="Agregar staff"
-        icon="pi pi-plus"
-        class="p-button-success"
-        [routerLink]="['/staff/add']"
-      ></button>
-      <button
-        header-actions
-        pButton
-        label="Eliminar seleccionados"
-        [disabled]="!ids().length"
-        icon="pi pi-trash"
-        class="p-button-danger"
-        (click)="delete(null, 1)"
-      ></button>
-    </app-page-section-header>
+            <button header-actions pButton label="Agregar staff" icon="pi pi-plus" class="p-button-success" [routerLink]="['/staff/add']"></button>
+            <button header-actions pButton label="Eliminar seleccionados" [disabled]="!ids().length" icon="pi pi-trash" class="p-button-danger" (click)="delete(null, 1)"></button>
+        </app-page-section-header>
 
-    <div class="card border border-slate-200 shadow-md p-4 md:p-6">
-      <app-table-template
-        [columns]="columns"
-        [data]="data()"
-        [configTable]="configTable()"
-        [loading]="isLoading()"
-        (idDelete)="delete($event, 2)"
-        (idsDelete)="getIdsDeleted($event)"
-        (paramsListChange)="handleParamsList($event)"
-      ></app-table-template>
+        <div class="card border border-slate-200 shadow-md p-4 md:p-6">
+            <app-table-template
+                [columns]="columns"
+                [data]="data()"
+                [configTable]="configTable()"
+                [loading]="isLoading()"
+                (idDelete)="delete($event, 2)"
+                (idsDelete)="getIdsDeleted($event)"
+                (paramsListChange)="handleParamsList($event)"
+            ></app-table-template>
+        </div>
     </div>
-  </div>
 </div>

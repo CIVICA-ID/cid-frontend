@@ -3,13 +3,13 @@
 <div class="grid">
     <div class="col-12">
         <div class="card px-6">
-            <p-toolbar styleClass="pb-4">
-                <ng-template pTemplate="left">
-                    <button pButton label="Agregar" icon="pi pi-plus" class="p-button-success mr-2"
-                        [routerLink]="['/services/add']"></button>
-                    <button pButton label="Eliminar" [disabled]="!ids.length" icon="pi pi-plus" class="p-button-danger mr-2" (click)="delete(null, 1)"></button>
-                </ng-template>
-            </p-toolbar>
+            <app-page-section-header title="Listado de Servicios" subtitle="Gestiona los servicios.">
+            <span header-meta class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                <i class="pi pi-list text-[10px]"></i>
+                    Registros: {{ totalRows }}
+            </span>
+                <button header-actions pButton label="Agregar servicio" icon="pi pi-plus" class="p-button-success" [routerLink]="['/services/add']"></button>
+            </app-page-section-header>
             <div class="pt-3">
                 <app-table-template [columns]="columns" [data]="data"
                     [configTable]="configTable"
