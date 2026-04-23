@@ -10,7 +10,7 @@ import { AuthLoginResponse, RefreshRequest, SessionSnapshot, SKIP_AUTH_INTERCEPT
 const baseUrl: string = `${environment.apiUrl}auth`;
 const authStorageKey = 'auth_session';
 const legacyAccessTokenKey = 'bearer';
-const accessTokenRefreshBufferMs = 60_000;
+const accessTokenRefreshBufferMs = 10_000;
 
 interface JwtPayload {
     exp?: number;
