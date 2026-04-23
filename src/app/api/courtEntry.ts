@@ -1,3 +1,5 @@
+import { Offensives } from '@/api/offensives';
+
 export class CourtEntry {
     id: string;
     idOffender: string;
@@ -5,4 +7,5 @@ export class CourtEntry {
     entryDate: string | null;
     createdAt: string;
     updatedAt: string;
+    offensives: Offensives[];
 }

@@ -260,7 +260,7 @@ export class FormCourtEntryComponent implements OnInit {
                     this.messageService.add({
                         key: 'msg',
                         severity: 'error',
-                        detail: 'Error al guardar la corte, error: ' + error.error.message,
+                        detail: 'Error al obtener la corte, error: ' + error.error.message,
                         life: 3000
                     });
                 }

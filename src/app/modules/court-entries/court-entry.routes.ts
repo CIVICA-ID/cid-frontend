@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { ViewComponent } from '@/modules/services/view/component';
 
 export const COURT_ENTRY_ROUTES: Routes = [
     {
@@ -12,5 +13,9 @@ export const COURT_ENTRY_ROUTES: Routes = [
     {
         path: 'edit/:id', //
         loadComponent: () => import('./edit/edit.court-entry.component').then((m) => m.EditCourtEntryComponent)
+    },
+    {
+        path: 'view/:id', //
+        loadComponent: () => import('./view/component').then((m) => m.ViewComponent)
     }
 ];

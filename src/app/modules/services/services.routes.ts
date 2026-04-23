@@ -1,5 +1,6 @@
 // roles.routes.ts
 import { Routes } from '@angular/router';
+import { ViewComponent } from '@/modules/services/view/component';
 
 export const SERVICES_ROUTES: Routes = [
     {

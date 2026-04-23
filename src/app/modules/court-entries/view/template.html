@@ -1,0 +1,169 @@
+<p-toast [breakpoints]="{ '920px': { width: '100%', right: '0', left: '0' } }" key="msg" />
+
+<div class="flex justify-center p-4">
+    <div class="w-full md:max-w-4xl">
+        <div class="card p-6 bg-white shadow-md rounded-lg">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold">Detalle de la Audiencia</h2>
+                <div class="flex gap-2">
+                    <button pButton pRipple label="Editar" icon="pi pi-pencil" class="p-button-info" (click)="edit()" [disabled]="!audience"></button>
+                    <button pButton pRipple label="Regresar" icon="pi pi-arrow-left" class="p-button-outlined" (click)="backToList()"></button>
+                </div>
+            </div>
+
+            @if (loading) {
+            <div class="py-6 text-center text-slate-600">Cargando...</div>
+            } @else if (error) {
+            <div class="py-6 text-center text-red-600">No se pudo cargar la información de la audiencia.</div>
+            } @else {
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="flex flex-col gap-4">
+                    <h3 class="font-bold border-b pb-2 text-slate-700">Información General</h3>
+
+                    <div class="flex flex-col">
+                        <span class="text-sm text-slate-500">Juez Cívico</span>
+                        <span class="text-base font-medium">{{ audience?.civilJudge }}</span>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <span class="text-sm text-slate-500">Secretario</span>
+                        <span class="text-base">{{ audience?.secretary }}</span>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <span class="text-sm text-slate-500">Fecha y Hora de Inicio</span>
+                        <span class="text-base">{{ audience?.startDate | date: 'dd/MM/yyyy HH:mm' }}</span>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <span class="text-sm text-slate-500">Fecha y Hora de Fin</span>
+                        <span class="text-base">{{ audience?.endDate | date: 'dd/MM/yyyy HH:mm' }}</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-4">
+                    <h3 class="font-bold border-b pb-2 text-slate-700">Dictamen y Sanción</h3>
+
+                    <div class="flex flex-col">
+                        <span class="text-sm text-slate-500">Sentencia</span>
+                        <span class="text-base font-semibold text-blue-700">{{ audience?.sentence }}</span>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <span class="text-sm text-slate-500">Sanción Impuesta</span>
+                        <span class="text-base">{{ audience?.sanction || 'Ninguna' }}</span>
+                    </div>
+
+                    @if (audience?.sanctionVariant) {
+                    <div class="flex flex-col">
+                        <span class="text-sm text-slate-500">Variante de Sanción</span>
+                        <span class="text-base italic text-slate-600">{{ audience?.sanctionVariant }}</span>
+                    </div>
+                    }
+                </div>
+
+                <div class="md:col-span-2 mt-4">
+                    <h3 class="font-bold border-b pb-2 text-slate-700 mb-2">Detalles de la Audiencia</h3>
+                    <div class="grid grid-cols-1 gap-4">
+                        <div class="flex flex-col p-3 bg-slate-50 rounded border">
+                            <span class="text-sm text-slate-500 font-bold mb-1">Descripción</span>
+                            <p class="text-base whitespace-pre-line text-slate-700">{{ audience?.description || 'Sin descripción detallada.' }}</p>
+                        </div>
+
+                        <div class="flex flex-col p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
+                            <span class="text-sm text-blue-600 font-bold mb-1">Observaciones Adicionales</span>
+                            <p class="text-base whitespace-pre-line text-slate-700">{{ audience?.observations || 'Sin observaciones.' }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="md:col-span-2 mt-6">
+                    <h3 class="font-bold border-b pb-2 text-slate-700 mb-3 flex items-center gap-2"><i class="pi pi-users"></i> Testigos Presentes</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @for (witness of witnesses; track witness.curp) {
+                        <div class="p-4 border border-slate-200 rounded-lg bg-white shadow-sm hover:border-blue-300 transition-colors">
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex flex-col">
+                                    <span class="text-lg font-bold text-slate-800 capitalize"> {{ witness?.firstName }} {{ witness?.paternalName }} {{ witness?.maternalName }} </span>
+                                    @if (witness?.alias) {
+                                    <span class="text-sm text-blue-600 font-medium italic">"{{ witness.alias }}"</span>
+                                    }
+                                </div>
+                                <span class="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">Testigo</span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-y-3 gap-x-4">
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">CURP</span>
+                                    <span class="text-sm font-mono">{{ witness?.curp || 'No registrado' }}</span>
+                                </div>
+
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Fecha Nacimiento</span>
+                                    <span class="text-sm">{{ witness?.birthDate | date: 'dd/MM/yyyy' }}</span>
+                                </div>
+
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Género</span>
+                                    <span class="text-sm">{{ witness?.gender || '-' }}</span>
+                                </div>
+
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Ocupación</span>
+                                    <span class="text-sm">{{ witness?.occupation || '-' }}</span>
+                                </div>
+
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Estado Civil</span>
+                                    <span class="text-sm">{{ witness?.maritalStatus || '-' }}</span>
+                                </div>
+
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Escolaridad</span>
+                                    <span class="text-sm">{{ witness?.educationLevel || '-' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        } @empty {
+                        <div class="col-span-2 p-4 bg-slate-50 border border-dashed border-slate-300 text-slate-500 text-center rounded-lg">No se registraron testigos en esta audiencia.</div>
+                        }
+                    </div>
+                </div><div class="md:col-span-2 mt-6">
+                <h3 class="font-bold border-b pb-2 text-slate-700 mb-3 flex items-center gap-2">
+                    <i class="pi pi-exclamation-circle"></i> Agraviantes / Factores del Incidente
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    @for (item of courtEntry?.offensives; track item.id) {
+                        <div class="p-4 border-l-4 border-l-orange-500 border-slate-200 rounded-r-lg bg-white shadow-sm hover:bg-slate-50 transition-colors">
+                            <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-bold text-orange-600 uppercase tracking-widest">
+                        Tipo: {{ item.type }}
+                    </span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-sm text-slate-500 font-semibold mb-1">Factor:</span>
+                                <p class="text-base text-slate-800 leading-relaxed">
+                                    {{ item.factor }}
+                                </p>
+                            </div>
+
+                            <div class="mt-3 pt-2 border-t border-slate-100 flex justify-end">
+                    <span class="text-[10px] text-slate-400">
+                        Registrado: {{ item.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+                    </span>
+                            </div>
+                        </div>
+                    } @empty {
+                        <div class="col-span-2 p-4 bg-slate-50 border border-dashed border-slate-300 text-slate-400 text-center rounded-lg italic">
+                            No se registraron agraviantes para esta entrada de corte.
+                        </div>
+                    }
+                </div>
+            </div>
+            </div>
+            }
+        </div>
+    </div>
+</div>

@@ -68,7 +68,8 @@ export class ListCourtEntryComponent {
                         module: 'Corte',
                         route: 'court-entry',
                         totalRows: this.totalRows,
-                        add: true
+                        add: true,
+                        view:true
                     };
                 } else {
                     this.messageService.add({ life: 5000, key: 'message', severity: 'error', summary: 'Error', detail: 'No se encontraron registros de juez' });

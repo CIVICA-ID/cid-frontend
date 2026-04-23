@@ -47,21 +47,6 @@ export class ViewComponent implements OnInit {
     loadSeguimiento(id: string) {
         this.loading = true;
         this.error = false;
-        // this.serviceService.getById(id).subscribe({
-        //     next: (data) => {
-        //         if (data) {
-        //             this.service = data as Service;
-        //         } else {
-        //             this.error = true;
-        //         }
-        //         this.loading = false;
-        //     },
-        //     error: (error) => {
-        //         this.loading = false;
-        //         this.error = true;
-        //         this.messageService.add({ severity: 'error', key: 'msg', summary: 'Error', detail: error?.error?.message || error.message, life: 3000 });
-        //     }
-        // });
         this.serviceService
             .getById(id)
             .pipe(
@@ -126,49 +111,4 @@ export class ViewComponent implements OnInit {
         return 'Regresar';
     }
 
-    getOffenderName(): string {
-        return 'Offender pendiente dddddddddddddddddddddddddddddddddddddd';
-        // const p = this.service?.offenders?.people;
-        // if (!p) return '-';
-        // return `${p.paternalName ?? ''} ${p.maternalName ?? ''} ${p.firstName ?? ''}`.replace(/\s+/g, ' ').trim() || '-';
-    }
-
-    getStatusLabel(active?: boolean): string {
-        if (active === true) return 'Activo';
-        if (active === false) return 'Inactivo';
-        return 'Sin estado';
-    }
-
-    getStatusSeverity(active?: boolean): 'success' | 'danger' | 'secondary' {
-        if (active === true) return 'success';
-        if (active === false) return 'danger';
-        return 'secondary';
-    }
-
-    getFriendlyId(id?: string | null): string {
-        if (!id) return '-';
-        return `SEG-${id.slice(0, 8).toUpperCase()}`;
-    }
-
-    getCompactUuid(id?: string | null): string {
-        if (!id) return '-';
-        return `${id.slice(0, 8).toUpperCase()}...${id.slice(-4).toUpperCase()}`;
-    }
-
-    async copyUuid(): Promise<void> {
-        const id = this.service?.id;
-        if (!id) return;
-
-        if (typeof navigator === 'undefined' || !navigator.clipboard) {
-            this.messageService.add({ severity: 'warn', key: 'msg', summary: 'No se pudo copiar', detail: 'Clipboard no disponible', life: 2500 });
-            return;
-        }
-
-        try {
-            await navigator.clipboard.writeText(id);
-            this.messageService.add({ severity: 'success', key: 'msg', summary: 'UUID copiado', detail: id, life: 2500 });
-        } catch {
-            this.messageService.add({ severity: 'error', key: 'msg', summary: 'No se pudo copiar el UUID', life: 2500 });
-        }
-    }
 }
