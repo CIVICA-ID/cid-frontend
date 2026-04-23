@@ -6,7 +6,6 @@ import { Component, EventEmitter, inject, Input, Output } from "@angular/core";
 import { ButtonModule } from "primeng/button";
 import { DialogModule } from "primeng/dialog";
 
-
 @Component({
     selector: 'app-fingerprint-enroll-dialog',
     templateUrl: './fingerprint-enroll-dialog.component.html',
@@ -25,11 +24,9 @@ export class FingerprintEnrollDialogComponent{
 
     currentFullStep: FullCaptureStep = 'left-four';
     leftFourFingers: SegmentedFinger[] = [];
-    leftThumbFinger: SegmentedFinger | null = null;
     rightFourFingers: SegmentedFinger[] = [];
-    rightThumbFinger: SegmentedFinger | null = null;
-    leftThumbImageFormat: string = 'bmp';
-    rightThumbImageFormat: string = 'bmp';
+    bothThumbs: SegmentedFinger[] = [];
+    bothThumbsImageFormat: string = 'bmp';
 
     selectedFingerKeys: Set<FingerKey> = new Set();
     captureGroups: CaptureGroup[] = [];
@@ -116,56 +113,35 @@ export class FingerprintEnrollDialogComponent{
             error: e => console.error('Error en captura de 4 dedos derechos', e)
         });
     }
-    captureLeftThumb(): void{
-        this.captureThumbFinger('left');
-    }
-    captureRightThumb(): void{
-        this.captureThumbFinger('right');
-    }
-    private captureThumbFinger(hand: 'left' | 'right'): void{
-        if(hand === 'left'){
-            this.leftThumbFinger = null;
-            this.leftThumbImageFormat = 'bmp';
-        }else {
-            this.rightThumbFinger = null;
-            this.rightThumbImageFormat = 'bmp';
-        }
+    captureBothThumbs(): void{
+        this.bothThumbs = [];
+        this.bothThumbsImageFormat = 'bmp';
         this.realScanService.clearError();
-
-        this.realScanService.quickCapture(CaptureMode.FLAT_SINGLE_FINGER, 10000, Segment.ENABLED)
+        this.realScanService.quickCapture(CaptureMode.FLAT_TWO_FINGERS_EX, 12000, Segment.ENABLED)
         .subscribe({
             next: r => {
                 if(!r.success){
                     this.realScanService.lastError.set(r.message || 'Error en Captura');
                     return;
                 }
-                const segmentedFinger = this.extractSingleFinger(r);
-                if(segmentedFinger){
-                    if(hand === 'left')
-                        this.leftThumbFinger = segmentedFinger;
-                    else this.rightThumbFinger = segmentedFinger;
-                } else{
-                    this.realScanService.lastError.set('No se recibio imagen del pulgar');
+                if(r.fingers?.length){
+                    this.bothThumbs = r.fingers;
+                } else {
+                    this.realScanService.lastError.set('No se detectaron pulgares');
                 }
             },
-            error: e => console.error('Error captura pulgar: ', e),
+            error: e => console.error("Error captura pulgares: ", e)
         });
     }
     acceptLeftFourFingers(): void{
         if(this.leftFourFingers.length > 0){
-            this.currentFullStep = 'left-thumb';
-            this.realScanService.clearError();
-        }
-    }
-    acceptLeftThumb(): void{
-        if(this.leftThumbFinger){
             this.currentFullStep = 'right-four';
             this.realScanService.clearError();
         }
     }
     acceptRightFourFingers(): void{
         if(this.rightFourFingers.length > 0){
-            this.currentFullStep = 'right-thumb';
+            this.currentFullStep = 'two-thumbs';
             this.realScanService.clearError();
         }
     }
@@ -173,45 +149,25 @@ export class FingerprintEnrollDialogComponent{
         this.leftFourFingers = [];
         this.realScanService.clearError();
     }
-    retakeLeftThumb(): void{
-        this.leftThumbFinger = null;
-        this.leftThumbImageFormat = 'bmp';
-        this.realScanService.clearError();
-    }
     retakeRightFourFingers(): void{
         this.rightFourFingers = [];
         this.realScanService.clearError();
     }
-    retakeRightThumb(): void{
-        this.rightThumbFinger = null;
-        this.rightThumbImageFormat = 'bmp';
+    retakeBothThumbs(): void{
+        this.bothThumbs = [];
+        this.bothThumbsImageFormat = 'bmp';
         this.realScanService.clearError();
     }
     confirmFullCaptureAndFinish(): void{
-        console.log('Estoy dentro');
-        if(this.leftFourFingers.length < 1 || !this.leftThumbFinger || this.rightFourFingers.length < 1 || !this.rightThumbFinger){
+        if(this.leftFourFingers.length < 1 || this.rightFourFingers.length < 1 || this.bothThumbs.length < 1){
             this.realScanService.lastError.set('Complete todos los pasos');
             return;
         }
-        const capturedFingers = assignSlapFingersToCapture(this.leftFourFingers, this.leftThumbFinger, this.rightFourFingers, this.rightThumbFinger);
+        const capturedFingers = assignSlapFingersToCapture(this.leftFourFingers, this.rightFourFingers, this.bothThumbs);
 
         this.fingersEnrolled.emit(capturedFingers);
         this.closeEnrollDialog();
     }
-
-    getLeftThumbImageUrl(): string | null {
-        return this.leftThumbFinger ? buildImageDataUrl(this.leftThumbFinger.imageBase64, this.leftThumbImageFormat) : null;
-    }
-    getRightThumbImageUrl(): string | null {
-        return this.rightThumbFinger ? buildImageDataUrl(this.rightThumbFinger.imageBase64, this.rightThumbImageFormat) : null;
-    }
-    onLeftThumbImageError(): void {
-        this.leftThumbImageFormat = rotateImageFormat(this.leftThumbImageFormat);
-    }
-    onRightThumbImageError(): void {
-        this.rightThumbImageFormat = rotateImageFormat(this.rightThumbImageFormat);
-    }
-
     isFullStepCompleted(step: string): boolean {
         return FULL_CAPTURE_STEP_ORDER.indexOf(step as FullCaptureStep) < FULL_CAPTURE_STEP_ORDER.indexOf(this.currentFullStep);
     }
@@ -313,7 +269,6 @@ export class FingerprintEnrollDialogComponent{
 
     acceptCurrentGroup(): void {
         if (!this.isGroupCaptured()) return;
-
         if (this.currentGroupIndex + 1 < this.captureGroups.length) {
             this.currentGroupIndex++;
             this.realScanService.clearError();
@@ -355,7 +310,7 @@ export class FingerprintEnrollDialogComponent{
             case 'two-thumbs':
                 return 'border-amber-300';
             default:
-                return 'bg-purple-50';
+                return 'border-purple-300';
         }
     }
     getGroupBgColor(): string{
@@ -398,7 +353,7 @@ export class FingerprintEnrollDialogComponent{
         switch(group.type){
             case 'left-four':
             case 'right-four':
-                return 'pi pi-th-large';
+                return 'pi pi-thumbs-up-fill';
             case 'two-thumbs':
                 return 'pi pi-thumbs-up-fill';
             default:
@@ -420,7 +375,7 @@ export class FingerprintEnrollDialogComponent{
         return null;
     }
     private updateGroupCapture(capturedFingers: SegmentedFinger[] | undefined, capturedSingle: SegmentedFinger | undefined): void {
-        this.captureGroups = this.captureGroups.map((group, index) => 
+        this.captureGroups = this.captureGroups.map((group, index) =>
             index === this.currentGroupIndex ?
         {
             ...group,
@@ -463,7 +418,7 @@ export class FingerprintEnrollDialogComponent{
                     (result as any)[fingerKey] = unknowns[index].imageBase64;
                 }
             });
-        } 
+        }
     }
     private assignTwoThumbsToResult(fingers: SegmentedFinger[], result: TenFingerCapture): void{
         for(const finger of fingers){
@@ -485,11 +440,9 @@ export class FingerprintEnrollDialogComponent{
     private resetFullModeState(): void {
         this.currentFullStep = 'left-four';
         this.leftFourFingers = [];
-        this.leftThumbFinger = null;
         this.rightFourFingers = [];
-        this.rightThumbFinger = null;
-        this.leftThumbImageFormat = 'bmp';
-        this.rightThumbImageFormat = 'bmp';
+        this.bothThumbs = [];
+        this.bothThumbsImageFormat = 'bmp';
     }
     private resetAllCaptureState(): void {
         this.resetFullModeState();

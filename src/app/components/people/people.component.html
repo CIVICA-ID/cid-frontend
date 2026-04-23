@@ -232,12 +232,6 @@
                                             (change)="onSearchFileSelected($event)"
                                             class="hidden"
                                             #fpFileInput />
-                                        <button pButton pRipple type="button"
-                                            label="Subir Imagen"
-                                            icon="pi pi-upload"
-                                            class="p-button-outlined p-button-secondary"
-                                            (click)="fpFileInput.click()">
-                                        </button>
                                     </div>
                                 </div>
                                 <!-- Preview de la huella capturada -->
@@ -628,19 +622,21 @@
                             @for (thumbnail of leftFingerThumbnails; track thumbnail.key) {
                                 @if (getEnrolledFingerImage(thumbnail.key)) {
                                     <div class="text-center relative group">
-                                        <button pButton pRipple type="button"
-                                            icon="pi pi-times"
-                                            class="p-button-rounded p-button-danger p-button-text absolute -top-2 -right-2 z-10 !w-6 !h-6 !p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            (click)="removeEnrolledFinger(thumbnail.key)"
-                                            pTooltip="Quitar este dedo"
-                                            >
-                                        </button>
-                                        <img [src]="'data:image/bmp;base64,' + getEnrolledFingerImage(thumbnail.key)"
-                                            [alt]="thumbnail.label"
-                                            class="w-16 max-h-20 object-contain bg-white rounded shadow border border-green-200" />
-                                        <p class="text-xs text-green-600 mt-0.5 font-medium">
-                                            {{ thumbnail.label }}
-                                        </p>
+                                        <div class="relative inline-block group">
+                                            <button pButton pRipple type="button"
+                                                icon="pi pi-times"
+                                                class="p-button-rounded p-button-danger p-button-text absolute -top-2 -right-2 z-10 !w-6 !h-6 !p-0 ml-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                (click)="removeEnrolledFinger(thumbnail.key)"
+                                                pTooltip="Quitar este dedo"
+                                                >
+                                            </button>
+                                            <img [src]="'data:image/bmp;base64,' + getEnrolledFingerImage(thumbnail.key)"
+                                                [alt]="thumbnail.label"
+                                                class="w-16 max-h-20 object-contain bg-white rounded shadow border border-green-200" />
+                                            <p class="text-xs text-green-600 mt-0.5 font-medium">
+                                                {{ thumbnail.label }}
+                                            </p>
+                                        </div>
                                     </div>
                                 }
                             }
@@ -785,7 +781,7 @@
          </div>
          <!-- Boton para guardar todo -->
         <div class="flex justify-end mt-4">
-            <button pButton pRipple type="button" label="Guardar Persona y Huellas" icon="pi pi-save" (click)="savePersonComplete()" class="!w-64"></button>
+            <button pButton pRipple type="button" label="Guardar Informacion" icon="pi pi-save" (click)="savePersonComplete()" class="!w-64"></button>
         </div>
     </form>
 </ng-template>

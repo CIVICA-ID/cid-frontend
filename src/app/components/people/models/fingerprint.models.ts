@@ -29,7 +29,7 @@ export interface FingerSearchOption{
 
 export type EnrollMode = 'select' | 'full' | 'custom';
 
-export type FullCaptureStep = 'left-four' | 'left-thumb' | 'right-four' | 'right-thumb';
+export type FullCaptureStep = 'left-four' | 'right-four' | 'two-thumbs';
 
 export interface CaptureQueueItem {
     finger: FingerDef;
@@ -99,7 +99,7 @@ export function buildGroups(selectedKeys: Set<FingerKey>): CaptureGroup[]{
             type: 'two-thumbs',
             label: '2 Pulgares',
             fingers,
-            captureMode: CaptureMode.FLAT_TWO_FINGERS,
+            captureMode: CaptureMode.FLAT_TWO_FINGERS_EX,
             imageFormat: 'bmp'
         });
         consumed.add('leftThumb');
@@ -116,7 +116,7 @@ export function buildGroups(selectedKeys: Set<FingerKey>): CaptureGroup[]{
             type: 'single',
             label: finger.label,
             fingers: [finger],
-            captureMode: CaptureMode.FLAT_SINGLE_FINGER,
+            captureMode: CaptureMode.FLAT_SINGLE_FINGER_EX,
             imageFormat: 'bmp'
         });
     }
@@ -164,18 +164,17 @@ export const RIGHT_FINGER_SEARCH_OPTIONS = FINGER_SEARCH_OPTIONS.filter(option =
 
 export const FULL_CAPTURE_STEP_INDICATORS: FullStepIndicator[] = [
     { step: 'left-four',  label: '4 Izq.' },
-    { step: 'left-thumb', label: 'Pulgar Izq.' },
     { step: 'right-four', label: '4 Der.' },
-    { step: 'right-thumb', label: 'Pulgar Der.' },
+    { step: 'two-thumbs', label: '2 Pulgares' },
 ];
 
 export const FULL_CAPTURE_STEP_ORDER: FullCaptureStep[] = [
-    'left-four', 'left-thumb', 'right-four', 'right-thumb'
+    'left-four', 'right-four', 'two-thumbs'
 ];
 
-export const LEFT_SLAP_FINGER_NAMES = ['Índice', 'Medio', 'Anular', 'Meñique'];
+export const LEFT_SLAP_FINGER_NAMES = ['Indice', 'Medio', 'Anular', 'Meñique'];
 
-export const RIGHT_SLAP_FINGER_NAMES = ['Meñique', 'Anular', 'Medio', 'Índice'];
+export const RIGHT_SLAP_FINGER_NAMES = ['Meñique', 'Anular', 'Medio', 'Indice'];
 
 export const LEFT_FINGER_THUMBNAILS: FingerThumbnail[] = [
     { key: 'leftThumb',  label: 'Pulgar' },
@@ -239,14 +238,10 @@ export function countCapturedFingers(fingers: TenFingerCapture): number {
 
 export function assignSlapFingersToCapture(
     leftFourFingers: SegmentedFinger[],
-    leftThumbFinger: SegmentedFinger,
     rightFourFingers: SegmentedFinger[],
-    rightThumbFinger: SegmentedFinger
+    bothThumbs: SegmentedFinger[]
 ): TenFingerCapture {
-    const result: TenFingerCapture = {
-        leftThumb: leftThumbFinger.imageBase64,
-        rightThumb: rightThumbFinger.imageBase64,
-    };
+    const result: TenFingerCapture = {};
 
     // Asignar dedos izquierdos por fingerType del SDK
     for (const finger of leftFourFingers) {
@@ -257,7 +252,6 @@ export function assignSlapFingersToCapture(
             case SDK_FINGER_TYPE_MAP.LEFT.LITTLE: result.leftLittle = finger.imageBase64; break;
         }
     }
-
     // Asignar dedos derechos por fingerType del SDK
     for (const finger of rightFourFingers) {
         switch (finger.fingerType) {
@@ -267,7 +261,26 @@ export function assignSlapFingersToCapture(
             case SDK_FINGER_TYPE_MAP.RIGHT.LITTLE: result.rightLittle = finger.imageBase64; break;
         }
     }
-
+    // Asignar pulgares por fyngerType
+    for(const finger of bothThumbs){
+        if(finger.fingerType === 6){
+            result.leftThumb = finger.imageBase64;
+        } else if(finger.fingerType === 1){
+            result.rightThumb = finger.imageBase64;
+        }
+    }
+    // en pulgares, cuando fingerType=0, asignar por posicion
+    const unknownThumbs = bothThumbs.filter(f => f.fingerType !== 1 && f.fingerType !== 6);
+    if(unknownThumbs.length >= 2 && !result.leftThumb && !result.rightThumb){
+        result.leftThumb = unknownThumbs[0].imageBase64;
+        result.rightThumb = unknownThumbs[1].imageBase64;
+    } else if(unknownThumbs.length === 1){
+        if(!result.leftThumb){
+            result.leftThumb = unknownThumbs[0].imageBase64;
+        }else if(!result.rightThumb){
+            result.rightThumb = unknownThumbs[0].imageBase64;
+        }
+    }
     // cuando fingerType=0 (Unknown), asignar por la posicion fisica del sensor G10
     const leftUnknownFingers = leftFourFingers.filter(finger => !finger.fingerType);
     const rightUnknownFingers = rightFourFingers.filter(finger => !finger.fingerType);
