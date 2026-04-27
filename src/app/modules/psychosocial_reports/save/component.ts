@@ -19,6 +19,7 @@ import { OffendersService } from '@/services/offenders.service';
 import { StaffService } from '@/modules/staff/module/service';
 import { DateTimePickerComponent } from '@/components/date-time-picker/date-time-picker.component';
 import { deserializeApiDateTime } from '@/lib/date-time';
+import { buildSaveErrorDetail } from '@/lib/http-error';
 
 @Component({
   selector: 'app-psychosocial-reports-save',
@@ -47,7 +48,7 @@ export class SaveComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly messageService = inject(MessageService);
-  private readonly miscService = inject(MiscService);
+  readonly miscService = inject(MiscService);
   private readonly psychosocialReportsService = inject(PsychosocialReportsService);
   private readonly offendersService = inject(OffendersService);
   private readonly staffService = inject(StaffService);
@@ -162,6 +163,10 @@ export class SaveComponent implements OnInit {
   onSubmit() {
     this.submitted = true;
 
+    if (this.miscService.loading) {
+      return;
+    }
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.messageService.add({
@@ -202,7 +207,7 @@ export class SaveComponent implements OnInit {
           this.messageService.add({
             key: 'msg',
             severity: 'error',
-            detail: 'Error al guardar el reporte psicosocial, error: ' + (error?.error?.message || error.message),
+            detail: buildSaveErrorDetail(error, 'el reporte psicosocial'),
             life: 3000
           });
         }
@@ -228,7 +233,7 @@ export class SaveComponent implements OnInit {
         this.messageService.add({
           key: 'msg',
           severity: 'error',
-          detail: 'Error al guardar el reporte psicosocial, error: ' + (error?.error?.message || error.message),
+          detail: buildSaveErrorDetail(error, 'el reporte psicosocial'),
           life: 3000
         });
       }

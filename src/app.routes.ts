@@ -73,7 +73,7 @@ export const appRoutes: Routes = [
             {
                 path: 'seguimiento',
                 loadChildren: () => import('@/modules/seguimiento/module/routes').then((m) => m.SEGUIMIENTO_ROUTES),
-                data: { breadcrumb: 'Seguimiento', module: 'seguimiento' }
+                data: { breadcrumb: 'Seguimiento', module: 'tracings' }
             },
         ]
     },

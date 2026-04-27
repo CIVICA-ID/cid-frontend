@@ -18,6 +18,7 @@ import { FreedomTicketsService } from '../module/service';
 import { CellStaysService } from '@/modules/cell_stays/module/service';
 import { DateTimePickerComponent } from '@/components/date-time-picker/date-time-picker.component';
 import { deserializeApiDateTime } from '@/lib/date-time';
+import { buildSaveErrorDetail } from '@/lib/http-error';
 
 interface CellStayOption {
   label: string;
@@ -196,7 +197,7 @@ export class SaveComponent implements OnInit {
           this.messageService.add({
             key: 'msg',
             severity: 'error',
-            detail: 'Error al guardar la boleta de libertad, error: ' + (error?.error?.message || error.message),
+            detail: buildSaveErrorDetail(error, 'la boleta de libertad'),
             life: 3000
           });
         }
@@ -222,7 +223,7 @@ export class SaveComponent implements OnInit {
         this.messageService.add({
           key: 'msg',
           severity: 'error',
-          detail: 'Error al guardar la boleta de libertad, error: ' + (error?.error?.message || error.message),
+          detail: buildSaveErrorDetail(error, 'la boleta de libertad'),
           life: 3000
         });
       }

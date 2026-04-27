@@ -17,6 +17,7 @@ import { MiscService } from '@/services/misc.service';
 import { BelongingsService } from '../module/service';
 import { CellStaysService } from '@/modules/cell_stays/module/service';
 import { deserializeApiDateTime } from '@/lib/date-time';
+import { buildSaveErrorDetail } from '@/lib/http-error';
 
 interface CellStayOption {
   label: string;
@@ -201,7 +202,7 @@ export class SaveComponent implements OnInit {
           this.messageService.add({
             key: 'msg',
             severity: 'error',
-            detail: 'Error al guardar la pertenencia, error: ' + (error?.error?.message || error.message),
+            detail: buildSaveErrorDetail(error, 'la pertenencia'),
             life: 3000
           });
         }
@@ -227,7 +228,7 @@ export class SaveComponent implements OnInit {
         this.messageService.add({
           key: 'msg',
           severity: 'error',
-          detail: 'Error al guardar la pertenencia, error: ' + (error?.error?.message || error.message),
+          detail: buildSaveErrorDetail(error, 'la pertenencia'),
           life: 3000
         });
       }
