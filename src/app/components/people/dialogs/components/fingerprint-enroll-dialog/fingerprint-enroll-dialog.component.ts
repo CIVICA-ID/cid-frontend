@@ -1,44 +1,48 @@
 import { CaptureMode, Segment, SegmentedFinger } from "@/api/realscan";
-import { All_FINGERS, assignSlapFingersToCapture, buildGroups, buildImageDataUrl, CaptureGroup, CaptureQueueItem, describeGroups, EnrollMode, FingerKey, FULL_CAPTURE_STEP_INDICATORS, FULL_CAPTURE_STEP_ORDER, FullCaptureStep, LEFT_FALLBACK_ORDER, LEFT_FINGER_DEFINITIONS, LEFT_SLAP_FINGER_NAMES, RIGHT_FALLBACK_ORDER, RIGHT_FINGER_DEFINITIONS, RIGHT_SLAP_FINGER_NAMES, rotateImageFormat, SDK_FINGER_TYPE_MAP, TenFingerCapture } from "@/components/people/models/fingerprint.models";
+import { All_FINGERS, assignFingersToCapture, assignSlapFingersToCapture, assignThumbsToCapture, buildGroups, buildImageDataUrl, CaptureGroup, CaptureQueueItem, describeGroups, EnrollMode, FingerKey, FULL_CAPTURE_STEP_INDICATORS, FULL_CAPTURE_STEP_ORDER, FullCaptureStep, getGroupStyle, GroupStyle, LEFT_FALLBACK_ORDER, LEFT_FINGER_DEFINITIONS, LEFT_SLAP_FINGER_NAMES, RIGHT_FALLBACK_ORDER, RIGHT_FINGER_DEFINITIONS, RIGHT_SLAP_FINGER_NAMES, rotateImageFormat, SDK_FINGER_TYPE_MAP, TenFingerCapture } from "@/components/people/models/fingerprint.models";
 import { RealScanService } from "@/services/realscan.service";
 import { CommonModule } from "@angular/common";
-import { Component, EventEmitter, inject, Input, Output } from "@angular/core";
+import { Component, EventEmitter, inject, Input, output, Output, input, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ButtonModule } from "primeng/button";
 import { DialogModule } from "primeng/dialog";
+import { SdkInitButtonsComponent } from "@/components/people/shared/sdk-init-buttons.component";
 
 @Component({
     selector: 'app-fingerprint-enroll-dialog',
     templateUrl: './fingerprint-enroll-dialog.component.html',
     standalone: true,
-    imports: [CommonModule, ButtonModule, DialogModule]
+    imports: [CommonModule, ButtonModule, DialogModule, SdkInitButtonsComponent]
 })
 export class FingerprintEnrollDialogComponent{
     // Emite el resultado de la captura cuando se completa
-    @Output() fingersEnrolled = new EventEmitter<TenFingerCapture>();
-    @Input() alreadyEnrolledFingers: TenFingerCapture = {};
+    fingersEnrolled = output<TenFingerCapture>();
+    // Dedos ya capturados previamente para deshabilitar seleccion
+    alreadyEnrolledFingers = input<TenFingerCapture>({});
 
-    public realScanService = inject(RealScanService);
+    readonly realScanService = inject(RealScanService);
+    private readonly destroyRef = inject(DestroyRef);
     //Estado del dialog
     enrollDialogVisible: boolean = false
     enrollMode: EnrollMode = 'select';
-
+    // Modo completo
     currentFullStep: FullCaptureStep = 'left-four';
     leftFourFingers: SegmentedFinger[] = [];
     rightFourFingers: SegmentedFinger[] = [];
     bothThumbs: SegmentedFinger[] = [];
     bothThumbsImageFormat: string = 'bmp';
-
-    selectedFingerKeys: Set<FingerKey> = new Set();
+    // Modo personalizado
+    selectedFingerKeys = new Set<FingerKey>();
     captureGroups: CaptureGroup[] = [];
     currentGroupIndex: number = 0;
     groupSummary: string = '';
-
+    // Constantes para template
     readonly leftFingerDefinitions = LEFT_FINGER_DEFINITIONS;
     readonly rightFingerDefinitions = RIGHT_FINGER_DEFINITIONS;
     readonly fullStepIndicators = FULL_CAPTURE_STEP_INDICATORS;
     readonly leftSlapFingerNames = LEFT_SLAP_FINGER_NAMES;
     readonly rightSlapFingerNames = RIGHT_SLAP_FINGER_NAMES;
-
+    // Dialog
     openEnrollDialog(): void{
         this.enrollMode = 'select';
         this.resetAllCaptureState();
@@ -48,9 +52,12 @@ export class FingerprintEnrollDialogComponent{
     closeEnrollDialog(): void{
         this.enrollDialogVisible = false;
         if(this.realScanService.deviceHandle()) {
-            this.realScanService.exitDevice().subscribe();
+            this.realScanService.exitDevice()
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe();
         }
     }
+    // Seleccion de modo
     selectFullMode(): void{
         this.enrollMode = 'full';
         this.resetFullModeState();
@@ -66,72 +73,31 @@ export class FingerprintEnrollDialogComponent{
         this.resetAllCaptureState();
         this.realScanService.clearError();
     }
-    initSDK(): void {
-        this.realScanService.initSDK().subscribe({
-            error: e => console.error(e)
-        });
-    }
-    initDevice(): void{
-        this.realScanService.initDevice(0).subscribe({ error: e => console.error(e)});
-    }
-
+    // Modo completo de captura
     captureLeftFour(): void{
         this.leftFourFingers = [];
-        this.realScanService.clearError();
-        this.realScanService.quickCapture(CaptureMode.FLAT_LEFT_FOUR_FINGERS, 15000, Segment.ENABLED)
-        .subscribe({
-            next: r => {
-                if(!r.success){
-                    this.realScanService.lastError.set(r.message || 'Error');
-                    return;
-                }
-                if(r.fingers?.length){
-                    this.leftFourFingers = r.fingers;
-                } else{
-                    this.realScanService.lastError.set('No se detectaron dedos');
-                }
-            },
-            error: e => console.error('Error en captura de 4 dedos izquierdos', e)
-        });
+        this.captureGroup(CaptureMode.FLAT_LEFT_FOUR_FINGERS, 15000,
+            fingers => {
+                this.leftFourFingers = fingers;
+            }
+        );
     }
     captureRightFour(): void{
         this.rightFourFingers = [];
-        this.realScanService.clearError();
-        this.realScanService.quickCapture(CaptureMode.FLAT_RIGHT_FOUR_FINGERS, 15000, Segment.ENABLED)
-        .subscribe({
-            next: r => {
-                if(!r.success){
-                    this.realScanService.lastError.set(r.message || 'Error');
-                    return;
-                }
-                if(r.fingers?.length){
-                    this.rightFourFingers = r.fingers;
-                }else{
-                    this.realScanService.lastError.set('No se detectaron dedos');
-                }
-            },
-            error: e => console.error('Error en captura de 4 dedos derechos', e)
-        });
+        this.captureGroup(CaptureMode.FLAT_RIGHT_FOUR_FINGERS, 15000,
+            fingers => {
+                this.rightFourFingers = fingers;
+            }
+        );
     }
     captureBothThumbs(): void{
         this.bothThumbs = [];
         this.bothThumbsImageFormat = 'bmp';
-        this.realScanService.clearError();
-        this.realScanService.quickCapture(CaptureMode.FLAT_TWO_FINGERS_EX, 12000, Segment.ENABLED)
-        .subscribe({
-            next: r => {
-                if(!r.success){
-                    this.realScanService.lastError.set(r.message || 'Error en Captura');
-                    return;
-                }
-                if(r.fingers?.length){
-                    this.bothThumbs = r.fingers;
-                } else {
-                    this.realScanService.lastError.set('No se detectaron pulgares');
-                }
-            },
-            error: e => console.error("Error captura pulgares: ", e)
-        });
+        this.captureGroup(CaptureMode.FLAT_TWO_FINGERS_EX, 12000,
+            fingers => {
+                this.bothThumbs = fingers;
+            }
+        );
     }
     acceptLeftFourFingers(): void{
         if(this.leftFourFingers.length > 0){
@@ -159,10 +125,11 @@ export class FingerprintEnrollDialogComponent{
         this.realScanService.clearError();
     }
     confirmFullCaptureAndFinish(): void{
-        if(this.leftFourFingers.length < 1 || this.rightFourFingers.length < 1 || this.bothThumbs.length < 1){
+        if(!this.leftFourFingers.length || !this.rightFourFingers.length || !this.bothThumbs.length){
             this.realScanService.lastError.set('Complete todos los pasos');
             return;
         }
+        // Se reutiliza funcion
         const capturedFingers = assignSlapFingersToCapture(this.leftFourFingers, this.rightFourFingers, this.bothThumbs);
 
         this.fingersEnrolled.emit(capturedFingers);
@@ -171,6 +138,7 @@ export class FingerprintEnrollDialogComponent{
     isFullStepCompleted(step: string): boolean {
         return FULL_CAPTURE_STEP_ORDER.indexOf(step as FullCaptureStep) < FULL_CAPTURE_STEP_ORDER.indexOf(this.currentFullStep);
     }
+    // Modo personalizado de seleccion
     toggleFingerSelection(fingerKey: FingerKey): void {
         if (this.selectedFingerKeys.has(fingerKey)) {
             this.selectedFingerKeys.delete(fingerKey);
@@ -182,7 +150,7 @@ export class FingerprintEnrollDialogComponent{
         return this.selectedFingerKeys.has(fingerKey);
     }
     isFingerAlreadyEnrolled(fingerKey: FingerKey): boolean{
-        return !!this.alreadyEnrolledFingers[fingerKey];
+        return !!this.alreadyEnrolledFingers()[fingerKey];
     }
     selectAllFingers(): void {
         this.selectedFingerKeys = new Set(All_FINGERS.map(finger => finger.key));
@@ -190,7 +158,7 @@ export class FingerprintEnrollDialogComponent{
     clearFingerSelection(): void {
         this.selectedFingerKeys = new Set();
     }
-    // Grupos de captura
+    // Grupos de captura en modo personalizado
     startCustomCapture(): void {
         if (this.selectedFingerKeys.size === 0) {
             this.realScanService.lastError.set('Selecciona al menos un dedo.');
@@ -218,10 +186,9 @@ export class FingerprintEnrollDialogComponent{
         if(!group){
             return false;
         }
-        if(group.type === 'single'){
-            return !!group.capturedSingle;
-        }
-        return !!group.capturedFingers && group.capturedFingers.length > 0;
+        return group.type === 'single'
+            ? !!group.capturedSingle
+            : !!group.capturedFingers?.length;
     }
     captureCurrentGroup(): void {
         const group = this.getCurrentGroup();
@@ -234,36 +201,36 @@ export class FingerprintEnrollDialogComponent{
         const timeout = group.type === 'single' ? 12000 : 15000;
         console.log('Capturando grupo:', group.type, 'modo:', group.captureMode);
 
-        this.realScanService.quickCapture(group.captureMode, timeout, Segment.ENABLED).subscribe({
+        this.realScanService.quickCapture(group.captureMode, timeout, Segment.ENABLED)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
             next: response => {
-                if (!response.success) {
+                if(!response.success){
                     this.realScanService.lastError.set(response.message || 'Error en captura');
                     return;
                 }
                 if(group.type === 'single'){
-                    const segmentedFinger = this.extractSingleFinger(response, group.fingers[0].label);
-                    if(segmentedFinger){
-                        this.updateGroupCapture(undefined, segmentedFinger);
-                    } else{
+                    const finger = this.extractSingleFinger(response, group.fingers[0].label);
+                    if(finger){
+                        this.updateGroupCapture(undefined, finger);
+                    }else {
                         this.realScanService.lastError.set('No se recibio imagen');
                     }
-                } else {
+                } else{
                     if(response.fingers?.length){
-                        this.updateGroupCapture(response.fingers, undefined)
-                    } else{
+                        this.updateGroupCapture(response.fingers, undefined);
+                    }else {
                         this.realScanService.lastError.set('No se detectaron dedos');
                     }
                 }
             },
-            error: error => console.error('Error captura dedo:', error),
+            error: e => console.error('Error captura grupo: ', e)
         });
     }
     retakeCurrentGroup(): void {
         this.updateGroupCapture(undefined, undefined);
         const group = this.getCurrentGroup();
-        if(group){
-            group.imageFormat = 'bmp';
-        }
+        if(group) group.imageFormat = 'bmp';
         this.realScanService.clearError();
     }
 
@@ -276,18 +243,15 @@ export class FingerprintEnrollDialogComponent{
             this.finishCustomCapture();
         }
     }
+    // Imagen y estilos para template
     getGroupSingleImageUrl(): string | null{
         const group = this.getCurrentGroup();
-        if(!group?.capturedSingle){
-            return null;
-        }
+        if(!group?.capturedSingle) return null;
         return buildImageDataUrl(group.capturedSingle.imageBase64, group.imageFormat || 'bmp');
     }
     onGroupSingleImageError(): void{
         const group = this.getCurrentGroup();
-        if(group){
-            group.imageFormat = rotateImageFormat(group.imageFormat || 'bmp');
-        }
+        if(group) group.imageFormat = rotateImageFormat(group.imageFormat || 'bmp');
     }
     getGroupFingerNames(): string[]{
         const group = this.getCurrentGroup();
@@ -297,70 +261,36 @@ export class FingerprintEnrollDialogComponent{
         if(group.type === 'two-thumbs') return ['Pulgar Izq.', 'Pulgar Der.'];
         return [group.fingers[0]?.label || ''];
     }
-    getGroupBorderColor(): string{
-        const group = this.getCurrentGroup();
-        if(!group){
-            return 'border-purple-300';
-        }
-        switch(group.type){
-            case 'left-four':
-                return 'border-green-300';
-            case 'right-four':
-                return 'border-blue-300';
-            case 'two-thumbs':
-                return 'border-amber-300';
-            default:
-                return 'border-purple-300';
-        }
+    // Retorna los estilos del grupo actual
+    get currentGroupStyle(): GroupStyle{
+        return getGroupStyle(this.getCurrentGroup()?.type);
     }
-    getGroupBgColor(): string{
-        const group = this.getCurrentGroup();
-        if(!group){
-            return 'bg-purple-50';
-        }
-        switch(group.type){
-            case 'left-four':
-                return 'bg-green-50';
-            case 'right-four':
-                return 'bg-blue-50';
-            case 'two-thumbs':
-                return 'bg-amber-50';
-            default:
-                return 'bg-purple-50';
-        }
+    // metodo para capturar un grupo de dedos
+    private captureGroup(
+        mode: CaptureMode,
+        timeout: number,
+        onSuccess: (fingers: SegmentedFinger[]) => void
+    ): void{
+        this.realScanService.clearError();
+        this.realScanService
+        .quickCapture(mode, timeout, Segment.ENABLED)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+            next: r => {
+                if(!r.success){
+                    this.realScanService.lastError.set(r.message || 'Error');
+                    return;
+                }
+                if(r.fingers?.length){
+                    onSuccess(r.fingers);
+                }else{
+                    this.realScanService.lastError.set('No se detectaron dedos');
+                }
+            },
+            error: e => console.error('Error en captura: ', e)
+        });
     }
-    getGroupTextColor(): string{
-        const group = this.getCurrentGroup();
-        if(!group){
-            return 'text-purple-700';
-        }
-        switch(group.type){
-            case 'left-four':
-                return 'text-green-700';
-            case 'right-four':
-                return 'text-blue-700';
-            case 'two-thumbs':
-                return 'text-amber-700';
-            default:
-                return 'text-purple-700';
-        }
-    }
-    getGroupIcon(): string{
-        const group = this.getCurrentGroup();
-        if(!group){
-            return 'pi pi-thumbs-up-fill';
-        }
-        switch(group.type){
-            case 'left-four':
-            case 'right-four':
-                return 'pi pi-thumbs-up-fill';
-            case 'two-thumbs':
-                return 'pi pi-thumbs-up-fill';
-            default:
-                return 'pi pi-thumbs-up-fill';
-        }
-    }
-    private extractSingleFinger(response: any, fingerLabel: string = 'Thumb'): SegmentedFinger | null {
+    private extractSingleFinger(response: any, fingerLabel: string): SegmentedFinger | null {
         if (response.fingers?.length) return response.fingers[0];
         if (response.imageBase64) {
             return {
@@ -384,58 +314,22 @@ export class FingerprintEnrollDialogComponent{
         }
         : group);
     }
+    // Finaliza captura personalizada
     private finishCustomCapture(): void {
         const capturedFingers: TenFingerCapture = {};
         for (const group of this.captureGroups) {
             if (group.type === 'single' && group.capturedSingle) {
                 (capturedFingers as any)[group.fingers[0].key] = group.capturedSingle.imageBase64;
             } else if(group.type === 'left-four' && group.capturedFingers?.length){
-                this.assignFourFingersToResult(group.capturedFingers, 'left', capturedFingers);
+                assignFingersToCapture(group.capturedFingers, 'left', capturedFingers);
             } else if(group.type === 'right-four' && group.capturedFingers?.length){
-                this.assignFourFingersToResult(group.capturedFingers, 'right', capturedFingers);
+                assignFingersToCapture(group.capturedFingers, 'right', capturedFingers);
             } else if(group.type === 'two-thumbs' && group.capturedFingers?.length){
-                this.assignTwoThumbsToResult(group.capturedFingers, capturedFingers);
+                assignThumbsToCapture(group.capturedFingers, capturedFingers);
             }
         }
         this.fingersEnrolled.emit(capturedFingers);
         this.closeEnrollDialog();
-    }
-    private assignFourFingersToResult(fingers: SegmentedFinger[], hand: 'left' | 'right', result: TenFingerCapture): void{
-        const typeMap = hand === 'left' ? SDK_FINGER_TYPE_MAP.LEFT : SDK_FINGER_TYPE_MAP.RIGHT;
-        const fallbackOrder = hand === 'left' ? LEFT_FALLBACK_ORDER : RIGHT_FALLBACK_ORDER;
-        const keyPrefix = hand === 'left' ? 'left' : 'right';
-
-        for(const finger of fingers){
-            if (finger.fingerType === typeMap.INDEX)  (result as any)[`${keyPrefix}Index`]  = finger.imageBase64;
-            if (finger.fingerType === typeMap.MIDDLE)  (result as any)[`${keyPrefix}Middle`]  = finger.imageBase64;
-            if (finger.fingerType === typeMap.RING)  (result as any)[`${keyPrefix}Ring`]  = finger.imageBase64;
-            if (finger.fingerType === typeMap.LITTLE)  (result as any)[`${keyPrefix}Little`]  = finger.imageBase64;
-        }
-        const unknowns = fingers.filter(f => !f.fingerType);
-        if(unknowns.length > 0){
-            fallbackOrder.forEach((fingerKey, index) => {
-                if(unknowns[index] && !result[fingerKey]){
-                    (result as any)[fingerKey] = unknowns[index].imageBase64;
-                }
-            });
-        }
-    }
-    private assignTwoThumbsToResult(fingers: SegmentedFinger[], result: TenFingerCapture): void{
-        for(const finger of fingers){
-            if(finger.fingerType === 6){
-                result.leftThumb = finger.imageBase64;
-            } else if(finger.fingerType === 1){
-                result.rightThumb = finger.imageBase64;
-            }
-        }
-        const unknowns = fingers.filter(f => f.fingerType !== 1 && f.fingerType !== 6);
-        if(unknowns.length >= 2 && !result.leftThumb && !result.rightThumb){
-            result.leftThumb = unknowns[0].imageBase64;
-            result.rightThumb = unknowns[1].imageBase64;
-        } else if(unknowns.length === 1){
-            if(!result.leftThumb) result.leftThumb = unknowns[0].imageBase64;
-            else if(!result.rightThumb) result.rightThumb = unknowns[0].imageBase64;
-        }
     }
     private resetFullModeState(): void {
         this.currentFullStep = 'left-four';

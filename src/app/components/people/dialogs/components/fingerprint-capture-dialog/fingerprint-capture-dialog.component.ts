@@ -2,30 +2,32 @@ import { CaptureMode, Segment, SegmentedFinger } from "@/api/realscan";
 import { buildImageDataUrl, rotateImageFormat } from "@/components/people/models/fingerprint.models";
 import { RealScanService } from "@/services/realscan.service";
 import { CommonModule } from "@angular/common";
-import { Component, EventEmitter, inject, Input, Output } from "@angular/core";
+import { Component, DestroyRef, EventEmitter, inject, input, Input, output, Output } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ButtonModule } from "primeng/button";
 import { DialogModule } from "primeng/dialog";
+import { SdkInitButtonsComponent } from "@/components/people/shared/sdk-init-buttons.component";
 
 
 @Component({
     selector: 'app-fingerprint-capture-dialog',
     templateUrl: './fingerprint-capture-dialog.component.html',
     standalone: true,
-    imports: [CommonModule, ButtonModule, DialogModule]
+    imports: [CommonModule, ButtonModule, DialogModule, SdkInitButtonsComponent]
 })
 export class FingerprintCaptureDialogComponent{
     //Nombre del dedo que se esta buscando
-    @Input() selectedFingerLabel: string | null = null;
-
+    selectedFingerLabel = input<string | null>(null);
     // Emite la imagen base64 del dedo capturado
-    @Output() fingerCaptured = new EventEmitter<string>();
+    fingerCaptured = output<string>();
 
-    public realScanService = inject(RealScanService);
+    readonly realScanService = inject(RealScanService);
+    private readonly destroyRef = inject(DestroyRef);
 
     captureDialogVisible = false;
     capturedFinger: SegmentedFinger | null = null;
     captureImageFormat = 'bmp';
-
+    // Estado Dialog
     openCaptureDialog(): void{
         this.capturedFinger = null;
         this.captureImageFormat = 'bmp';
@@ -36,45 +38,40 @@ export class FingerprintCaptureDialogComponent{
     closeCaptureDialog(): void{
         this.captureDialogVisible = false;
         if(this.realScanService.deviceHandle()){
-            this.realScanService.exitDevice().subscribe();
+            this.realScanService.exitDevice()
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe();
         }
     }
-
-    initSDK(): void {
-        this.realScanService.initSDK().subscribe({
-            error: e => console.error(e)
-        });
-    }
-    initDevice(): void{
-        this.realScanService.initDevice(0).subscribe({ error: e => console.error(e)});
-    }
-
+    // Captura
     captureSingle(): void{
         this.capturedFinger = null;
         this.captureImageFormat = 'bmp';
         this.realScanService.clearError();
-        this.realScanService.quickCapture(CaptureMode.FLAT_SINGLE_FINGER, 12000, Segment.ENABLED).subscribe({
-            next: (r) => {
-                if(!r.success){
-                    this.realScanService.lastError.set(r.message || 'Error');
+        this.realScanService.quickCapture(CaptureMode.FLAT_SINGLE_FINGER_EX, 12000, Segment.ENABLED)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+            next: (response) => {
+                if(!response.success){
+                    this.realScanService.lastError.set(response.message || 'Error');
                     return;
                 }
-                if(r.fingers.length){
-                    this.capturedFinger = r.fingers[0];
-                } else if(r.imageBase64){
+                if(response.fingers?.length){
+                    this.capturedFinger = response.fingers[0];
+                }else if(response.imageBase64){
                     this.capturedFinger = {
                         fingerIndex: 1,
                         fingerType: 0,
                         fingerTypeName: 'Tipo de dedo desconocido',
-                        width: r.width ?? 0,
-                        height: r.height ?? 0,
-                        imageBase64: r.imageBase64
+                        width: response.width ?? 0,
+                        height: response.height ?? 0,
+                        imageBase64: response.imageBase64
                     };
-                } else{
+                }else {
                     this.realScanService.lastError.set('No se recibio imagen');
                 }
             },
-            error: e => console.error(e)
+            error: e => console.error('Error en captura', e)
         });
     }
     retakeCapture(): void{
@@ -87,6 +84,7 @@ export class FingerprintCaptureDialogComponent{
         this.fingerCaptured.emit(this.capturedFinger.imageBase64);
         this.closeCaptureDialog();
     }
+    // Imagenes
     getCaptureImageUrl(): string | null{
         if(!this.capturedFinger) return null;
         return buildImageDataUrl(this.capturedFinger.imageBase64, this.captureImageFormat);
@@ -94,6 +92,7 @@ export class FingerprintCaptureDialogComponent{
     onCaptureImgError(): void{
         this.captureImageFormat = rotateImageFormat(this.captureImageFormat);
     }
+    // Estados visuales
     getCaptureStateText(): string{
         if(this.realScanService.isCapturing()) return 'Capturando';
         if(this.capturedFinger) return 'Huella Capturada';

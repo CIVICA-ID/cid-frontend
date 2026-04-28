@@ -1,7 +1,7 @@
 import { computed, Injectable, signal } from "@angular/core";
 import { CaptureImageResponse, CaptureMode, Segment, CapturingStatusResponse, DeviceInfoResponse, InitDeviceResponse, InitSDKResponse, OperationResponse, RealScanStatus } from "../api/realscan";
 import { HttpClient, HttpErrorResponse } from "@angular/common/http";
-import { catchError, finalize, Observable, of, tap, throwError } from "rxjs";
+import { catchError, finalize, Observable, of, switchMap, tap, throwError } from "rxjs";
 
 
 @Injectable({
@@ -10,27 +10,27 @@ import { catchError, finalize, Observable, of, tap, throwError } from "rxjs";
 export class RealScanService {
   private readonly apiUrl = 'http://localhost:5001/api/realscan';
   // Estado de inicializacion del SDK
-  sdkInitialized = signal<boolean>(false);
+  readonly sdkInitialized = signal<boolean>(false);
   // Handle del dispositivo actualmente abierto
-  deviceHandle = signal<number | null>(null);
+  readonly deviceHandle = signal<number | null>(null);
   // informacion del dispositivo
-  deviceInfo = signal<DeviceInfoResponse['deviceInfo'] | null>(null);
+  readonly deviceInfo = signal<DeviceInfoResponse['deviceInfo'] | null>(null);
   // Estado de captura
-  isCapturing = signal<boolean>(false);
+  readonly isCapturing = signal<boolean>(false);
   // Numero de dispositivos detectados
-  numberOfDevices = signal<number>(0);
+  readonly numberOfDevices = signal<number>(0);
   // Estado de carga
-  loading = signal<boolean>(false);
+  readonly loading = signal<boolean>(false);
   // Ultimo error
-  lastError = signal<string | null>(null);
+  readonly lastError = signal<string | null>(null);
 
   // Indica si hay un dispositivo listo para capturar
-  isDeviceReady = computed(() => {
+  readonly isDeviceReady = computed(() => {
     return this.sdkInitialized() && this.deviceHandle() !== null;
   });
 
   // Estado completo del SDK
-  status = computed<RealScanStatus>(() => ({
+  readonly status = computed<RealScanStatus>(() => ({
     sdkInitialized: this.sdkInitialized(),
     deviceHandle: this.deviceHandle(),
     deviceInfo: this.deviceInfo(),
@@ -38,8 +38,8 @@ export class RealScanService {
     lastError: this.lastError()
   }));
 
-  constructor(private http: HttpClient) { }
-
+  constructor(private readonly http: HttpClient) { }
+  // Operaciones del SDK
   initSDK(): Observable<InitSDKResponse> {
     this.loading.set(true);
     this.clearError();
@@ -62,15 +62,13 @@ export class RealScanService {
   }
 
   initDevice(deviceIndex: number = 0): Observable<InitDeviceResponse> {
-    this.loading.set(true);
-    this.clearError();
-
     if (!this.sdkInitialized()) {
       const error = 'SDK no inicializado, llame a initSDK() primero';
       this.lastError.set(error);
       return throwError(() => new Error(error));
     }
-
+    this.loading.set(true);
+    this.clearError();
     return this.http.post<InitDeviceResponse>(`${this.apiUrl}/init-device/${deviceIndex}`, {})
       .pipe(
         tap((response) => {
@@ -101,7 +99,7 @@ export class RealScanService {
         catchError((error) => this.handleError(error, 'Error al obtener info del dispositivo'))
       );
   }
-
+  // Captura
   quickCapture(
     mode: CaptureMode = CaptureMode.FLAT_SINGLE_FINGER,
     timeout: number = 10000,
@@ -154,15 +152,16 @@ export class RealScanService {
         catchError((error) => this.handleError(error, 'Error al verificar estado de captura'))
       );
   }
-
+  // Liberacion de dispositivos
   exitDevice(): Observable<OperationResponse> {
     const handle = this.deviceHandle();
 
     if (handle === null) {
         return of({
             success: true,
-            message: 'No hay dispositivo que liberar'
-        } as OperationResponse);
+            message: 'No hay dispositivo que liberar',
+            errorCode: 0
+        });
     }
     this.deviceHandle.set(null);
     this.deviceInfo.set(null);
@@ -186,8 +185,9 @@ export class RealScanService {
     if(!this.sdkInitialized()){
         return of({
             success: true,
-            message: 'SDK no inicializado'
-        } as OperationResponse);
+            message: 'SDK no inicializado',
+            errorCode: 0
+        });
     }
     this.deviceHandle.set(null);
     this.deviceInfo.set(null),
@@ -205,101 +205,56 @@ export class RealScanService {
         finalize(() => this.loading.set(false))
       );
   }
-
+  // Reinicia el SDK, libera dispositios si hay alguno abierto y se vuelve a inicializar
   reset(): Observable<InitSDKResponse> {
-    if (this.deviceHandle() !== null) {
-      return new Observable((observer) => {
-        this.exitAllDevices().subscribe({
-          next: () => {
-            // Despues de liberar, reiniciar
-            this.initSDK().subscribe({
-              next: (response) => observer.next(response),
-              error: (error) => observer.error(error),
-              complete: () => observer.complete()
-            });
-          },
-          error: (error) => observer.error(error)
-        });
-      });
-    } else {
-      // Si no hay dispositivos, solo inicilizar
-      return this.initSDK();
-    }
+    return this.deviceHandle() !== null
+        ? this.exitAllDevices().pipe(switchMap(() => this.initSDK()))
+        : this.initSDK();
   }
-
+  // Inicializa SDK, el dispositivo y captura
   initAndCapture(
     deviceIndex: number = 0,
     mode: CaptureMode = CaptureMode.FLAT_SINGLE_FINGER,
     segment: Segment = Segment.ENABLED
   ): Observable<CaptureImageResponse> {
-    return new Observable((observer) => {
-      // Inicializar SDK
-      this.initSDK().subscribe({
-        next: (sdkResponse) => {
-          if (!sdkResponse.success) {
-            observer.error(new Error(sdkResponse.message));
-            return;
-          }
-
-          // Inicializar dispositivo
-          this.initDevice(deviceIndex).subscribe({
-            next: (deviceResponse) => {
-              if (!deviceResponse.success) {
-                observer.error(new Error(deviceResponse.message));
-                return;
-              }
-
-              // Capturar imagen
-              this.quickCapture(mode, 10000, segment).subscribe({
-                next: (captureResponse) => {
-                  observer.next(captureResponse);
-                  observer.complete();
-                },
-                error: (error) => observer.error(error)
-              });
-            },
-            error: (error) => observer.error(error)
-          });
-        },
-        error: (error) => observer.error(error)
-      });
-    });
+        return this.initSDK().pipe(
+            tap(sdk => {
+                if(!sdk.success){
+                    throw new Error(sdk.message);
+                }
+            }),
+            switchMap(() => this.initDevice(deviceIndex)),
+            tap(device => {
+                if(!device.success){
+                    throw new Error(device.message);
+                }
+            }),
+            switchMap(() => this.quickCapture(mode, 10000, segment))
+        );
   }
-
 
   clearError(): void {
     this.lastError.set(null);
   }
 
-  handleError(error: HttpErrorResponse, defaultMessage: string = 'Error desconocido') {
+  handleError(error: HttpErrorResponse, defaultMessage: string = 'Error desconocido'):Observable<never> {
     let errorMessage = defaultMessage;
     if (error.error instanceof ErrorEvent) {
       errorMessage = `Error de red: ${error.error.message}`;
     } else {
-      switch (error.status) {
-        case 0:
-          errorMessage = 'No se puede conectar con el servidor RealScan, verifica que la API se este ejecutando';
-          break;
-        case 400:
-          errorMessage = error.error?.message || 'Solicitud invalida';
-          break;
-        case 404:
-          errorMessage = "Endpoint no encontrado, verificar la url de la API";
-          break;
-        case 500:
-          errorMessage = error.error?.message || 'Error interno del servidor RealScan';
-          break;
-        default:
-          errorMessage = error.error?.message || error.message || defaultMessage;
-
-      }
+        const statusMessages: Record<number, string> = {
+            0: 'No se puede conectar con el servidor Realscan, verifica que la API se este ejecutando',
+            400: error.error?.message || 'Solicitud invalida',
+            404: 'Endpoint no encontrado, verificar la URL de la API',
+            500: error.error?.message || 'Error interno del servidor Realscan'
+        };
+        errorMessage = statusMessages[error.status] || error.error?.message || error.message || defaultMessage;
     }
 
     console.error('Error en RealScanService:', {
       status: error.status,
       message: errorMessage,
       url: error.url,
-      fullError: error
     });
 
     this.lastError.set(errorMessage);

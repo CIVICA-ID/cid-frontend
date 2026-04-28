@@ -1,10 +1,10 @@
 <!-- Captura de huella para busqueda -->
 <p-dialog [(visible)]="captureDialogVisible" [modal]="true" [style]="{ width: '28rem' }" [draggable]="false" [resizable]="false" header="Captura para Busqueda" (onHide)="closeCaptureDialog()">
     <!-- Info del dedo seleccionado -->
-    @if (selectedFingerLabel) {
+    @if (selectedFingerLabel()) {
         <div class="mb-4 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700 flex items-center">
             <i class="pi pi-search mr-2"></i>
-            Buscando: <strong class="ml-1">{{ selectedFingerLabel }}</strong>
+            Buscando: <strong class="ml-1">{{ selectedFingerLabel() }}</strong>
         </div>
     }
     <!-- Estado del lector -->
@@ -23,27 +23,7 @@
         }
     </div>
     <!-- Boton inicializar SDK -->
-    @if (!realScanService.sdkInitialized()) {
-        <button pButton pRipple type="button"
-            label="Inicializar SDK"
-            icon="pi pi-bolt"
-            class="w-full mb-3"
-            [disabled]="realScanService.loading()"
-            [loading]="realScanService.loading()"
-            (click)="initSDK()">
-        </button>
-    }
-    <!-- Boton inicializar dispositivo -->
-    @if (realScanService.sdkInitialized() && !realScanService.deviceHandle()) {
-        <button pButton pRipple type="button"
-            label="Inicializar Dispositivo"
-            icon="pi pi-desktop"
-            class="p-button-success w-full mb-3"
-            [disabled]="realScanService.loading()"
-            [loading]="realScanService.loading()"
-            (click)="initDevice()">
-        </button>
-    }
+    <app-sdk-init-buttons/>
     <!-- Preview de la huella capturada -->
     @if (capturedFinger) {
         <div class="mb-4 border-2 border-green-300 rounded-lg p-3 bg-green-50 text-center">

@@ -27,33 +27,8 @@
                 <span class="text-sm mt-1">Elige que dedos capturar</span>
             </button>
         </div>
-
-        <!-- SDK del dispositivo -->
-        @if (!realScanService.sdkInitialized()) {
-            <button pButton pRipple type="button"
-                label="Inicializar SDK"
-                icon="pi pi-bolt"
-                class="w-full mb-3"
-                [disabled]="realScanService.loading()"
-                [loading]="realScanService.loading()"
-                (click)="initSDK()">
-            </button>
-        }
-        @if (realScanService.sdkInitialized() && !realScanService.deviceHandle()) {
-            <button pButton pRipple type="button"
-                label="Inicializar Dispositivo"
-                icon="pi pi-desktop"
-                class="p-button-success w-full mb-3"
-                [disabled]="realScanService.loading()"
-                [loading]="realScanService.loading()"
-                (click)="initDevice()">
-            </button>
-        }
-        @if (realScanService.deviceInfo()) {
-            <div class="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg text-xs text-green-700 text-center">
-                {{ realScanService.deviceInfo()?.productName }} conectado
-            </div>
-        }
+        <!-- Botones SDK del dispositivo -->
+         <app-sdk-init-buttons/>
     }
 
     <!-- Modo personalizado -->
@@ -172,35 +147,15 @@
             <p class="text-xs text-gray-500 text-center">{{groupSummary}}</p>
         </div>
 
-        <!-- SDK del dispositivo -->
-        @if (!realScanService.sdkInitialized()) {
-            <button pButton pRipple type="button"
-                label="Inicializar SDK"
-                icon="pi pi-bolt"
-                class="w-full mb-2"
-                [disabled]="realScanService.loading()"
-                [loading]="realScanService.loading()"
-                (click)="initSDK()">
-            </button>
-        }
-        @if (realScanService.sdkInitialized() && !realScanService.deviceHandle()) {
-            <button pButton pRipple type="button"
-                label="Inicializar Dispositivo"
-                icon="pi pi-desktop"
-                class="p-button-success w-full mb-2"
-                [disabled]="realScanService.loading()"
-                [loading]="realScanService.loading()"
-                (click)="initDevice()">
-            </button>
-        }
+        <app-sdk-init-buttons/>
         <!-- Preview del dedo actual -->
         @if (getCurrentGroup()?.type === 'single' && getCurrentGroup()?.capturedSingle) {
-            <div class="mb-3 border-2 rounded-lg p-3 text-center" [ngClass]="[getGroupBorderColor(), getGroupBgColor()]">
+            <div class="mb-3 border-2 rounded-lg p-3 text-center" [ngClass]="[currentGroupStyle.border, currentGroupStyle.bg]">
                 <img [src]="getGroupSingleImageUrl()"
                     (error)="onGroupSingleImageError()"
                     [alt]="getCurrentGroup()!.label"
                     class="mx-auto max-h-44 object-contain bg-white p-1 rounded" />
-                <p class="text-sm mt-1 font-semibold" [class]="getGroupTextColor()">
+                <p class="text-sm mt-1 font-semibold" [class]="currentGroupStyle.text">
                     {{ getCurrentGroup()!.label }} capturado
                 </p>
             </div>
@@ -216,9 +171,9 @@
                 'grid-cols-2': getCurrentGroup()!.type === 'two-thumbs'
                 }">
                 @for (finger of getCurrentGroup()!.capturedFingers; track finger.fingerIndex; let fingerIndex = $index){
-                    <div class="border-2 rounded-lg p-2 text-center" [ngClass]="[getGroupBorderColor(), getGroupBgColor()]">
+                    <div class="border-2 rounded-lg p-2 text-center" [ngClass]="[currentGroupStyle.border, currentGroupStyle.bg]">
                     <img [src]="'data:image/bmp;base64,' + finger.imageBase64" class="mx-auto max-h-28 object-contain bg-white rounded mb-1"/>
-                    <p class="text-xs font-semibold" [class]="getGroupTextColor()">
+                    <p class="text-xs font-semibold" [class]="currentGroupStyle.text">
                         {{ getGroupFingerNames()[fingerIndex] }}
                     </p>
                     </div>
@@ -233,7 +188,7 @@
                     [label]="realScanService.isCapturing()
                         ? 'Capturando...'
                         : 'Capturar ' + (getCurrentGroup()?.label || '')"
-                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : getGroupIcon()"
+                    [icon]="realScanService.isCapturing() ? 'pi pi-spin pi-spinner' : 'pi pi-thumbs-up-fill'"
                     class="w-full"
                     [disabled]="!realScanService.isDeviceReady() || realScanService.loading() || realScanService.isCapturing()"
                     (click)="captureCurrentGroup()">
@@ -279,27 +234,8 @@
                 }
             </div>
         </div>
-        <!-- SDK del dispositivo -->
-        @if (!realScanService.sdkInitialized()) {
-            <button pButton pRipple type="button"
-                label="Inicializar SDK"
-                icon="pi pi-bolt"
-                class="w-full mb-2"
-                [disabled]="realScanService.loading()"
-                [loading]="realScanService.loading()"
-                (click)="initSDK()">
-            </button>
-        }
-        @if (realScanService.sdkInitialized() && !realScanService.deviceHandle()) {
-            <button pButton pRipple type="button"
-                label="Inicializar Dispositivo"
-                icon="pi pi-desktop"
-                class="p-button-success w-full mb-2"
-                [disabled]="realScanService.loading()"
-                [loading]="realScanService.loading()"
-                (click)="initDevice()">
-            </button>
-        }
+
+        <app-sdk-init-buttons/>
 
         <!-- 4 dedos izquierdos -->
         @if (currentFullStep === 'left-four') {

@@ -3,12 +3,13 @@ import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Injectable, signal } from "@angular/core";
 import { catchError, finalize, Observable, tap, throwError } from "rxjs";
 import { environment } from "src/environments/environment";
+import { BaseApiService } from "./base-api.service";
 
-
+// Tipos de dedos
 export type SearchFingerType =
 | 'leftThumb' | 'leftIndex' | 'leftMiddle' | 'leftRing' | 'leftLittle'
 | 'rightThumb' | 'rightIndex' | 'rightMiddle' | 'rightRing' | 'rightLittle';
-
+// Interfaces
 export interface MatchResult {
     isMatch: boolean;
     peopleId?: string;
@@ -53,72 +54,46 @@ export interface EnrollFingerprintRequest {
 }
 
 @Injectable({ providedIn: 'root'})
-export class FingerprintService{
+export class FingerprintService extends BaseApiService{
     private apiUrl = `${environment.apiUrl}fingerprint`;
 
-    loading = signal<boolean>(false);
-    lastError = signal<string | null>(null);
-
-    constructor(private http: HttpClient){}
-
-    clearError(): void{
-        this.lastError.set(null);
+    constructor(private http: HttpClient){
+        super();
     }
 
     searchFingerprint(request: SearchRequest): Observable<MatchResult>{
-        this.loading.set(true);
-        this.clearError();
-
-        return this.http.post<MatchResult>(`${this.apiUrl}/search`, request).pipe(
-            tap((result) => console.log('Busqueda completada', result)),
-            catchError((error) => this.handleError(error, 'Error durante la busqueda')),
-            finalize(() => this.loading.set(false))
+        return this.executeRequest(
+            this.http.post<MatchResult>(`${this.apiUrl}/search`, request).pipe(
+                tap(result => {
+                    console.log('Busqueda completada', result)
+                })
+            )
         );
     }
 
     confirmMatch(request: ConfirmationRequest): Observable<MatchResult>{
-        this.loading.set(true);
-        this.clearError();
-
-        return this.http.post<MatchResult>(`${this.apiUrl}/confirm`, request).pipe(
-            tap((result) => console.log('Confirmacion procesada', result)),
-            catchError((error) => this.handleError(error, 'Error al procesar confirmacion')),
-            finalize(() => this.loading.set(false))
+        return this.executeRequest(
+            this.http.post<MatchResult>(`${this.apiUrl}/confirm`, request).pipe(
+                tap(result => {
+                    console.log('Confirmacion procesada', result)
+                })
+            )
         );
     }
 
     enrollFingerprint(request: EnrollFingerprintRequest): Observable<any>{
-        this.loading.set(true);
-        this.clearError();
-
-        return this.http.post(`${this.apiUrl}/enroll`, request).pipe(
-            tap(() => console.log('Huellas enroladas correctamente')),
-            catchError((error) => this.handleError(error, 'Error en enrolamiento')),
-            finalize(() => this.loading.set(false))
+        return this.executeRequest(
+            this.http.post(`${this.apiUrl}/enroll`, request).pipe(
+                tap(() => {
+                    console.log('Huellas enroladas correctamente')
+                })
+            )
         );
     }
 
-    private handleError(error: HttpErrorResponse, defaultMessage: string)
-    {
-        let errorMessage = defaultMessage;
-        if(error.error instanceof ErrorEvent){
-            errorMessage = `Error de red: ${error.error.message}`;
-        } else {
-            switch(error.status){
-                case 0:
-                    errorMessage = 'No se puede conectar con el servidor';
-                    break;
-                case 400:
-                    errorMessage = error.error?.message || 'Solicitud invalida';
-                    break;
-                case 503:
-                    errorMessage = error.error?.message || 'Servicio ocupado, intente mas tarde';
-                    break;
-                default:
-                    errorMessage = error.error?.message || error.message || defaultMessage;
-            }
-        }
-        this.lastError.set(errorMessage);
-        return throwError(() => new Error(errorMessage));
+    protected override extractErrorMessage(error: HttpErrorResponse): string{
+        return super.extractErrorMessage(error, {
+            503: 'Servicio ocupado, intente mas tarde'
+        });
     }
 }

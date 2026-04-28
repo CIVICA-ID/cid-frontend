@@ -1,5 +1,5 @@
-import { ChangeDetectorRef, Component, EventEmitter, inject, Input, OnInit, Output, ViewChild, input } from '@angular/core';
-import { AbstractControlOptions, FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ChangeDetectorRef, Component, EventEmitter, inject, Input, OnInit, Output, ViewChild, input, DestroyRef } from '@angular/core';
+import { AbstractControlOptions, FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 
 import { FileUploadModule } from 'primeng/fileupload';
@@ -25,7 +25,7 @@ import { PeopleService } from '@/services/people.service';
 import { DatePicker } from 'primeng/datepicker';
 import { SelectModule } from 'primeng/select';
 import { AddressesComponent } from '../addresses/addresses.component';
-import { EnrollFingerprintRequest, MatchResult } from '@/services/fingerprint.service';
+import { EnrollFingerprintRequest, MatchResult, SearchFingerType } from '@/services/fingerprint.service';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
 import { FingerprintService } from '../../services/fingerprint.service';
 import { FingerprintEnrollDialogComponent } from './dialogs/components/fingerprint-enroll-dialog/fingerprint-enroll-dialog.component';
@@ -33,12 +33,53 @@ import { FingerprintCaptureDialogComponent } from './dialogs/components/fingerpr
 import { ADD_PERSON_FIELDS, buildImageDataUrl, countCapturedFingers, FINGER_SEARCH_OPTIONS, FingerKey, formatElapsedTime, formatPageRange, getScoreColorClass, LEFT_FINGER_SEARCH_OPTIONS, LEFT_FINGER_THUMBNAILS, RIGHT_FINGER_SEARCH_OPTIONS, RIGHT_FINGER_THUMBNAILS, SEARCH_FIELDS, TenFingerCapture } from './models';
 import { Tooltip } from "primeng/tooltip";
 import { EnrollFaceRequest, FaceRecognitionService, FaceSearchResult } from '@/services/face-recognition.service';
-
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { extractFileFromEvent, IMAGE_TYPES, readFileAsBase64 } from './utils/file.utils';
+import { MathResultCardComponent } from "./shared/match-result-card.component";
+// Tipos
 type PhotoType = 'front' | 'leftProfile' | 'rightProfile';
+interface PhotoEntry{
+    base64: string | null;
+    preview: string | null;
+}
 
-const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/bmp', 'image/webp'] as const;
+interface PersonFormControls{
+    firstName: FormControl<string | null>;
+    paternalName: FormControl<string | null>;
+    maternalName: FormControl<string | null>;
+    birthDate: FormControl<Date | string | null>;
+    alias: FormControl<string | null>;
+    curp: FormControl<string | null>;
+    gender: FormControl<string | null>;
+    maritalStatus: FormControl<string | null>;
+    educationLevel: FormControl<string | null>;
+    occupation: FormControl<string | null>;
+    peopleAddresses: FormArray;
+}
+
 const LEFT_HAND_KEYS: FingerKey[] = ['leftThumb', 'leftIndex', 'leftMiddle', 'leftRing', 'leftLittle'];
 const RIGHT_HAND_KEYS: FingerKey[] = ['rightThumb', 'rightIndex', 'rightMiddle', 'rightRing', 'rightLittle'];
+
+function createEmptyPhotos(): Record<PhotoType, PhotoEntry>{
+    return {
+        front: { base64: null, preview: null },
+        leftProfile: { base64: null, preview: null },
+        rightProfile: { base64: null, preview: null }
+    };
+}
+interface PaginatedResponse<T>{
+    data: T[];
+    meta: {
+        totalItems: number;
+        itemsPerPage: number;
+        totalPages: number;
+        currentPage: number;
+    };
+}
+interface ApiCreateResponse{
+    object: People;
+    message?: string;
+}
 
 @Component({
     selector: 'app-people',
@@ -74,19 +115,21 @@ const RIGHT_HAND_KEYS: FingerKey[] = ['rightThumb', 'rightIndex', 'rightMiddle',
     TabPanel,
     FingerprintCaptureDialogComponent,
     FingerprintEnrollDialogComponent,
-    Tooltip
+    Tooltip,
+    MathResultCardComponent
 ],
     standalone: true
 })
 export class PeopleComponent {
     //Injections
-    private formBuilder = inject(FormBuilder);
-    private peopleService = inject(PeopleService);
-    private fingerprintService = inject(FingerprintService);
-    private faceService = inject(FaceRecognitionService);
-    private messageService = inject(MessageService);
-    private miscService = inject(MiscService);
-    private changeDetector = inject(ChangeDetectorRef);
+    private readonly formBuilder = inject(FormBuilder);
+    private readonly peopleService = inject(PeopleService);
+    private readonly fingerprintService = inject(FingerprintService);
+    private readonly faceService = inject(FaceRecognitionService);
+    private readonly messageService = inject(MessageService);
+    private readonly miscService = inject(MiscService);
+    private readonly changeDetector = inject(ChangeDetectorRef);
+    private readonly destroyRef = inject(DestroyRef);
     // Componentes hijos
     @ViewChild('enrollDialog') enrollDialog!: FingerprintEnrollDialogComponent;
     @ViewChild('captureDialog') captureDialog!: FingerprintCaptureDialogComponent;
@@ -103,10 +146,12 @@ export class PeopleComponent {
             return;
         }
         this.peopleService.getById(personId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
             next: person => {
                 if(person){
                     this.selectedPerson = person;
+                    // const {firstName, paternalName, maternalName, birthDate, alias, curp, gender, maritalStatus, educationLevel, occupation} = person;
                     this.form.patchValue(person);
                 } else{
                     this.selectedPerson = null;
@@ -121,16 +166,16 @@ export class PeopleComponent {
     // formOptions: AbstractControlOptions = { validators: Validators.nullValidator };
     form = this.formBuilder.group(
         {
-            firstName: [null, [Validators.required, Validators.maxLength(150)]],
-            paternalName: [null, [Validators.maxLength(100)]],
-            maternalName: [null, [Validators.maxLength(100)]],
-            birthDate: [null],
-            alias: [null, Validators.maxLength(150)],
-            curp: [null, Validators.maxLength(18)],
-            gender: [null],
-            maritalStatus: [null],
-            educationLevel: [null],
-            occupation: [null],
+            firstName: [null as string | null, [Validators.required, Validators.maxLength(150)]],
+            paternalName: [null as string | null, [Validators.maxLength(100)]],
+            maternalName: [null as string | null, [Validators.maxLength(100)]],
+            birthDate: [null as Date | string | null],
+            alias: [null as string | null, Validators.maxLength(150)],
+            curp: [null as string | null, Validators.maxLength(18)],
+            gender: [null as string | null],
+            maritalStatus: [null as string | null],
+            educationLevel: [null as string | null],
+            occupation: [null as string | null],
             peopleAddresses: this.formBuilder.array([], Validators.required)
         },
         // this.formOptions
@@ -152,13 +197,13 @@ export class PeopleComponent {
     dataSearchStep = 1;
     currentPage = 1;
     pageSize = 10;
-    sortBy:[[string, string]] = [['createdAt', 'DESC']];
+    sortBy: [[string, string]] = [['createdAt', 'DESC']];
     totalRows = 0;
     personList: People[] = [];
     searchFilter: Record<string, string> = {};
     // Tab 2
     fingerprintStep = 1;
-    selectedSearchFinger: string | null = null;
+    selectedSearchFinger: SearchFingerType | null = null;
     selectedSearchFingerLabel: string | null = null;
     fingerprintPreviewUrl: string | null = null;
     capturedSearchImageBase64: string | null = null;
@@ -168,8 +213,8 @@ export class PeopleComponent {
     fingerprintSearchError = '';
     isAwaitingMatchConfirmation = false;
     activeSessionId: string | null = null;
-    searchThreshold = 40;
-    highConfidenceThreshold = 100;
+    searchThreshold = 20;
+    highConfidenceThreshold = 40;
     noMatchWasFound = false;
     // Tab 3
     faceStep = 1;
@@ -187,23 +232,7 @@ export class PeopleComponent {
     // Visibilidad de apartado fotos
     showPhotosSection = false;
     // Enrolamiento de fotos
-    faceEnrollPhotos: Record<PhotoType, {
-        base64: string | null;
-        preview: string | null
-    }> = {
-        front: {
-            base64: null,
-            preview: null
-        },
-        leftProfile: {
-            base64: null,
-            preview: null
-        },
-        rightProfile: {
-            base64: null,
-            preview: null
-        }
-    };
+    faceEnrollPhotos: Record<PhotoType, PhotoEntry> = createEmptyPhotos();
 
     // Constantes template
     readonly searchFields = SEARCH_FIELDS;
@@ -213,7 +242,9 @@ export class PeopleComponent {
     readonly leftFingerThumbnails = LEFT_FINGER_THUMBNAILS;
     readonly rightFingerThumbnails = RIGHT_FINGER_THUMBNAILS;
 
-    // ngOnInit(): void{}
+    get addressFormArray(): FormArray{
+        return this.form.controls.peopleAddresses;
+    }
 
     // Dialog principal
     openDialog(): void{
@@ -264,12 +295,14 @@ export class PeopleComponent {
         this.isMainDialogVisible = false;
     }
     loadPersonTable(event: TableLazyLoadEvent): void {
-        this.currentPage = event.first / event.rows + 1;
-        this.pageSize = event.rows;
-        this.peopleService.getList(this.pageSize, this.currentPage, this.sortBy, this.searchFilter).subscribe({
-            next: (response: any) => {
-                const total = response['meta']['totalItems'];
-                this.personList = total ? response['data'] : [];
+        this.currentPage = event.first! / event.rows! + 1;
+        this.pageSize = event.rows!;
+        this.peopleService.getList(this.pageSize, this.currentPage, this.sortBy, this.searchFilter)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+            next: (response: PaginatedResponse<People>) => {
+                const total = response.meta.totalItems;
+                this.personList = total ? response.data : [];
                 this.totalRows = total || 0;
                 if(!total){
                     this.showWarning('No se encontraron personas')
@@ -290,7 +323,7 @@ export class PeopleComponent {
 
     // Tab 2
     selectSearchFinger(fingerKey: string): void {
-        this.selectedSearchFinger = fingerKey;
+        this.selectedSearchFinger = fingerKey as SearchFingerType;
         this.selectedSearchFingerLabel = FINGER_SEARCH_OPTIONS.find(option => option.key === fingerKey)?.label ?? null;
         this.fingerprintSearchResult = null;
         this.fingerprintSearchError = '';
@@ -311,15 +344,21 @@ export class PeopleComponent {
     }
 
     onSearchFileSelected(event: Event): void {
-        this.readFileAsBase64(event, IMAGE_TYPES as unknown as string[], (dataUrl, base64) => {
-            this.fingerprintSearchResult = null;
-            this.fingerprintSearchError = '';
-            this.resetMatchConfirmation();
-            this.isSearchImageFromLiveCapture = false;
-            this.fingerprintPreviewUrl = dataUrl;
-            this.capturedSearchImageBase64 = base64;
-        }, () => {
-            this.fingerprintSearchError = 'Formato invalido';
+        const file = extractFileFromEvent(event);
+        if(!file) return;
+
+        readFileAsBase64(file, IMAGE_TYPES).subscribe({
+            next: ({dataUrl, base64}) => {
+                this.fingerprintSearchResult = null;
+                this.fingerprintSearchError = '';
+                this.resetMatchConfirmation();
+                this.isSearchImageFromLiveCapture = false;
+                this.fingerprintPreviewUrl = dataUrl;
+                this.capturedSearchImageBase64 = base64;
+            },
+            error: () => {
+                this.fingerprintSearchError = 'Formato invalido'
+            },
         });
     }
 
@@ -343,8 +382,10 @@ export class PeopleComponent {
             fingerprintImage: this.capturedSearchImageBase64,
             threshold: this.searchThreshold,
             highConfidenceThreshold: this.highConfidenceThreshold,
-            fingerType: this.selectedSearchFinger as any,
-        }).subscribe({
+            fingerType: this.selectedSearchFinger,
+        })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
             next: result => {
                 this.handleFingerprintSearchResult(result);
                 this.isFingerprintSearchLoading = false;
@@ -363,13 +404,18 @@ export class PeopleComponent {
         }
         this.isFingerprintSearchLoading = true;
 
-        this.fingerprintService.confirmMatch({ sessionId: this.activeSessionId, isCorrect }).subscribe({
+        this.fingerprintService
+        .confirmMatch({ sessionId: this.activeSessionId, isCorrect })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
             next: result => {
                 if (isCorrect) {
                     this.fingerprintSearchResult = result;
                     this.isAwaitingMatchConfirmation = false;
                     if (result.peopleId) {
-                        this.peopleService.getById(result.peopleId).subscribe(person => {
+                        this.peopleService.getById(result.peopleId)
+                        .pipe(takeUntilDestroyed(this.destroyRef))
+                        .subscribe(person => {
                             if (person) this.selectPerson(person);
                         });
                     }
@@ -392,9 +438,7 @@ export class PeopleComponent {
     }
 
     goBackFromFingerprintAddPerson(): void {
-        if (this.fingerprintStep === 3) {
-            this.fingerprintStep = 1;
-        }
+        if (this.fingerprintStep === 3) this.fingerprintStep = 1;
     }
 
     // Enrolamiento de huellas
@@ -425,14 +469,20 @@ export class PeopleComponent {
 
     // Tab 3
     onFaceSearchFileSelected(event: Event): void{
-        this.readFileAsBase64(event, IMAGE_TYPES as unknown as string[], (dataUrl, base64) => {
-            this.faceSearchResult = null;
-            this.faceSearchError = '';
-            this.faceNoMatchFound = false;
-            this.faceSearchPreviewUrl = dataUrl;
-            this.faceSearchImageBase64 = base64;
-        }, () => {
-            this.faceSearchError = 'Formato no valido';
+        const file = extractFileFromEvent(event);
+        if(!file) return;
+
+        readFileAsBase64(file, IMAGE_TYPES).subscribe({
+            next: ({dataUrl, base64}) => {
+                this.faceSearchResult = null;
+                this.faceSearchError = '';
+                this.faceNoMatchFound = false;
+                this.faceSearchPreviewUrl = dataUrl;
+                this.faceSearchImageBase64 = base64;
+            },
+            error: () => {
+                this.faceSearchError = 'Formato no valido';
+            }
         });
     }
 
@@ -450,7 +500,9 @@ export class PeopleComponent {
 
         this.faceService.searchByFace({
             imageBase64: this.faceSearchImageBase64
-        }).subscribe({
+        })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
             next: result => {
                 this.faceSearchResult = result;
                 if(result.isMatch && result.peopleId){
@@ -470,7 +522,9 @@ export class PeopleComponent {
     confirmFaceMatch(isCorrect: boolean): void{
         this.isAwaitingFaceConfirmation = false;
         if(isCorrect && this.faceSearchResult?.peopleId){
-            this.peopleService.getById(this.faceSearchResult.peopleId).subscribe(person => {
+            this.peopleService.getById(this.faceSearchResult.peopleId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(person => {
                 if(person){
                     this.selectPerson(person);
                 }
@@ -489,19 +543,23 @@ export class PeopleComponent {
     }
 
     goBackFromFaceAddPerson(): void{
-        if(this.faceStep === 3){
-            this.faceStep = 1;
-        }
+        if(this.faceStep === 3) this.faceStep = 1;
     }
-
+    // Fotos de enrolamiento
     onFaceEnrollPhotoSelected(event: Event, type: PhotoType): void{
-        this.readFileAsBase64(event, IMAGE_TYPES as unknown as string[], (dataUrl, base64) => {
-            this.faceEnrollPhotos[type] = {
-                base64,
-                preview: dataUrl
-            };
-        }, () => {
-            this.showError('Formato invalido');
+        const file = extractFileFromEvent(event);
+        if(!file) return;
+
+        readFileAsBase64(file, IMAGE_TYPES).subscribe({
+            next: ({dataUrl, base64}) => {
+                this.faceEnrollPhotos[type] = {
+                    base64,
+                    preview: dataUrl
+                };
+            },
+            error: () => {
+                this.showError('Formato invalido');
+            }
         });
     }
 
@@ -539,10 +597,6 @@ export class PeopleComponent {
         } else {
             this.enrollPersonOnly(personData);
         }
-    }
-    // FormArray
-    getAddressFormArray(): FormArray {
-        return this.form.get('peopleAddresses') as FormArray;
     }
 
     onAddressSelected(addressData: any, index: number, formArray: FormArray): void {
@@ -613,9 +667,11 @@ export class PeopleComponent {
             ...personData,
             fingers: this.enrolledFingers
         } as any;
-        this.fingerprintService.enrollFingerprint(request).subscribe({
-            next: (res: any) => {
-                const person = res['object'];
+        this.fingerprintService.enrollFingerprint(request)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+            next: (res: ApiCreateResponse) => {
+                const person = res.object;
                 if(hasPhotos){
                     this.savePhotosAfterEnroll(person);
                 } else{
@@ -635,17 +691,21 @@ export class PeopleComponent {
         } as any;
 
         this.faceService.enrollWithFace(request)
+        .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-            next:
-            (res: any) => this.onSaveSuccess(res['object'], 'Datos y fotos de persona han sido guardadas'),
+            next: (res: ApiCreateResponse) =>
+                this.onSaveSuccess(res.object, 'Datos y fotos de persona han sido guardadas'),
             error: (err: any) => this.onSaveError(err)
         });
     }
     private enrollPersonOnly(personData: Record<string, any>): void{
-        this.peopleService.create(personData).subscribe({
-            next:
-            (res: any) => this.onSaveSuccess(res['object'], 'Datos de persona han sido guardadas')
-        })
+        this.peopleService.create(personData)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+            next: (res: ApiCreateResponse) =>
+                this.onSaveSuccess(res.object, 'Datos de persona han sido guardadas'),
+            error: (err: any) => this.onSaveError(err)
+        });
     }
     private savePhotosAfterEnroll(person: People): void{
         const photos = this.faceEnrollPhotos;
@@ -654,8 +714,10 @@ export class PeopleComponent {
             imageFront: photos.front.base64!,
             imageLeftProfile: photos.leftProfile.base64 || undefined,
             imageRightProfile: photos.rightProfile.base64 || undefined
-        }).subscribe({
-            next: () => this.onSaveSuccess(person, 'Datos, Huellas y fotos de persona guardadas correctament'),
+        })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+            next: () => this.onSaveSuccess(person, 'Datos, Huellas y fotos de persona guardadas correctamente'),
             error: () => {
                 this.miscService.endRquest();
                 this.showWarning('Datos y huellas de persona guardadas, pero hubo un error con las fotos');
@@ -672,37 +734,11 @@ export class PeopleComponent {
         this.miscService.endRquest();
         this.showError('Error al guardar', error.error?.message || error.message);
     }
-    private readFileAsBase64(
-        event: Event,
-        allowedTypes: string[],
-        onSuccess: (dataUrl: string, base64: string) => void,
-        onInvalidType: () => void
-    ): void{
-        const input = event.target as HTMLInputElement;
-        const file = input.files?.[0];
-        if(!file){
-            return;
-        }
-        if(!allowedTypes.includes(file.type.toLowerCase())){
-            onInvalidType();
-            input.value = '';
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const dataUrl = e.target?.result as string;
-            if(dataUrl){
-                onSuccess(dataUrl, dataUrl.split(',')[1]);
-            }
-        };
-        reader.readAsDataURL(file);
-        input.value = '';
-    }
     private handleFingerprintSearchResult(result: MatchResult): void{
         this.fingerprintSearchResult = result;
         if(result.requiresConfirmation){
             this.isAwaitingMatchConfirmation = true;
-            this,this.activeSessionId = result.sessionId || null;
+            this.activeSessionId = result.sessionId || null;
         } else{
             this.isAwaitingMatchConfirmation = false;
             if(!result.isMatch){
@@ -717,19 +753,11 @@ export class PeopleComponent {
         this.enrolledFingers = {};
         this.enrolledFingersCount = 0;
         this.showPhotosSection = false;
-        this.resetFaceEnrollPhotos();
+        this.faceEnrollPhotos = createEmptyPhotos();
     }
     private resetMatchConfirmation(): void {
         this.isAwaitingMatchConfirmation = false;
         this.activeSessionId = null;
-    }
-    private resetFaceEnrollPhotos(): void{
-        for(const key of Object.keys(this.faceEnrollPhotos) as PhotoType[]){
-            this.faceEnrollPhotos[key] = {
-                base64: null,
-                preview: null
-            }
-        }
     }
     private resetAllState(): void {
         // Tab 1
@@ -749,7 +777,7 @@ export class PeopleComponent {
         this.fingerprintSearchError = '';
         this.noMatchWasFound = false;
         this.resetMatchConfirmation();
-
+        // Tab 3
         this.faceStep = 1;
         this.faceSearchImageBase64 = null;
         this.faceSearchPreviewUrl = null;
@@ -758,7 +786,7 @@ export class PeopleComponent {
         this.faceSearchError = '';
         this.faceNoMatchFound = false;
         this.isAwaitingFaceConfirmation = false;
-        this.resetFaceEnrollPhotos();
+        this.faceEnrollPhotos = createEmptyPhotos();
         // Enrollment
         this.enrolledFingers = {};
         this.enrolledFingersCount = 0;
@@ -770,7 +798,7 @@ export class PeopleComponent {
     }
 
     private clearAddressFormArray(): void {
-        const addressArray = this.getAddressFormArray();
+        const addressArray = this.addressFormArray;
         while (addressArray.length > 0) addressArray.removeAt(0);
     }
 

@@ -1,59 +1,63 @@
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable } from "rxjs";
+import { Observable } from 'rxjs';
 import { environment } from "src/environments/environment";
+import { ApiResponse, PaginatedResponse, People } from "@/api/people";
+
+interface ListRequest{
+    limit: number;
+    page: number;
+    sortBy: [[string, string]];
+    filter: Record<string, string>
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class PeopleService {
-    filters={
-        "contains":"$ilike",
-        "equals":"$eq",
-        "startsWith":"$sw",
-    }
-    
-  url: string = `${environment.apiUrl}people`;
-  constructor(private http: HttpClient) { }
-  getList(limit:number,page:number,sort:any,search :any):Observable<any[]> 
+    private readonly url: string = `${environment.apiUrl}people`;
+    readonly filters={
+        contains: "$ilike",
+        equals: "$eq",
+        startsWith: "$sw",
+    } as const;
+
+  constructor(private readonly http: HttpClient) { }
+
+  getList(limit:number,page:number,sort:[[string, string]],search: Record<string, string>):Observable<PaginatedResponse<People>>
     {
-      const body = {
-        "limit" :limit,
-        "page": page,
+      const body: ListRequest = {
+        limit,
+        page,
         "sortBy":sort,
         "filter" : search,
-      
-      }
-                       
-      return this.http.post<any[]>(this.url+"/list", body);
+      };
+
+      return this.http.post<PaginatedResponse<People>>(this.url+"/list", body);
   }
 
-
-
-  create(data:any):Observable<Object>
+  create(data: Partial<People>): Observable<ApiResponse<People>>
   {
-    return this.http.post(this.url,data);
+    return this.http.post<ApiResponse<People>>(this.url, data);
   }
-  getById(id:string)
+  getById(id: string): Observable<People>
   {
-    return this.http.get<any>(this.url+"/"+id);
+    return this.http.get<People>(this.url+"/"+id);
   }
-  disable(id:string)
+  disable(id: string): Observable<void>
   {
-    return this.http.delete(this.url+"/disable/"+id);
+    return this.http.delete<void>(this.url+"/disable/"+id);
   }
-  update(id:string,data:any)
+  update(id: string,data: Partial<People>): Observable<ApiResponse<People>>
   {
-    return this.http.patch(this.url+"/"+id,data);
+    return this.http.patch<ApiResponse<People>>(this.url+"/"+id, data);
   }
 
-  getPeople(page: number, search: any): Observable<any> {
-        const options = {
-            params: new HttpParams({
-                fromString: "search=" + search + "&page=" + page
-            })
-        };
+  getPeople(page: number, search: string): Observable<PaginatedResponse<People>> {
+    const params = new HttpParams()
+        .set('search', search)
+        .set('page', page.toString());
 
-        return this.http.get<any>(this.url + "/search", options);
+    return this.http.get<PaginatedResponse<People>>(this.url + "/search", {params});
     }
 }
