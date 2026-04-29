@@ -1,7 +1,6 @@
-import { ChangeDetectorRef, Component, EventEmitter, inject, Input, OnInit, Output, ViewChild, input, DestroyRef } from '@angular/core';
-import { AbstractControlOptions, FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, inject, Input, ViewChild, DestroyRef, signal, output, computed, ChangeDetectionStrategy } from '@angular/core';
+import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-
 import { FileUploadModule } from 'primeng/fileupload';
 import { CommonModule, DatePipe } from '@angular/common';
 import { AccordionModule } from 'primeng/accordion';
@@ -19,7 +18,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { StepsModule } from 'primeng/steps';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
-import { People } from '@/api/people';
+import { PaginatedResponse, People } from '@/api/people';
 import { MiscService } from '@/services/misc.service';
 import { PeopleService } from '@/services/people.service';
 import { DatePicker } from 'primeng/datepicker';
@@ -43,20 +42,6 @@ interface PhotoEntry{
     preview: string | null;
 }
 
-interface PersonFormControls{
-    firstName: FormControl<string | null>;
-    paternalName: FormControl<string | null>;
-    maternalName: FormControl<string | null>;
-    birthDate: FormControl<Date | string | null>;
-    alias: FormControl<string | null>;
-    curp: FormControl<string | null>;
-    gender: FormControl<string | null>;
-    maritalStatus: FormControl<string | null>;
-    educationLevel: FormControl<string | null>;
-    occupation: FormControl<string | null>;
-    peopleAddresses: FormArray;
-}
-
 const LEFT_HAND_KEYS: FingerKey[] = ['leftThumb', 'leftIndex', 'leftMiddle', 'leftRing', 'leftLittle'];
 const RIGHT_HAND_KEYS: FingerKey[] = ['rightThumb', 'rightIndex', 'rightMiddle', 'rightRing', 'rightLittle'];
 
@@ -66,19 +51,6 @@ function createEmptyPhotos(): Record<PhotoType, PhotoEntry>{
         leftProfile: { base64: null, preview: null },
         rightProfile: { base64: null, preview: null }
     };
-}
-interface PaginatedResponse<T>{
-    data: T[];
-    meta: {
-        totalItems: number;
-        itemsPerPage: number;
-        totalPages: number;
-        currentPage: number;
-    };
-}
-interface ApiCreateResponse{
-    object: People;
-    message?: string;
 }
 
 @Component({
@@ -118,7 +90,8 @@ interface ApiCreateResponse{
     Tooltip,
     MathResultCardComponent
 ],
-    standalone: true
+    standalone: true,
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PeopleComponent {
     //Injections
@@ -128,19 +101,17 @@ export class PeopleComponent {
     private readonly faceService = inject(FaceRecognitionService);
     private readonly messageService = inject(MessageService);
     private readonly miscService = inject(MiscService);
-    private readonly changeDetector = inject(ChangeDetectorRef);
     private readonly destroyRef = inject(DestroyRef);
     // Componentes hijos
     @ViewChild('enrollDialog') enrollDialog!: FingerprintEnrollDialogComponent;
     @ViewChild('captureDialog') captureDialog!: FingerprintCaptureDialogComponent;
 
     //Entradas y Salidas
-    selectedPerson: People | null = null;
-    @Output() sendPeople = new EventEmitter<People | null>();
+    readonly sendPeople = output<People | null>();
 
-    @Input() set newPeople(personId: any){
+    @Input() set newPeople(personId: string | null){
         if(!personId){
-            this.selectedPerson = null;
+            this.selectedPerson.set(null);
             this.form.reset();
             this.searchForm.reset();
             return;
@@ -148,13 +119,12 @@ export class PeopleComponent {
         this.peopleService.getById(personId)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-            next: person => {
+            next: (person) => {
                 if(person){
-                    this.selectedPerson = person;
-                    // const {firstName, paternalName, maternalName, birthDate, alias, curp, gender, maritalStatus, educationLevel, occupation} = person;
+                    this.selectedPerson.set(person);
                     this.form.patchValue(person);
                 } else{
-                    this.selectedPerson = null;
+                    this.selectedPerson.set(null);
                     this.form.reset();
                     this.searchForm.reset();
                 }
@@ -163,8 +133,65 @@ export class PeopleComponent {
         });
     }
 
+    // Estados
+    readonly selectedPerson = signal<People | null>(null);
+    readonly isMainDialogVisible = signal(false);
+    readonly activeTabValue = signal('0');
+
+    // Tab 1
+    readonly dataSearchStep = signal(1);
+    readonly currentPage = signal(1);
+    readonly pageSize = signal(10);
+    readonly sortBy: [[string, string]] = [['createdAt', 'DESC']];
+    readonly totalRows = signal(0);
+    readonly personList = signal<People[]>([]);
+    searchFilter: Record<string, string> = {};
+    // Tab 2
+    readonly fingerprintStep = signal(1);
+    readonly selectedSearchFinger = signal<SearchFingerType | null>(null);
+    readonly selectedSearchFingerLabel = signal<string | null>(null);
+    readonly fingerprintPreviewUrl = signal<string | null>(null);
+    readonly capturedSearchImageBase64 = signal<string | null>(null);
+    readonly isSearchImageFromLiveCapture = signal(false);
+    readonly isFingerprintSearchLoading = signal(false);
+    readonly fingerprintSearchResult = signal<MatchResult | null>(null);
+    readonly fingerprintSearchError = signal('');
+    readonly isAwaitingMatchConfirmation = signal(false);
+    readonly activeSessionId = signal<string | null>(null);
+    readonly noMatchWasFound = signal(false);
+
+    readonly searchThreshold = 20;
+    readonly highConfidenceThreshold = 40;
+    // Tab 3
+    readonly faceStep = signal(1);
+    readonly faceSearchImageBase64 = signal<string | null>(null);
+    readonly faceSearchPreviewUrl = signal<string | null>(null);
+    readonly isFaceSearchLoading = signal(false);
+    readonly faceSearchResult = signal<FaceSearchResult | null>(null);
+    readonly faceSearchError = signal('');
+    readonly faceNoMatchFound = signal(false);
+    readonly isAwaitingFaceConfirmation = signal(false);
+
+    // enrolamiento de huellas
+    readonly enrolledFingers = signal<TenFingerCapture>({});
+    // Visibilidad de apartado fotos
+    readonly showPhotosSection = signal(false);
+    // Enrolamiento de fotos
+    faceEnrollPhotos: Record<PhotoType, PhotoEntry> = createEmptyPhotos();
+
+    enrolledFingersCount = computed(() => countCapturedFingers(this.enrolledFingers()));
+
+    readonly hasLeftHandFingers = computed(() =>
+        LEFT_HAND_KEYS.some((k) => !!this.enrolledFingers()[k]));
+    readonly hasRightHandFingers = computed(() =>
+        RIGHT_HAND_KEYS.some(k => !!this.enrolledFingers()[k]));
+
+    readonly faceEnrollFrontPreview = computed(() => this.faceEnrollPhotos.front.preview);
+    readonly faceEnrollLeftProfilePreview = computed(() => this.faceEnrollPhotos.leftProfile.preview);
+    readonly faceEnrollRightProfilePreview = computed(() => this.faceEnrollPhotos.rightProfile.preview);
+
     // formOptions: AbstractControlOptions = { validators: Validators.nullValidator };
-    form = this.formBuilder.group(
+    readonly form = this.formBuilder.group(
         {
             firstName: [null as string | null, [Validators.required, Validators.maxLength(150)]],
             paternalName: [null as string | null, [Validators.maxLength(100)]],
@@ -178,63 +205,16 @@ export class PeopleComponent {
             occupation: [null as string | null],
             peopleAddresses: this.formBuilder.array([], Validators.required)
         },
-        // this.formOptions
     );
-    searchForm = this.formBuilder.group(
+    readonly searchForm = this.formBuilder.group(
         {
-            firstName: [null, [Validators.required, Validators.maxLength(150)]],
-            paternalName: [null, Validators.maxLength(150)],
-            maternalName: [null, Validators.maxLength(150)],
-            curp: [null, Validators.maxLength(18)]
+            firstName: [null as string | null, [Validators.required, Validators.maxLength(150)]],
+            paternalName: [null as string | null, Validators.maxLength(150)],
+            maternalName: [null as string | null, Validators.maxLength(150)],
+            curp: [null as string | null, Validators.maxLength(18)]
         },
-        // this.formOptions
     );
-    // Estado del dialog principal
-    isMainDialogVisible = false;
-    activeTabValue = '0';
-
-    // Tab 1
-    dataSearchStep = 1;
-    currentPage = 1;
-    pageSize = 10;
-    sortBy: [[string, string]] = [['createdAt', 'DESC']];
-    totalRows = 0;
-    personList: People[] = [];
-    searchFilter: Record<string, string> = {};
-    // Tab 2
-    fingerprintStep = 1;
-    selectedSearchFinger: SearchFingerType | null = null;
-    selectedSearchFingerLabel: string | null = null;
-    fingerprintPreviewUrl: string | null = null;
-    capturedSearchImageBase64: string | null = null;
-    isSearchImageFromLiveCapture = false;
-    isFingerprintSearchLoading = false;
-    fingerprintSearchResult: MatchResult | null = null;
-    fingerprintSearchError = '';
-    isAwaitingMatchConfirmation = false;
-    activeSessionId: string | null = null;
-    searchThreshold = 20;
-    highConfidenceThreshold = 40;
-    noMatchWasFound = false;
-    // Tab 3
-    faceStep = 1;
-    faceSearchImageBase64: string | null = null;
-    faceSearchPreviewUrl: string | null = null;
-    isFaceSearchLoading = false;
-    faceSearchResult: FaceSearchResult | null = null;
-    faceSearchError = '';
-    faceNoMatchFound = false;
-    isAwaitingFaceConfirmation = false;
-
-    // enrolamiento de huellas
-    enrolledFingers: TenFingerCapture = {};
-    enrolledFingersCount = 0;
-    // Visibilidad de apartado fotos
-    showPhotosSection = false;
-    // Enrolamiento de fotos
-    faceEnrollPhotos: Record<PhotoType, PhotoEntry> = createEmptyPhotos();
-
-    // Constantes template
+        // Constantes template
     readonly searchFields = SEARCH_FIELDS;
     readonly addPersonFields = ADD_PERSON_FIELDS;
     readonly leftFingerSearchOptions = LEFT_FINGER_SEARCH_OPTIONS;
@@ -245,18 +225,15 @@ export class PeopleComponent {
     get addressFormArray(): FormArray{
         return this.form.controls.peopleAddresses;
     }
-
     // Dialog principal
     openDialog(): void{
-        this.activeTabValue = '0';
+        this.activeTabValue.set('0');
         this.resetAllState();
-        this.isMainDialogVisible = true;
-        this.changeDetector.detectChanges();
+        this.isMainDialogVisible.set(true);
     }
     onTabChange(value: string | number): void{
-        this.activeTabValue = String(value);
+        this.activeTabValue.set(String(value));
         this.resetAllState();
-        this.changeDetector.detectChanges();
     }
 
     // Tab 1
@@ -268,7 +245,7 @@ export class PeopleComponent {
             return;
         }
         this.miscService.startRequest();
-        this.dataSearchStep = 2;
+        this.dataSearchStep.set(2);
         const values = this.searchForm.value;
         for (const key of Object.keys(values)) {
             const fieldValue = values[key];
@@ -286,47 +263,51 @@ export class PeopleComponent {
             paternalName: paternalName.value,
             maternalName: maternalName.value
         });
-        this.dataSearchStep = 3;
+        this.dataSearchStep.set(3);
     }
     selectPerson(person: People): void {
-        this.selectedPerson = person;
+        this.selectedPerson.set(person);
         this.sendPeople.emit(person);
-        this.dataSearchStep = 1;
-        this.isMainDialogVisible = false;
+        this.dataSearchStep.set(1);
+        this.isMainDialogVisible.set(false);
     }
     loadPersonTable(event: TableLazyLoadEvent): void {
-        this.currentPage = event.first! / event.rows! + 1;
-        this.pageSize = event.rows!;
-        this.peopleService.getList(this.pageSize, this.currentPage, this.sortBy, this.searchFilter)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-            next: (response: PaginatedResponse<People>) => {
-                const total = response.meta.totalItems;
-                this.personList = total ? response.data : [];
-                this.totalRows = total || 0;
-                if(!total){
-                    this.showWarning('No se encontraron personas')
-                }
-                this.miscService.endRquest();
-            },
-            error: (error: any) => {
-                this.personList = [];
-                this.totalRows = 0;
-                this.miscService.endRquest();
-                this.showError('Error al buscar', error.error?.message);
-            },
-        });
+        const page = event.first! / event.rows! + 1;
+        const rows = event.rows!;
+        this.currentPage.set(page);
+        this.pageSize.set(rows);
+
+        this.peopleService.getList(rows, page, this.sortBy, this.searchFilter)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response: PaginatedResponse<People>) => {
+                    const total = response.meta.totalItems;
+                    this.personList.set(total ? response.data : []);
+                    this.totalRows.set(total || 0);
+                    if(!total){
+                        this.showWarning('No se encontraron personas')
+                    }
+                    this.miscService.endRquest();
+                },
+                error: (error: {error?: { message?: string } }) => {
+                    this.personList.set([]);
+                    this.totalRows.set(0);
+                    this.miscService.endRquest();
+                    this.showError('Error al buscar', error.error?.message);
+                },
+            });
     }
     goBackDataStep(): void{
-        if(this.dataSearchStep > 1) this.dataSearchStep--;
+        this.dataSearchStep.update((s) => (s > 1 ? s-1 : s));
     }
 
     // Tab 2
     selectSearchFinger(fingerKey: string): void {
-        this.selectedSearchFinger = fingerKey as SearchFingerType;
-        this.selectedSearchFingerLabel = FINGER_SEARCH_OPTIONS.find(option => option.key === fingerKey)?.label ?? null;
-        this.fingerprintSearchResult = null;
-        this.fingerprintSearchError = '';
+        this.selectedSearchFinger.set(fingerKey as SearchFingerType);
+        this.selectedSearchFingerLabel.set(
+            FINGER_SEARCH_OPTIONS.find(option => option.key === fingerKey)?.label ?? null);
+        this.fingerprintSearchResult.set(null);
+        this.fingerprintSearchError.set('');
         this.resetMatchConfirmation();
     }
 
@@ -335,12 +316,10 @@ export class PeopleComponent {
     }
 
     onSearchFingerCaptured(imageBase64: string): void {
-        this.fingerprintSearchResult = null;
-        this.fingerprintSearchError = '';
-        this.resetMatchConfirmation();
-        this.isSearchImageFromLiveCapture = true;
-        this.capturedSearchImageBase64 = imageBase64;
-        this.fingerprintPreviewUrl = buildImageDataUrl(imageBase64, 'bmp');
+        this.clearFingerprintSearchState();
+        this.isSearchImageFromLiveCapture.set(true);
+        this.capturedSearchImageBase64.set(imageBase64);
+        this.fingerprintPreviewUrl.set(buildImageDataUrl(imageBase64, 'bmp'));
     }
 
     onSearchFileSelected(event: Event): void {
@@ -349,96 +328,92 @@ export class PeopleComponent {
 
         readFileAsBase64(file, IMAGE_TYPES).subscribe({
             next: ({dataUrl, base64}) => {
-                this.fingerprintSearchResult = null;
-                this.fingerprintSearchError = '';
-                this.resetMatchConfirmation();
-                this.isSearchImageFromLiveCapture = false;
-                this.fingerprintPreviewUrl = dataUrl;
-                this.capturedSearchImageBase64 = base64;
+                this.clearFingerprintSearchState();
+                this.isSearchImageFromLiveCapture.set(false);
+                this.fingerprintPreviewUrl.set(dataUrl);
+                this.capturedSearchImageBase64.set(base64);
             },
-            error: () => {
-                this.fingerprintSearchError = 'Formato invalido'
-            },
+            error: () => this.fingerprintSearchError.set('Formato invalido')
         });
     }
 
     searchByFingerprint(): void {
-        if (!this.capturedSearchImageBase64) {
-            this.fingerprintSearchError = 'Capture o seleccione una imagen';
+        const imageBase64 = this.capturedSearchImageBase64();
+        const fingerType = this.selectedSearchFinger();
+
+        if (!imageBase64) {
+            this.fingerprintSearchError.set('Capture o seleccione una imagen');
             return;
         }
-        if (!this.selectedSearchFinger){
-            this.fingerprintSearchError = 'Seleccione el dedo';
+        if (!fingerType){
+            this.fingerprintSearchError.set('Seleccione el dedo');
             return;
         }
 
-        this.isFingerprintSearchLoading = true;
-        this.fingerprintSearchResult = null;
-        this.fingerprintSearchError = '';
+        this.isFingerprintSearchLoading.set(true);
+        this.fingerprintSearchResult.set(null);
+        this.fingerprintSearchError.set('');
         this.resetMatchConfirmation();
-        this.noMatchWasFound = false;
+        this.noMatchWasFound.set(false);
 
         this.fingerprintService.searchFingerprint({
-            fingerprintImage: this.capturedSearchImageBase64,
+            fingerprintImage: imageBase64,
             threshold: this.searchThreshold,
             highConfidenceThreshold: this.highConfidenceThreshold,
-            fingerType: this.selectedSearchFinger,
+            fingerType,
         })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-            next: result => {
+            next: (result) => {
                 this.handleFingerprintSearchResult(result);
-                this.isFingerprintSearchLoading = false;
+                this.isFingerprintSearchLoading.set(false);
             },
             error: (error: Error) => {
-                this.fingerprintSearchError = error.message || 'Error en la busqueda';
-                this.isFingerprintSearchLoading = false;
+                this.fingerprintSearchError.set(error.message || 'Error en la busqueda');
+                this.isFingerprintSearchLoading.set(false);
             },
         });
     }
 
     confirmMatch(isCorrect: boolean): void {
-        if (!this.activeSessionId) {
-            this.fingerprintSearchError = 'No hay sesion activa';
+        const sessionId = this.activeSessionId();
+        if (!sessionId) {
+            this.fingerprintSearchError.set('No hay sesion activa');
             return;
         }
-        this.isFingerprintSearchLoading = true;
+        this.isFingerprintSearchLoading.set(true);
 
         this.fingerprintService
-        .confirmMatch({ sessionId: this.activeSessionId, isCorrect })
+        .confirmMatch({ sessionId, isCorrect })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-            next: result => {
+            next: (result) => {
                 if (isCorrect) {
-                    this.fingerprintSearchResult = result;
-                    this.isAwaitingMatchConfirmation = false;
+                    this.fingerprintSearchResult.set(result);
+                    this.isAwaitingMatchConfirmation.set(false);
                     if (result.peopleId) {
-                        this.peopleService.getById(result.peopleId)
-                        .pipe(takeUntilDestroyed(this.destroyRef))
-                        .subscribe(person => {
-                            if (person) this.selectPerson(person);
-                        });
+                        this.fetchAndSelectPerson(result.peopleId);
                     }
                 } else {
                     this.handleFingerprintSearchResult(result);
                 }
-                this.isFingerprintSearchLoading = false;
+                this.isFingerprintSearchLoading.set(false);
             },
             error: (error: Error) => {
-                this.fingerprintSearchError = error.message || 'Error al confirmar';
-                this.isFingerprintSearchLoading = false;
-                this.isAwaitingMatchConfirmation = false;
+                this.fingerprintSearchError.set(error.message || 'Error al confirmar');
+                this.isFingerprintSearchLoading.set(false);
+                this.isAwaitingMatchConfirmation.set(false);
             },
         });
     }
 
     goToAddPersonFromFingerprint(): void {
         this.prepareAddPersonForm();
-        this.fingerprintStep = 3;
+        this.fingerprintStep.set(3);
     }
 
     goBackFromFingerprintAddPerson(): void {
-        if (this.fingerprintStep === 3) this.fingerprintStep = 1;
+        if (this.fingerprintStep() === 3) this.fingerprintStep.set(1);
     }
 
     // Enrolamiento de huellas
@@ -447,24 +422,22 @@ export class PeopleComponent {
     }
 
     onFingersEnrolled(capturedFingers: TenFingerCapture): void {
-        this.enrolledFingers = {
-            ...this.enrolledFingers,
+        this.enrolledFingers.update((current) => ({
+            ...current,
             ...capturedFingers
-        };
-        this.enrolledFingersCount = countCapturedFingers(this.enrolledFingers);
+        }));
     }
 
     removeEnrolledFinger(fingerKey: FingerKey): void{
-        const updated = {
-            ...this.enrolledFingers
-        };
-        delete updated[fingerKey];
-        this.enrolledFingers = updated;
-        this.enrolledFingersCount = countCapturedFingers(this.enrolledFingers);
+        this.enrolledFingers.update((current) => {
+            const updated = { ...current };
+            delete updated[fingerKey];
+            return updated;
+        });
     }
 
     isFingerAlreadyEnrolled(fingerKey: FingerKey): boolean{
-        return !!this.enrolledFingers[fingerKey];
+        return !!this.enrolledFingers()[fingerKey];
     }
 
     // Tab 3
@@ -474,76 +447,70 @@ export class PeopleComponent {
 
         readFileAsBase64(file, IMAGE_TYPES).subscribe({
             next: ({dataUrl, base64}) => {
-                this.faceSearchResult = null;
-                this.faceSearchError = '';
-                this.faceNoMatchFound = false;
-                this.faceSearchPreviewUrl = dataUrl;
-                this.faceSearchImageBase64 = base64;
+                this.faceSearchResult.set(null);
+                this.faceSearchError.set('');
+                this.faceNoMatchFound.set(false);
+                this.faceSearchPreviewUrl.set(dataUrl);
+                this.faceSearchImageBase64.set(base64);
             },
-            error: () => {
-                this.faceSearchError = 'Formato no valido';
-            }
+            error: () => this.faceSearchError.set('Formato no valido')
         });
     }
 
     searchByFace(): void{
-        if(!this.faceSearchImageBase64){
-            this.faceSearchError = 'Seleccione una imagen primero';
+        const imageBase64 = this.faceSearchImageBase64();
+        if(!imageBase64){
+            this.faceSearchError.set('Seleccione una imagen primero');
             return;
         }
 
-        this.isFaceSearchLoading = true;
-        this.faceSearchResult = null;
-        this.faceSearchError = '';
-        this.faceNoMatchFound = false;
-        this.isAwaitingFaceConfirmation = false;
+        this.isFaceSearchLoading.set(true);
+        this.faceSearchResult.set(null);
+        this.faceSearchError.set('');
+        this.faceNoMatchFound.set(false);
+        this.isAwaitingFaceConfirmation.set(false);
 
         this.faceService.searchByFace({
-            imageBase64: this.faceSearchImageBase64
+            imageBase64
         })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-            next: result => {
-                this.faceSearchResult = result;
+            next: (result) => {
+                this.faceSearchResult.set(result);
                 if(result.isMatch && result.peopleId){
-                    this.isAwaitingFaceConfirmation = true;
+                    this.isAwaitingFaceConfirmation.set(true);
                 } else {
-                    this.faceNoMatchFound = true;
+                    this.faceNoMatchFound.set(true);
                 }
-                this.isFaceSearchLoading = false;
+                this.isFaceSearchLoading.set(false);
             },
             error: (err: Error) => {
-                this.faceSearchError = err.message || 'Error en la busqueda facial';
-                this.isFaceSearchLoading = false;
+                this.faceSearchError.set(err.message || 'Error en la busqueda facial');
+                this.isFaceSearchLoading.set(false);
             },
         });
     }
 
     confirmFaceMatch(isCorrect: boolean): void{
-        this.isAwaitingFaceConfirmation = false;
-        if(isCorrect && this.faceSearchResult?.peopleId){
-            this.peopleService.getById(this.faceSearchResult.peopleId)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(person => {
-                if(person){
-                    this.selectPerson(person);
-                }
-            });
+        this.isAwaitingFaceConfirmation.set(false);
+        const result = this.faceSearchResult();
+        if(isCorrect && result?.peopleId){
+            this.fetchAndSelectPerson(result.peopleId);
         } else{
-            this.faceSearchResult = null;
-            this.faceNoMatchFound = true;
+            this.faceSearchResult.set(null);
+            this.faceNoMatchFound.set(true);
         }
     }
     togglePhotosSection(): void{
-        this.showPhotosSection = !this.showPhotosSection;
+        this.showPhotosSection.update((v) => !v);
     }
     goToAddPersonFromFace(): void{
         this.prepareAddPersonForm();
-        this.faceStep = 3;
+        this.faceStep.set(3);
     }
 
     goBackFromFaceAddPerson(): void{
-        if(this.faceStep === 3) this.faceStep = 1;
+        if(this.faceStep() === 3) this.faceStep.set(1);
     }
     // Fotos de enrolamiento
     onFaceEnrollPhotoSelected(event: Event, type: PhotoType): void{
@@ -552,31 +519,20 @@ export class PeopleComponent {
 
         readFileAsBase64(file, IMAGE_TYPES).subscribe({
             next: ({dataUrl, base64}) => {
-                this.faceEnrollPhotos[type] = {
-                    base64,
-                    preview: dataUrl
+                this.faceEnrollPhotos = {
+                    ...this.faceEnrollPhotos,
+                    [type]: { base64, preview: dataUrl }
                 };
             },
-            error: () => {
-                this.showError('Formato invalido');
-            }
+            error: () => this.showError('Formato invalido')
         });
     }
 
     removeFaceEnrollPhoto(type: PhotoType): void{
-        this.faceEnrollPhotos[type] = {
-            base64: null,
-            preview: null
+        this.faceEnrollPhotos = {
+            ...this.faceEnrollPhotos,
+            [type]: { base64: null, preview: null }
         };
-    }
-    get faceEnrollFrontPreview(): string | null{
-        return this.faceEnrollPhotos.front.preview;
-    }
-    get faceEnrollLeftProfilePreview(): string | null{
-        return this.faceEnrollPhotos.leftProfile.preview;
-    }
-    get faceEnrollRightProfilePreview(): string | null{
-        return this.faceEnrollPhotos.rightProfile.preview;
     }
 
     savePersonComplete(): void{
@@ -587,7 +543,7 @@ export class PeopleComponent {
             return;
         }
         const personData = this.buildPersonData();
-        const hasFingerprints = this.enrolledFingersCount > 0;
+        const hasFingerprints = this.enrolledFingersCount() > 0;
         const hasPhotos = !!this.faceEnrollPhotos.front.base64;
 
         if(hasFingerprints){
@@ -599,7 +555,7 @@ export class PeopleComponent {
         }
     }
 
-    onAddressSelected(addressData: any, index: number, formArray: FormArray): void {
+    onAddressSelected(addressData: { id: string | null }, index: number, formArray: FormArray): void {
         const value = addressData
             ? {address: addressData.id, address_data: addressData}
             : {address: null, address_data: null}
@@ -618,7 +574,7 @@ export class PeopleComponent {
     }
     // Helpers para template
     removePerson(): void {
-        this.selectedPerson = null;
+        this.selectedPerson.set(null);
         this.sendPeople.emit(null);
         this.newPeople = null;
     }
@@ -636,113 +592,121 @@ export class PeopleComponent {
     }
 
     getPageRange(): string {
-        return formatPageRange(this.currentPage, this.pageSize, this.totalRows);
+        return formatPageRange(this.currentPage(), this.pageSize(), this.totalRows());
     }
 
     getEnrolledFingerImage(fingerKey: FingerKey): string {
-        return this.enrolledFingers?.[fingerKey] ?? '';
+        return this.enrolledFingers()[fingerKey] ?? '';
     }
 
-    hasLeftHandFingers(): boolean {
-        return LEFT_HAND_KEYS.some(k => !!this.enrolledFingers[k]);
+    private fetchAndSelectPerson(peopleId: string): void{
+        this.peopleService
+            .getById(peopleId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((person) => {
+                if(person) this.selectPerson(person);
+            })
     }
 
-    hasRightHandFingers(): boolean {
-        return RIGHT_HAND_KEYS.some(k => !!this.enrolledFingers[k]);
+    private clearFingerprintSearchState(): void{
+        this.fingerprintSearchResult.set(null);
+        this.fingerprintSearchError.set('');
+        this.resetMatchConfirmation();
     }
 
     // Metodos privados
-    private buildPersonData(): Record<string, any>{
+    private buildPersonData(): Record<string, unknown>{
         const raw = this.form.getRawValue();
         return {
             ...raw,
-            peopleAddresses: raw.peopleAddresses.map(({
-                address_data,
-                ...rest
-            }:any) => rest)
+            peopleAddresses: raw.peopleAddresses.map(
+                ({address_data, ...rest}: {address_data: unknown; [key: string]: unknown}) => rest)
         };
     }
-    private enrollWithFingerprints(personData: Record<string, any>, hasPhotos: boolean): void{
+    private enrollWithFingerprints(personData: Record<string, unknown>, hasPhotos: boolean): void{
         const request: EnrollFingerprintRequest = {
-            ...personData,
-            fingers: this.enrolledFingers
-        } as any;
-        this.fingerprintService.enrollFingerprint(request)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-            next: (res: ApiCreateResponse) => {
-                const person = res.object;
-                if(hasPhotos){
-                    this.savePhotosAfterEnroll(person);
-                } else{
-                    this.onSaveSuccess(person, 'Datos y huellas de persona guardada');
-                }
-            },
-            error: (err: any) => this.onSaveError(err)
-        })
+            ...personData as Partial<EnrollFingerprintRequest>,
+            fingers: this.enrolledFingers()
+        } as EnrollFingerprintRequest;
+
+        this.fingerprintService
+            .enrollFingerprint(request)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res: { object: People }) => {
+                    if(hasPhotos){
+                        this.savePhotosAfterEnroll(res.object);
+                    } else{
+                        this.onSaveSuccess(res.object, 'Datos y huellas de persona guardada');
+                    }
+                },
+                error: (err: { error?: { message?: string }; message?: string }) => this.onSaveError(err)
+            })
     }
-    private enrollWithPhotos(personData: Record<string, any>): void{
+    private enrollWithPhotos(personData: Record<string, unknown>): void{
         const photos = this.faceEnrollPhotos;
         const request: EnrollFaceRequest = {
-            ...personData,
-            imageFront: photos.front.base64,
+            ...personData as Partial<EnrollFaceRequest>,
+            imageFront: photos.front.base64!,
             imageLeftProfile: photos.leftProfile.base64 || undefined,
             imageRightProfile:photos.rightProfile.base64 || undefined
-        } as any;
+        } as EnrollFaceRequest;
 
         this.faceService.enrollWithFace(request)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-            next: (res: ApiCreateResponse) =>
+            next: (res: { object: People}) =>
                 this.onSaveSuccess(res.object, 'Datos y fotos de persona han sido guardadas'),
-            error: (err: any) => this.onSaveError(err)
+            error: (err: { error?: { message?: string }; message?: string }) => this.onSaveError(err)
         });
     }
-    private enrollPersonOnly(personData: Record<string, any>): void{
-        this.peopleService.create(personData)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-            next: (res: ApiCreateResponse) =>
-                this.onSaveSuccess(res.object, 'Datos de persona han sido guardadas'),
-            error: (err: any) => this.onSaveError(err)
-        });
+    private enrollPersonOnly(personData: Record<string, unknown>): void{
+        this.peopleService
+            .create(personData)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res) =>
+                    this.onSaveSuccess(res.object, 'Datos de persona han sido guardadas'),
+                error: (err: { error?: { message?: string }; message?: string }) => this.onSaveError(err)
+            });
     }
     private savePhotosAfterEnroll(person: People): void{
         const photos = this.faceEnrollPhotos;
-        this.faceService.savePhotosForPerson({
-            peopleId: person.id,
-            imageFront: photos.front.base64!,
-            imageLeftProfile: photos.leftProfile.base64 || undefined,
-            imageRightProfile: photos.rightProfile.base64 || undefined
-        })
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-            next: () => this.onSaveSuccess(person, 'Datos, Huellas y fotos de persona guardadas correctamente'),
-            error: () => {
-                this.miscService.endRquest();
-                this.showWarning('Datos y huellas de persona guardadas, pero hubo un error con las fotos');
-                this.selectPerson(person);
-            }
-        });
+        this.faceService
+            .savePhotosForPerson({
+                peopleId: person.id,
+                imageFront: photos.front.base64!,
+                imageLeftProfile: photos.leftProfile.base64 || undefined,
+                imageRightProfile: photos.rightProfile.base64 || undefined
+            })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => this.onSaveSuccess(person, 'Datos, Huellas y fotos de persona guardadas correctamente'),
+                error: () => {
+                    this.miscService.endRquest();
+                    this.showWarning('Datos y huellas de persona guardadas, pero hubo un error con las fotos');
+                    this.selectPerson(person);
+                }
+            });
     }
     private onSaveSuccess(person: People, message: string): void{
         this.selectPerson(person);
         this.miscService.endRquest();
         this.showSuccess(message);
     }
-    private onSaveError(error: any): void{
+    private onSaveError(error: { error?: { message?: string }; message?: string }): void{
         this.miscService.endRquest();
         this.showError('Error al guardar', error.error?.message || error.message);
     }
     private handleFingerprintSearchResult(result: MatchResult): void{
-        this.fingerprintSearchResult = result;
+        this.fingerprintSearchResult.set(result);
         if(result.requiresConfirmation){
-            this.isAwaitingMatchConfirmation = true;
-            this.activeSessionId = result.sessionId || null;
+            this.isAwaitingMatchConfirmation.set(true);
+            this.activeSessionId.set(result.sessionId || null);
         } else{
-            this.isAwaitingMatchConfirmation = false;
+            this.isAwaitingMatchConfirmation.set(false);
             if(!result.isMatch){
-                this.noMatchWasFound = true;
+                this.noMatchWasFound.set(true);
             }
         }
     }
@@ -750,47 +714,45 @@ export class PeopleComponent {
     private prepareAddPersonForm(): void{
         this.form.reset();
         this.clearAddressFormArray();
-        this.enrolledFingers = {};
-        this.enrolledFingersCount = 0;
-        this.showPhotosSection = false;
+        this.enrolledFingers.set({});
+        this.showPhotosSection.set(false);
         this.faceEnrollPhotos = createEmptyPhotos();
     }
     private resetMatchConfirmation(): void {
-        this.isAwaitingMatchConfirmation = false;
-        this.activeSessionId = null;
+        this.isAwaitingMatchConfirmation.set(false);
+        this.activeSessionId.set(null);
     }
     private resetAllState(): void {
         // Tab 1
-        this.dataSearchStep = 1;
+        this.dataSearchStep.set(1);
         this.searchFilter = {};
-        this.personList = [];
-        this.totalRows = 0;
+        this.personList.set([]);
+        this.totalRows.set(0);
         // Tab 2
-        this.fingerprintStep = 1;
-        this.selectedSearchFinger = null;
-        this.selectedSearchFingerLabel = null;
-        this.fingerprintPreviewUrl = null;
-        this.capturedSearchImageBase64 = null;
-        this.isSearchImageFromLiveCapture = false;
-        this.isFingerprintSearchLoading = false;
-        this.fingerprintSearchResult = null;
-        this.fingerprintSearchError = '';
-        this.noMatchWasFound = false;
+        this.fingerprintStep.set(1);
+        this.selectedSearchFinger.set(null);
+        this.selectedSearchFingerLabel.set(null);
+        this.fingerprintPreviewUrl.set(null);
+        this.capturedSearchImageBase64.set(null);
+        this.isSearchImageFromLiveCapture.set(false);
+        this.isFingerprintSearchLoading.set(false);
+        this.fingerprintSearchResult.set(null);
+        this.fingerprintSearchError.set('');
+        this.noMatchWasFound.set(false);
         this.resetMatchConfirmation();
         // Tab 3
-        this.faceStep = 1;
-        this.faceSearchImageBase64 = null;
-        this.faceSearchPreviewUrl = null;
-        this.isFaceSearchLoading = false;
-        this.faceSearchResult = null;
-        this.faceSearchError = '';
-        this.faceNoMatchFound = false;
-        this.isAwaitingFaceConfirmation = false;
+        this.faceStep.set(1);
+        this.faceSearchImageBase64.set(null);
+        this.faceSearchPreviewUrl.set(null);
+        this.isFaceSearchLoading.set(false);
+        this.faceSearchResult.set(null);
+        this.faceSearchError.set('');
+        this.faceNoMatchFound.set(false);
+        this.isAwaitingFaceConfirmation.set(false);
         this.faceEnrollPhotos = createEmptyPhotos();
         // Enrollment
-        this.enrolledFingers = {};
-        this.enrolledFingersCount = 0;
-        this.showPhotosSection = false;
+        this.enrolledFingers.set({});
+        this.showPhotosSection.set(false);
         // Forms
         this.form.reset();
         this.searchForm.reset();
