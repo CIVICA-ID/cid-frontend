@@ -1,15 +1,15 @@
-import { Injectable } from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from "rxjs";
-import { environment } from "src/environments/environment";
+import { APP_CONFIG } from '@/config.token';
 // import { Address } from "../api/address";
 
 @Injectable({
     providedIn: 'root'
 })
 export class AddressService {
-
-    url: string = `${environment.apiUrl}addresses`;
+    private readonly appConfig = inject(APP_CONFIG);
+    url: string = `${this.appConfig.apiUrl}addresses`;
     constructor(private http: HttpClient) { }
     getList(limit:number,page:number,sort:any,search :any):Observable<any[]> 
     {

@@ -1,15 +1,16 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
 import { Auth } from '@/api/auth';
+import { APP_CONFIG } from '@/config.token';
 import { AuthLoginResponse, BranchOption, RefreshRequest, SKIP_AUTH_INTERCEPTOR } from './auth-session.model';
 
 @Injectable({
     providedIn: 'root'
 })
 export class AuthService {
-    url: string = `${environment.apiUrl}auth`;
+    private readonly appConfig = inject(APP_CONFIG);
+    url: string = `${this.appConfig.apiUrl}auth`;
     constructor(private http: HttpClient) {}
 
     login(data: Auth): Observable<AuthLoginResponse> {

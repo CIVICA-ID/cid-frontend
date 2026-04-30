@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { APP_CONFIG } from '@/config.token';
 import { MedicalReport } from '@/api/medical-report';
 import { serializeDateTimeFields } from '@/lib/date-time';
 
@@ -11,7 +11,8 @@ const MEDICAL_REPORT_DATE_FIELDS = ['dictation_date'] as const;
   providedIn: 'root'
 })
 export class MedicalReportsService {
-  private readonly url = `${environment.apiUrl}medical-reports`;
+  private readonly appConfig = inject(APP_CONFIG);
+  private readonly url = `${this.appConfig.apiUrl}medical-reports`;
 
   constructor(private http: HttpClient) {}
 

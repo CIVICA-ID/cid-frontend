@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { APP_CONFIG } from '@/config.token';
 import { serializeDateTimeFields } from '@/lib/date-time';
 
 const SERVICE_DATE_FIELDS = ['captureDate', 'serviceDate', 'dateReception', 'arrivalDate', 'endDate', 'arrestDate', 'submissionDate'] as const;
@@ -10,7 +10,8 @@ const SERVICE_DATE_FIELDS = ['captureDate', 'serviceDate', 'dateReception', 'arr
     providedIn: 'root'
 })
 export class ServicesService {
-    url: string = `${environment.apiUrl}services`;
+    private readonly appConfig = inject(APP_CONFIG);
+    url: string = `${this.appConfig.apiUrl}services`;
     constructor(private http: HttpClient) {}
     getList(limit: number, page: number, sort: string[][], search: any): Observable<any> {
         const body = {

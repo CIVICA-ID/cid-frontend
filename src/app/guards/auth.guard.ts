@@ -1,15 +1,16 @@
 import { ActivatedRouteSnapshot, CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { environment } from '../../environments/environment';
 import { firstValueFrom } from 'rxjs';
 import { SessionService } from '@/services/session.service';
+import { APP_CONFIG } from '@/config.token';
 
 export const authGuard: CanActivateFn = async (route: ActivatedRouteSnapshot) => {
     const router: Router = inject(Router);
     const sessionService: SessionService = inject(SessionService);
     const http: HttpClient = inject(HttpClient);
-    const validatorURL = `${environment.apiUrl}auth/validator`;
+    const appConfig = inject(APP_CONFIG);
+    const validatorURL = `${appConfig.apiUrl}auth/validator`;
 
     try {
         await firstValueFrom(sessionService.ensureFreshAccessToken());

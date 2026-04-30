@@ -1,7 +1,7 @@
-import { Injectable } from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from "rxjs";
-import { environment } from "src/environments/environment";
+import { APP_CONFIG } from '@/config.token';
 import { State } from "@/api/state";
 import { Country } from "@/api/country";
 
@@ -9,7 +9,8 @@ import { Country } from "@/api/country";
     providedIn: 'root'
 })
 export class CountriesService {
-    url: string = `${environment.apiUrl}countries`;
+    private readonly appConfig = inject(APP_CONFIG);
+    url: string = `${this.appConfig.apiUrl}countries`;
     constructor(private http: HttpClient) { }
     getList(): Observable<Country[]> {
         return this.http.get<Country[]>(this.url );

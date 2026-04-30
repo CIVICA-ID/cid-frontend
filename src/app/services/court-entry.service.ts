@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { APP_CONFIG } from '@/config.token';
 import { serializeDateTimeFields } from '@/lib/date-time';
 
 const COURT_ENTRY_DATE_FIELDS = ['entryDate'] as const;
@@ -10,7 +10,8 @@ const COURT_ENTRY_DATE_FIELDS = ['entryDate'] as const;
     providedIn: 'root'
 })
 export class CourtEntryService {
-    url: string = `${environment.apiUrl}court-entries`;
+    private readonly appConfig = inject(APP_CONFIG);
+    url: string = `${this.appConfig.apiUrl}court-entries`;
     constructor(private http: HttpClient) {}
     getList(limit: number, page: number, sort: string[][], search: any): Observable<any> {
         const body = {

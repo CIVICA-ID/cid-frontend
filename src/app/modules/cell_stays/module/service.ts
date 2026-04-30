@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { APP_CONFIG } from '@/config.token';
 import { CellStay } from '@/api/cell-stay';
 import { serializeDateTimeFields } from '@/lib/date-time';
 
@@ -11,7 +11,8 @@ const CELL_STAY_DATE_FIELDS = ['entryDate'] as const;
   providedIn: 'root'
 })
 export class CellStaysService {
-  private readonly url = `${environment.apiUrl}cell-stays`;
+  private readonly appConfig = inject(APP_CONFIG);
+  private readonly url = `${this.appConfig.apiUrl}cell-stays`;
 
   constructor(private http: HttpClient) {}
 

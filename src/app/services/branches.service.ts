@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { APP_CONFIG } from '@/config.token';
 import { Role } from '@/api/rol';
 import { ItemName } from '@/api/itemName';
 // import { Address } from "../api/address";
@@ -10,7 +10,8 @@ import { ItemName } from '@/api/itemName';
     providedIn: 'root'
 })
 export class BranchesService {
-    url: string = `${environment.apiUrl}branches`;
+    private readonly appConfig = inject(APP_CONFIG);
+    url: string = `${this.appConfig.apiUrl}branches`;
     constructor(private http: HttpClient) {}
     getList(limit: number, page: number, sort: any, search: any): Observable<Role[]> {
         const body = {
