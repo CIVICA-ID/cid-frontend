@@ -71,22 +71,59 @@
 
                     @if (visibleBranches) {
                         <form class="mt-7 flex flex-col gap-4" [formGroup]="loginForm" (ngSubmit)="ngSubmitLogin()">
-                            <div class="flex flex-col gap-1.5">
-                                <label for="branch" class="text-sm font-medium text-surface-700">Sucursal</label>
-                                <p-select
-                                    inputId="branch"
-                                    formControlName="branch"
-                                    [options]="listBranchs"
-                                    optionLabel="label"
-                                    optionValue="id"
-                                    placeholder="Seleccionar una sucursal"
-                                    [filter]="true"
-                                    [showClear]="true"
-                                    class="w-full"
-                                >
-                                </p-select>
-                                @if (loginForm.get('branch')?.value == null) {
-                                    <small class="text-right text-xs text-red-600">*Campo requerido</small>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <label for="branch" class="text-sm font-medium text-surface-700">Sucursal</label>
+                                    <span class="text-xs text-surface-500">{{ listBranchs.length }} opciones</span>
+                                </div>
+
+                                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    @for (branch of listBranchs; track branch.id) {
+                                        <button
+                                            type="button"
+                                            class="group relative overflow-hidden rounded-2xl border p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+                                            [ngClass]="{
+                                                'border-primary-500 bg-primary-50 shadow-md shadow-primary-500/10': loginForm.get('branch')?.value === branch.id,
+                                                'border-surface-200 bg-white hover:border-primary-300': loginForm.get('branch')?.value !== branch.id
+                                            }"
+                                            (click)="selectBranch(branch.id)"
+                                        >
+                                            <div class="flex items-start gap-3">
+                                                <div
+                                                    class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg transition-colors"
+                                                    [ngClass]="{
+                                                        'bg-primary-600 text-white': loginForm.get('branch')?.value === branch.id,
+                                                        'bg-surface-100 text-surface-600 group-hover:bg-primary-100 group-hover:text-primary-700': loginForm.get('branch')?.value !== branch.id
+                                                    }"
+                                                >
+                                                    <i class="pi pi-building"></i>
+                                                </div>
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="truncate text-base font-semibold text-surface-900">{{ branch.label }}</p>
+                                                    <p class="mt-1 text-sm text-surface-500">Selecciona esta sucursal para continuar.</p>
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-4 flex items-center justify-between text-xs">
+                                                <span class="text-surface-500">Click para seleccionar</span>
+                                                @if (loginForm.get('branch')?.value === branch.id) {
+                                                    <span class="rounded-full bg-primary-600 px-2.5 py-1 font-medium text-white">Seleccionada</span>
+                                                } @else {
+                                                    <span class="rounded-full bg-surface-100 px-2.5 py-1 font-medium text-surface-500">Disponible</span>
+                                                }
+                                            </div>
+                                        </button>
+                                    }
+                                </div>
+
+                                @if (listBranchs.length === 0) {
+                                    <div class="rounded-2xl border border-dashed border-surface-300 bg-surface-50 px-4 py-5 text-center text-sm text-surface-600">
+                                        No tienes sucursales activas asignadas.
+                                    </div>
+                                }
+
+                                @if (loginForm.get('branch')?.invalid && loginForm.get('branch')?.touched) {
+                                    <small class="block text-right text-xs text-red-600">*Debes seleccionar una sucursal</small>
                                 }
                             </div>
 
@@ -94,7 +131,7 @@
                                 <button type="button" class="button-button !rounded-xl !border-surface-300 !bg-transparent !px-4 !py-3 !text-surface-700 hover:!bg-surface-100" (click)="returnToCredentials()">
                                     Regresar
                                 </button>
-                                <button type="submit" class="body-button !h-12 !w-full !rounded-xl text-base font-medium shadow-md shadow-primary-500/10">
+                                <button type="submit" class="body-button !h-12 !w-full !rounded-xl text-base font-medium shadow-md shadow-primary-500/10" [disabled]="loginForm.get('branch')?.invalid">
                                     Confirmar
                                 </button>
                             </div>

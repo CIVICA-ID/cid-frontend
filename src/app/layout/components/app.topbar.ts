@@ -131,6 +131,12 @@ interface NotificationsBars {
                                 </a>
                             </li>
                             <li>
+                                <a (click)="goToBranches()" class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
+                                    <i class="pi pi-building"></i>
+                                    <span>Sucursales</span>
+                                </a>
+                            </li>
+                            <li>
                                 <a (click)="logOut()" class="label-small dark:text-surface-400 flex gap-2 py-2 px-2.5 rounded-lg items-center hover:bg-emphasis transition-colors duration-150 cursor-pointer">
                                     <i class="pi pi-power-off"></i>
                                     <span>Cerrar sesión</span>
@@ -252,6 +258,9 @@ export class AppTopbar {
 
     toggleSearchBar() {
         this.layoutService.layoutState.update((value) => ({ ...value, searchBarActive: !value.searchBarActive }));
+    }
+    goToBranches() {
+        this.router.navigate(['/sucursales']);
     }
     logOut() {
         this.sessionService.logout();

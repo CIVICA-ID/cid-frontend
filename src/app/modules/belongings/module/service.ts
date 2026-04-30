@@ -5,7 +5,8 @@ import { environment } from 'src/environments/environment';
 import { Belonging } from '@/api/belonging';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
+  
 })
 export class BelongingsService {
   private readonly url = `${environment.apiUrl}belongings`;

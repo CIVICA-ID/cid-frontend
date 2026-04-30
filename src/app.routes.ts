@@ -40,6 +40,11 @@ export const appRoutes: Routes = [
                 data: { breadcrumb: 'Sucursales', module: 'branches' }
             },
             {
+                path: 'sucursales',
+                loadChildren: () => import('@/modules/sucursales/sucursales.routes').then((m) => m.SUCURSALES_ROUTES),
+                data: { breadcrumb: 'Sucursales', module: 'profile' }
+            },
+            {
                 path: 'medical-reports',
                 loadChildren: () => import('@/modules/medical_reports/module/routes').then((m) => m.MEDICAL_REPORTS_ROUTES),
                 data: { breadcrumb: 'Reportes médicos', module: 'medical_reports' }
