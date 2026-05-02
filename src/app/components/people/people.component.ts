@@ -21,22 +21,23 @@ import { ToastModule } from 'primeng/toast';
 import { PaginatedResponse, People } from '@/api/people';
 import { MiscService } from '@/services/misc.service';
 import { PeopleService } from '@/services/people.service';
-import { DatePicker } from 'primeng/datepicker';
 import { SelectModule } from 'primeng/select';
-import { AddressesComponent } from '../addresses/addresses.component';
 import { EnrollFingerprintRequest, MatchResult, SearchFingerType } from '@/services/fingerprint.service';
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from 'primeng/tabs';
 import { FingerprintService } from '../../services/fingerprint.service';
 import { FingerprintEnrollDialogComponent } from './dialogs/components/fingerprint-enroll-dialog/fingerprint-enroll-dialog.component';
 import { FingerprintCaptureDialogComponent } from './dialogs/components/fingerprint-capture-dialog/fingerprint-capture-dialog.component';
-import { ADD_PERSON_FIELDS, buildImageDataUrl, countCapturedFingers, FINGER_SEARCH_OPTIONS, FingerKey, formatElapsedTime, formatPageRange, getScoreColorClass, LEFT_FINGER_SEARCH_OPTIONS, LEFT_FINGER_THUMBNAILS, RIGHT_FINGER_SEARCH_OPTIONS, RIGHT_FINGER_THUMBNAILS, SEARCH_FIELDS, TenFingerCapture } from './models';
-import { Tooltip } from "primeng/tooltip";
+import { buildImageDataUrl, countCapturedFingers, FINGER_SEARCH_OPTIONS, FingerKey, formatPageRange, TenFingerCapture } from './models';
 import { EnrollFaceRequest, FaceRecognitionService, FaceSearchResult } from '@/services/face-recognition.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { extractFileFromEvent, IMAGE_TYPES, readFileAsBase64 } from './utils/file.utils';
-import { MathResultCardComponent } from "./shared/match-result-card.component";
+import { PersonSelectorComponent } from "./components/person-selector.component";
+import { DataSearchTabComponent } from "./components/data-search-tab.component";
+import { AddPersonFormComponent } from "./components/add-person-form.component";
+import { FingerprintSearchTabComponent } from "./components/fingerprint-search-tab.component";
+import { FaceSearchTabComponent } from "./components/face-search-tab.component";
 // Tipos
-type PhotoType = 'front' | 'leftProfile' | 'rightProfile';
+export type PhotoType = 'front' | 'leftProfile' | 'rightProfile';
 interface PhotoEntry{
     base64: string | null;
     preview: string | null;
@@ -77,9 +78,7 @@ function createEmptyPhotos(): Record<PhotoType, PhotoEntry>{
     FileUploadModule,
     ImageModule,
     InputMaskModule,
-    DatePicker,
     SelectModule,
-    AddressesComponent,
     Tabs,
     TabList,
     Tab,
@@ -87,8 +86,11 @@ function createEmptyPhotos(): Record<PhotoType, PhotoEntry>{
     TabPanel,
     FingerprintCaptureDialogComponent,
     FingerprintEnrollDialogComponent,
-    Tooltip,
-    MathResultCardComponent
+    PersonSelectorComponent,
+    DataSearchTabComponent,
+    AddPersonFormComponent,
+    FingerprintSearchTabComponent,
+    FaceSearchTabComponent
 ],
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush
@@ -177,18 +179,18 @@ export class PeopleComponent {
     // Visibilidad de apartado fotos
     readonly showPhotosSection = signal(false);
     // Enrolamiento de fotos
-    faceEnrollPhotos: Record<PhotoType, PhotoEntry> = createEmptyPhotos();
+    readonly faceEnrollPhotos = signal<Record<PhotoType, PhotoEntry>>(createEmptyPhotos());
 
-    enrolledFingersCount = computed(() => countCapturedFingers(this.enrolledFingers()));
+    readonly enrolledFingersCount = computed(() => countCapturedFingers(this.enrolledFingers()));
 
     readonly hasLeftHandFingers = computed(() =>
         LEFT_HAND_KEYS.some((k) => !!this.enrolledFingers()[k]));
     readonly hasRightHandFingers = computed(() =>
         RIGHT_HAND_KEYS.some(k => !!this.enrolledFingers()[k]));
 
-    readonly faceEnrollFrontPreview = computed(() => this.faceEnrollPhotos.front.preview);
-    readonly faceEnrollLeftProfilePreview = computed(() => this.faceEnrollPhotos.leftProfile.preview);
-    readonly faceEnrollRightProfilePreview = computed(() => this.faceEnrollPhotos.rightProfile.preview);
+    readonly faceEnrollFrontPreview = computed(() => this.faceEnrollPhotos().front.preview);
+    readonly faceEnrollLeftProfilePreview = computed(() => this.faceEnrollPhotos().leftProfile.preview);
+    readonly faceEnrollRightProfilePreview = computed(() => this.faceEnrollPhotos().rightProfile.preview);
 
     // formOptions: AbstractControlOptions = { validators: Validators.nullValidator };
     readonly form = this.formBuilder.group(
@@ -214,13 +216,6 @@ export class PeopleComponent {
             curp: [null as string | null, Validators.maxLength(18)]
         },
     );
-        // Constantes template
-    readonly searchFields = SEARCH_FIELDS;
-    readonly addPersonFields = ADD_PERSON_FIELDS;
-    readonly leftFingerSearchOptions = LEFT_FINGER_SEARCH_OPTIONS;
-    readonly rightFingerSearchOptions = RIGHT_FINGER_SEARCH_OPTIONS;
-    readonly leftFingerThumbnails = LEFT_FINGER_THUMBNAILS;
-    readonly rightFingerThumbnails = RIGHT_FINGER_THUMBNAILS;
 
     get addressFormArray(): FormArray{
         return this.form.controls.peopleAddresses;
@@ -278,24 +273,24 @@ export class PeopleComponent {
         this.pageSize.set(rows);
 
         this.peopleService.getList(rows, page, this.sortBy, this.searchFilter)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (response: PaginatedResponse<People>) => {
-                    const total = response.meta.totalItems;
-                    this.personList.set(total ? response.data : []);
-                    this.totalRows.set(total || 0);
-                    if(!total){
-                        this.showWarning('No se encontraron personas')
-                    }
-                    this.miscService.endRquest();
-                },
-                error: (error: {error?: { message?: string } }) => {
-                    this.personList.set([]);
-                    this.totalRows.set(0);
-                    this.miscService.endRquest();
-                    this.showError('Error al buscar', error.error?.message);
-                },
-            });
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: (response: PaginatedResponse<People>) => {
+                        const total = response.meta.totalItems;
+                        this.personList.set(total ? response.data : []);
+                        this.totalRows.set(total || 0);
+                        if(!total){
+                            this.showWarning('No se encontraron personas')
+                        }
+                        this.miscService.endRquest();
+                    },
+                    error: (error: {error?: { message?: string } }) => {
+                        this.personList.set([]);
+                        this.totalRows.set(0);
+                        this.miscService.endRquest();
+                        this.showError('Error al buscar', error.error?.message);
+                    },
+                });
     }
     goBackDataStep(): void{
         this.dataSearchStep.update((s) => (s > 1 ? s-1 : s));
@@ -384,27 +379,27 @@ export class PeopleComponent {
         this.isFingerprintSearchLoading.set(true);
 
         this.fingerprintService
-        .confirmMatch({ sessionId, isCorrect })
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-            next: (result) => {
-                if (isCorrect) {
-                    this.fingerprintSearchResult.set(result);
-                    this.isAwaitingMatchConfirmation.set(false);
-                    if (result.peopleId) {
-                        this.fetchAndSelectPerson(result.peopleId);
+            .confirmMatch({ sessionId, isCorrect })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (result) => {
+                    if (isCorrect) {
+                        this.fingerprintSearchResult.set(result);
+                        this.isAwaitingMatchConfirmation.set(false);
+                        if (result.peopleId) {
+                            this.fetchAndSelectPerson(result.peopleId);
+                        }
+                    } else {
+                        this.handleFingerprintSearchResult(result);
                     }
-                } else {
-                    this.handleFingerprintSearchResult(result);
-                }
-                this.isFingerprintSearchLoading.set(false);
-            },
-            error: (error: Error) => {
-                this.fingerprintSearchError.set(error.message || 'Error al confirmar');
-                this.isFingerprintSearchLoading.set(false);
-                this.isAwaitingMatchConfirmation.set(false);
-            },
-        });
+                    this.isFingerprintSearchLoading.set(false);
+                },
+                error: (error: Error) => {
+                    this.fingerprintSearchError.set(error.message || 'Error al confirmar');
+                    this.isFingerprintSearchLoading.set(false);
+                    this.isAwaitingMatchConfirmation.set(false);
+                },
+            });
     }
 
     goToAddPersonFromFingerprint(): void {
@@ -434,10 +429,6 @@ export class PeopleComponent {
             delete updated[fingerKey];
             return updated;
         });
-    }
-
-    isFingerAlreadyEnrolled(fingerKey: FingerKey): boolean{
-        return !!this.enrolledFingers()[fingerKey];
     }
 
     // Tab 3
@@ -519,20 +510,24 @@ export class PeopleComponent {
 
         readFileAsBase64(file, IMAGE_TYPES).subscribe({
             next: ({dataUrl, base64}) => {
-                this.faceEnrollPhotos = {
-                    ...this.faceEnrollPhotos,
-                    [type]: { base64, preview: dataUrl }
-                };
+                this.faceEnrollPhotos.update(
+                    current => ({
+                        ...current,
+                        [type]: { base64, preview: dataUrl }
+                    })
+                );
             },
             error: () => this.showError('Formato invalido')
         });
     }
 
     removeFaceEnrollPhoto(type: PhotoType): void{
-        this.faceEnrollPhotos = {
-            ...this.faceEnrollPhotos,
-            [type]: { base64: null, preview: null }
-        };
+        this.faceEnrollPhotos.update(
+            current => ({
+                ...current,
+                [type]: { base64: null, preview: null }
+            })
+        );
     }
 
     savePersonComplete(): void{
@@ -544,7 +539,7 @@ export class PeopleComponent {
         }
         const personData = this.buildPersonData();
         const hasFingerprints = this.enrolledFingersCount() > 0;
-        const hasPhotos = !!this.faceEnrollPhotos.front.base64;
+        const hasPhotos = !!this.faceEnrollPhotos().front.base64;
 
         if(hasFingerprints){
             this.enrollWithFingerprints(personData, hasPhotos);
@@ -576,27 +571,17 @@ export class PeopleComponent {
     removePerson(): void {
         this.selectedPerson.set(null);
         this.sendPeople.emit(null);
-        this.newPeople = null;
+        this.form.reset();
+        this.searchForm.reset();
+        // this.newPeople = null;
     }
 
     getDialogHeader(): string {
         return 'Buscar Persona';
     }
 
-    getScoreColor(score: number): string {
-        return getScoreColorClass(score);
-    }
-
-    formatTime(milliseconds: number): string {
-        return formatElapsedTime(milliseconds);
-    }
-
     getPageRange(): string {
         return formatPageRange(this.currentPage(), this.pageSize(), this.totalRows());
-    }
-
-    getEnrolledFingerImage(fingerKey: FingerKey): string {
-        return this.enrolledFingers()[fingerKey] ?? '';
     }
 
     private fetchAndSelectPerson(peopleId: string): void{
@@ -624,7 +609,7 @@ export class PeopleComponent {
         };
     }
     private enrollWithFingerprints(personData: Record<string, unknown>, hasPhotos: boolean): void{
-        const request: EnrollFingerprintRequest = {
+        const request = {
             ...personData as Partial<EnrollFingerprintRequest>,
             fingers: this.enrolledFingers()
         } as EnrollFingerprintRequest;
@@ -644,8 +629,8 @@ export class PeopleComponent {
             })
     }
     private enrollWithPhotos(personData: Record<string, unknown>): void{
-        const photos = this.faceEnrollPhotos;
-        const request: EnrollFaceRequest = {
+        const photos = this.faceEnrollPhotos();
+        const request = {
             ...personData as Partial<EnrollFaceRequest>,
             imageFront: photos.front.base64!,
             imageLeftProfile: photos.leftProfile.base64 || undefined,
@@ -653,12 +638,12 @@ export class PeopleComponent {
         } as EnrollFaceRequest;
 
         this.faceService.enrollWithFace(request)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-            next: (res: { object: People}) =>
-                this.onSaveSuccess(res.object, 'Datos y fotos de persona han sido guardadas'),
-            error: (err: { error?: { message?: string }; message?: string }) => this.onSaveError(err)
-        });
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res: { object: People }) =>
+                    this.onSaveSuccess(res.object, 'Datos y fotos de persona han sido guardadas'),
+                error: (err: { error?: { message?: string }; message?: string }) => this.onSaveError(err)
+            });
     }
     private enrollPersonOnly(personData: Record<string, unknown>): void{
         this.peopleService
@@ -671,7 +656,7 @@ export class PeopleComponent {
             });
     }
     private savePhotosAfterEnroll(person: People): void{
-        const photos = this.faceEnrollPhotos;
+        const photos = this.faceEnrollPhotos();
         this.faceService
             .savePhotosForPerson({
                 peopleId: person.id,
@@ -716,7 +701,7 @@ export class PeopleComponent {
         this.clearAddressFormArray();
         this.enrolledFingers.set({});
         this.showPhotosSection.set(false);
-        this.faceEnrollPhotos = createEmptyPhotos();
+        this.faceEnrollPhotos.set(createEmptyPhotos());
     }
     private resetMatchConfirmation(): void {
         this.isAwaitingMatchConfirmation.set(false);
@@ -749,7 +734,7 @@ export class PeopleComponent {
         this.faceSearchError.set('');
         this.faceNoMatchFound.set(false);
         this.isAwaitingFaceConfirmation.set(false);
-        this.faceEnrollPhotos = createEmptyPhotos();
+        this.faceEnrollPhotos.set(createEmptyPhotos());
         // Enrollment
         this.enrolledFingers.set({});
         this.showPhotosSection.set(false);

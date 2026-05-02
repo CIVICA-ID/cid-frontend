@@ -1,0 +1,89 @@
+<div class="pt-4">
+    <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center gap-2">
+            <button pButton type="button" pRipple icon="pi pi-arrow-left" class="p-button-outlined" (click)="back.emit()" [disabled]="step() === 1"></button>
+            <span class="text-sm font-medium text-gray-700">{{step()}} de 3</span>
+        </div>
+    </div>
+    @if(step() === 1){
+        <form [formGroup]="searchForm()" class="flex flex-col gap-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                @for (field of searchFields; track field.controlName) {
+                    <div class="flex flex-col gap-1.5">
+                        <label [for]="field.id" class="font-semibold ">
+                            {{ field.label }}
+                        </label>
+                        <input pInputText [id]="field.id" [formControlName]="field.controlName" class="w-full" [class.uppercase]="field.controlName === 'curp'" />
+                        <div class="min-h-5">
+                            @if (searchForm().get(field.controlName)?.hasError('required')) {
+                                <small class="text-red-600 text-right block text-xs">*Campo requerido</small>
+                            } @else if (searchForm().get(field.controlName)?.hasError('maxlength')) {
+                                <small class="text-red-600 text-right block text-xs">*Longitud máxima {{ field.maxLength }}</small>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="flex justify-end">
+                <button pButton pRipple type="button" label="Buscar" (click)="searchRequested.emit()" class="!w-32"></button>
+            </div>
+        </form>
+    }
+    @if(step() === 2){
+        <div class="flex flex-col gap-4">
+            <div class="flex justify-end">
+                <button pButton type="button" pRipple label="Agregar" icon="pi pi-plus" (click)="addRequested.emit()" class="p-button-outlined !w-32"></button>
+            </div>
+            <div class="mt-2 card">
+                <p-table
+                    #dt
+                    [value]="personList()"
+                    [lazy]="true"
+                    [resetPageOnSort]="false"
+                    dataKey="id"
+                    [rows]="pageSize()"
+                    [paginator]="true"
+                    (onLazyLoad)="lazyLoad.emit($event)"
+                    [lazyLoadOnInit]="true"
+                    [totalRecords]="totalRows()"
+                    [rowsPerPageOptions]="[10, 25, 50]"
+                    [showCurrentPageReport]="true"
+                    currentPageReportTemplate="{{ pageRange() }}"
+                    [responsive]="true"
+                    [rowHover]="true"
+                    responsiveLayout="scroll"
+                >
+                    <ng-template pTemplate="header">
+                        <tr>
+                            @for (field of searchFields; track field.controlName) {
+                                <th class="px-2 py-1">{{ field.label }}</th>
+                            }
+                            <th></th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-person>
+                        <tr class="hover:bg-gray-50">
+                            @for (field of searchFields; track field.controlName) {
+                                @if (field.controlName == 'curp') {
+                                    <td class="px-2 py-1">{{ person[field.controlName] | uppercase }}</td>
+                                } @else {
+                                    @if (person[field.controlName] != null && person[field.controlName]) {
+                                        <td class="px-2 py-1">{{ person[field.controlName] }}</td>
+                                    } @else {
+                                        <td class="px-2 py-1">-</td>
+                                    }
+                                }
+                            }
+                            <td class="px-2 py-1 text-center">
+                                <button pButton pRipple icon="pi pi-check" class="p-button-rounded p-button-info" (click)="personSelected.emit(person)"></button>
+                            </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </div>
+        </div>
+    }
+    @if(step() === 3){
+        <ng-content />
+    }
+</div>

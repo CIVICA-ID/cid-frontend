@@ -1,0 +1,56 @@
+<div class="flex flex-col w-full gap-4">
+    <div class="w-full max-w-1xl">
+        <div class="flex items-stretch p-inputgroup shadow-sm border border-gray-300 rounded-lg overflow-hidden">
+            <span class="p-inputgroup-addon bg-gray-100 text-gray-700 font-semibold px-4 flex items-center border-none" [style.minWidth.px]="120"> Persona{{ selectedPerson ? ':' : '' }} </span>
+            <button
+                pButton
+                pRipple
+                type="button"
+                icon="pi pi-search"
+                [label]="displayName()"
+                [class]="selectedPerson() ? 'p-button-primary' : 'p-button-outlined p-button-secondary'"
+                class="flex-grow border-none text-left justify-start px-4"
+                (click)="search.emit()"
+            ></button>
+            @if (selectedPerson()) {
+                <button pButton pRipple icon="pi pi-times" class="p-button-danger p-button-text border-none bg-gray-50" (click)="remove.emit()" type="button" pTooltip="Quitar seleccion"></button>
+            }
+        </div>
+    </div>
+    @if (selectedPerson(); as person) {
+        <div class="w-full animate-fade-in">
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-2 mb-1 text-gray-700">
+                    <i class="pi pi-id-card"></i>
+                    <span class="font-bold">Detalles de la persona seleccionada</span>
+                </div>
+                <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-md">
+                    <p-table [value]="[person]" [responsiveLayout]="'scroll'" styleClass="p-datatable-gridlines p-datatable-sm">
+                        <ng-template pTemplate="header">
+                            <tr class="bg-gray-50">
+                                <th class="text-xs uppercase tracking-wider font-bold text-gray-500 py-3">Ocupación</th>
+                                <th class="text-xs uppercase tracking-wider font-bold text-gray-500 py-3">CURP</th>
+                                <th class="text-xs uppercase tracking-wider font-bold text-gray-500 py-3">Alias / Otros</th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-p>
+                            <tr>
+                                <td class="text-sm text-gray-800 font-medium px-4">
+                                    {{ p.occupation || '-' }}
+                                </td>
+                                <td class="text-sm text-gray-700 font-mono px-4">
+                                    <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100">
+                                        {{ p.curp || 'NO REGISTRADO' }}
+                                    </span>
+                                </td>
+                                <td class="text-sm text-gray-600 px-4 italic">
+                                    {{ p.alias || '-' }}
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
