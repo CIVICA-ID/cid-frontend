@@ -1,14 +1,15 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { APP_CONFIG } from '@/config.token';
 import { Staff } from '@/api/staff';
 
 @Injectable({
   providedIn: 'root'
 })
 export class StaffService {
-  private readonly url = `${environment.apiUrl}staff`;
+  private readonly appConfig = inject(APP_CONFIG);
+  private readonly url = `${this.appConfig.apiUrl}staff`;
 
   constructor(private http: HttpClient) {}
 

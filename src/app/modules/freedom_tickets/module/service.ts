@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { APP_CONFIG } from '@/config.token';
 import { FreedomTicket } from '@/api/freedom-ticket';
 import { serializeDateTimeFields } from '@/lib/date-time';
 
@@ -11,7 +11,8 @@ const FREEDOM_TICKET_DATE_FIELDS = ['releaseDate'] as const;
   providedIn: 'root'
 })
 export class FreedomTicketsService {
-  private readonly url = `${environment.apiUrl}freedom-tickets`;
+  private readonly appConfig = inject(APP_CONFIG);
+  private readonly url = `${this.appConfig.apiUrl}freedom-tickets`;
 
   constructor(private http: HttpClient) {}
 

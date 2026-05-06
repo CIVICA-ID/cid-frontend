@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { APP_CONFIG } from '@/config.token';
 import { Seguimiento } from '@/api/seguimiento';
 import { serializeDateTimeFields } from '@/lib/date-time';
 
@@ -11,7 +11,8 @@ const SEGUIMIENTO_DATE_FIELDS = ['followDate'] as const;
   providedIn: 'root'
 })
 export class SeguimientoService {
-  private readonly url = `${environment.apiUrl}tracings`;
+  private readonly appConfig = inject(APP_CONFIG);
+  private readonly url = `${this.appConfig.apiUrl}tracings`;
 
   constructor(private http: HttpClient) {}
 

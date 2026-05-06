@@ -2,12 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpContext, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, catchError, finalize, map, of, shareReplay, throwError } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
-import { environment } from '../../environments/environment';
 import { AuthService } from '@/services/auth.service';
 import { IdempotencyClientService } from '@/services/idempotency-client.service';
+import { SessionStorageAdapter } from '@/services/session-storage.adapter';
+import { APP_CONFIG } from '@/config.token';
 import { AuthLoginResponse, RefreshRequest, SessionSnapshot, SKIP_AUTH_INTERCEPTOR } from './auth-session.model';
 
-const baseUrl: string = `${environment.apiUrl}auth`;
 const authStorageKey = 'auth_session';
 const legacyAccessTokenKey = 'bearer';
 const accessTokenRefreshBufferMs = 10_000;
@@ -30,6 +30,8 @@ export class SessionService {
 
     private readonly authService = inject(AuthService);
     private readonly idempotencyClient = inject(IdempotencyClientService);
+    private readonly storage = inject(SessionStorageAdapter);
+    private readonly appConfig = inject(APP_CONFIG);
     private accessToken: string | null = null;
     private accessTokenExpiresAt: number | null = null;
     private refreshRequest$?: Observable<string>;
@@ -40,7 +42,7 @@ export class SessionService {
     }
 
     register(user: any) {
-        return this.http.post(`${baseUrl}/register`, user, {
+        return this.http.post(`${this.appConfig.apiUrl}auth/register`, user, {
             context: new HttpContext().set(SKIP_AUTH_INTERCEPTOR, true),
             withCredentials: true
         });
@@ -48,7 +50,7 @@ export class SessionService {
 
     verification(token: string) {
         const params = new HttpParams().set('token', token);
-        return this.http.get(`${baseUrl}/confirm`, {
+        return this.http.get(`${this.appConfig.apiUrl}auth/confirm`, {
             params,
             context: new HttpContext().set(SKIP_AUTH_INTERCEPTOR, true),
             withCredentials: true
@@ -56,7 +58,7 @@ export class SessionService {
     }
 
     login(user: any) {
-        return this.http.post(`${baseUrl}/login/`, user, {
+        return this.http.post(`${this.appConfig.apiUrl}auth/login/`, user, {
             context: new HttpContext().set(SKIP_AUTH_INTERCEPTOR, true),
             withCredentials: true
         });
@@ -67,7 +69,7 @@ export class SessionService {
         const branch = this.getBranch() ?? '';
 
         this.http.post(
-            `${baseUrl}/logout`,
+            `${this.appConfig.apiUrl}auth/logout`,
             {
                 accessToken: accessToken ?? undefined
             },
@@ -92,21 +94,21 @@ export class SessionService {
     }
 
     forgotPassword(email: any) {
-        return this.http.post(`${baseUrl}/forgot-password`, email, {
+        return this.http.post(`${this.appConfig.apiUrl}auth/forgot-password`, email, {
             context: new HttpContext().set(SKIP_AUTH_INTERCEPTOR, true),
             withCredentials: true
         });
     }
 
     resetPassword(data: any) {
-        return this.http.post(`${baseUrl}/reset-password`, data, {
+        return this.http.post(`${this.appConfig.apiUrl}auth/reset-password`, data, {
             context: new HttpContext().set(SKIP_AUTH_INTERCEPTOR, true),
             withCredentials: true
         });
     }
 
     validateTokenReset(data: any) {
-        return this.http.post(`${baseUrl}/validate-token-reset`, data, {
+        return this.http.post(`${this.appConfig.apiUrl}auth/validate-token-reset`, data, {
             context: new HttpContext().set(SKIP_AUTH_INTERCEPTOR, true),
             withCredentials: true
         });
@@ -117,7 +119,7 @@ export class SessionService {
     }
 
     setSession(response: AuthLoginResponse) {
-        const accessToken = response.accessToken ?? response.token ?? null;
+        const accessToken = response.accessToken ?? null;
         if (!accessToken) {
             return;
         }
@@ -143,48 +145,48 @@ export class SessionService {
     }
 
     getBranches(nickName: string) {
-        return this.http.get(`${baseUrl}/branches/${nickName}`);
+        return this.http.get(`${this.appConfig.apiUrl}auth/branches/${nickName}`);
     }
 
     setFullName(name: string) {
-        localStorage.setItem('name', name);
+        this.storage.setItem('name', name);
         this.fullName = name;
         this.persistSessionMetadata({ ...this.getStoredSession(), fullName: name });
     }
 
     getFullName(): string | null {
-        return localStorage.getItem('name');
+        return this.storage.getItem('name');
     }
 
     setImage(uimage: string) {
-        localStorage.setItem('image', uimage);
-        this.image = `${environment.apiUrl}file/download?id=${uimage}`;
+        this.storage.setItem('image', uimage);
+        this.image = `${this.appConfig.apiUrl}file/download?id=${uimage}`;
         this.persistSessionMetadata({ ...this.getStoredSession(), image: uimage });
     }
 
     getImage(): string | null {
         const imageId = this.getRawImageId();
-        return imageId ? `${environment.apiUrl}file/download?id=${imageId}` : null;
+        return imageId ? `${this.appConfig.apiUrl}file/download?id=${imageId}` : null;
     }
 
     setId(id: string) {
-        localStorage.setItem('id', id);
+        this.storage.setItem('id', id);
         this.id = id;
         this.persistSessionMetadata({ ...this.getStoredSession(), id });
     }
 
     getId(): string | null {
-        return localStorage.getItem('id');
+        return this.storage.getItem('id');
     }
 
     setRights(rights: unknown) {
-        localStorage.setItem('rights', JSON.stringify(rights));
+        this.storage.setItem('rights', JSON.stringify(rights));
         this.rights = rights;
         this.persistSessionMetadata({ ...this.getStoredSession(), rights });
     }
 
     getRights(): unknown | null {
-        const rawRights = localStorage.getItem('rights');
+        const rawRights = this.storage.getItem('rights');
         if (!rawRights) {
             return null;
         }
@@ -197,33 +199,33 @@ export class SessionService {
     }
 
     setBranch(branch: string) {
-        localStorage.setItem('branch', branch);
+        this.storage.setItem('branch', branch);
         this.branch = branch;
         this.persistSessionMetadata({ ...this.getStoredSession(), branch });
     }
 
     getBranch(): string | null {
-        return localStorage.getItem('branch');
+        return this.storage.getItem('branch');
     }
 
     setEmail(email: string) {
-        localStorage.setItem('email', email);
+        this.storage.setItem('email', email);
         this.email = email;
         this.persistSessionMetadata({ ...this.getStoredSession(), email });
     }
 
     getEmail(): string | null {
-        return localStorage.getItem('email');
+        return this.storage.getItem('email');
     }
 
     setNickName(nickName: string) {
-        localStorage.setItem('nickName', nickName);
+        this.storage.setItem('nickName', nickName);
         this.nickName = nickName;
         this.persistSessionMetadata({ ...this.getStoredSession(), nickName });
     }
 
     getNickName(): string | null {
-        return localStorage.getItem('nickName');
+        return this.storage.getItem('nickName');
     }
 
     isAccessTokenExpired(bufferMs = 0): boolean {
@@ -256,7 +258,7 @@ export class SessionService {
 
         this.refreshRequest$ = this.authService.refresh(request).pipe(
             map((response: AuthLoginResponse) => {
-                const accessToken = response.accessToken ?? response.token;
+                const accessToken = response.accessToken;
                 if (!accessToken) {
                     throw new Error('Refresh response did not include an access token');
                 }
@@ -298,37 +300,37 @@ export class SessionService {
     private persistSessionMetadata(session: Partial<SessionSnapshot>) {
         const current = this.getStoredSession();
         const nextSession: SessionSnapshot = {
-            branch: session.branch ?? current.branch ?? localStorage.getItem('branch'),
-            fullName: session.fullName ?? current.fullName ?? localStorage.getItem('name'),
-            image: session.image ?? current.image ?? localStorage.getItem('image'),
-            id: session.id ?? current.id ?? localStorage.getItem('id'),
+            branch: session.branch ?? current.branch ?? this.storage.getItem('branch'),
+            fullName: session.fullName ?? current.fullName ?? this.storage.getItem('name'),
+            image: session.image ?? current.image ?? this.storage.getItem('image'),
+            id: session.id ?? current.id ?? this.storage.getItem('id'),
             rights: session.rights ?? current.rights ?? this.getRights(),
-            email: session.email ?? current.email ?? localStorage.getItem('email'),
-            nickName: session.nickName ?? current.nickName ?? localStorage.getItem('nickName'),
+            email: session.email ?? current.email ?? this.storage.getItem('email'),
+            nickName: session.nickName ?? current.nickName ?? this.storage.getItem('nickName'),
             accessTokenExpiresAt: session.accessTokenExpiresAt ?? current.accessTokenExpiresAt ?? this.accessTokenExpiresAt ?? null
         };
 
-        localStorage.setItem(authStorageKey, JSON.stringify(nextSession));
+        this.storage.setItem(authStorageKey, JSON.stringify(nextSession));
         if (nextSession.branch) {
-            localStorage.setItem('branch', nextSession.branch);
+            this.storage.setItem('branch', nextSession.branch);
         }
         if (nextSession.fullName) {
-            localStorage.setItem('name', nextSession.fullName);
+            this.storage.setItem('name', nextSession.fullName);
         }
         if (nextSession.image) {
-            localStorage.setItem('image', nextSession.image);
+            this.storage.setItem('image', nextSession.image);
         }
         if (nextSession.id) {
-            localStorage.setItem('id', nextSession.id);
+            this.storage.setItem('id', nextSession.id);
         }
         if (nextSession.rights !== undefined && nextSession.rights !== null) {
-            localStorage.setItem('rights', JSON.stringify(nextSession.rights));
+            this.storage.setItem('rights', JSON.stringify(nextSession.rights));
         }
         if (nextSession.email) {
-            localStorage.setItem('email', nextSession.email);
+            this.storage.setItem('email', nextSession.email);
         }
         if (nextSession.nickName) {
-            localStorage.setItem('nickName', nextSession.nickName);
+            this.storage.setItem('nickName', nextSession.nickName);
         }
 
         this.accessSnapshotToPublicFields(nextSession);
@@ -336,7 +338,7 @@ export class SessionService {
 
     private accessSnapshotToPublicFields(session: SessionSnapshot) {
         this.fullName = session.fullName ?? null;
-        this.image = session.image ? `${environment.apiUrl}file/download?id=${session.image}` : null;
+        this.image = session.image ? `${this.appConfig.apiUrl}file/download?id=${session.image}` : null;
         this.id = session.id ?? null;
         this.rights = session.rights ?? null;
         this.branch = session.branch ?? null;
@@ -395,7 +397,7 @@ export class SessionService {
             'nickName'
         ];
 
-        keys.forEach((key) => localStorage.removeItem(key));
+        keys.forEach((key) => this.storage.removeItem(key));
         this.clearAccessTokenState();
         this.fullName = null;
         this.image = null;
@@ -412,51 +414,51 @@ export class SessionService {
     }
 
     private getStoredSession(): SessionSnapshot {
-        const rawSession = localStorage.getItem(authStorageKey);
+        const rawSession = this.storage.getItem(authStorageKey);
         if (!rawSession) {
             return {
-                branch: localStorage.getItem('branch'),
-                fullName: localStorage.getItem('name'),
-                image: localStorage.getItem('image'),
-                id: localStorage.getItem('id'),
+                branch: this.storage.getItem('branch'),
+                fullName: this.storage.getItem('name'),
+                image: this.storage.getItem('image'),
+                id: this.storage.getItem('id'),
                 rights: this.getRights(),
-                email: localStorage.getItem('email'),
-                nickName: localStorage.getItem('nickName')
+                email: this.storage.getItem('email'),
+                nickName: this.storage.getItem('nickName')
             };
         }
 
         try {
             const parsed = JSON.parse(rawSession) as Partial<SessionSnapshot>;
             return {
-                branch: parsed.branch ?? localStorage.getItem('branch'),
-                fullName: parsed.fullName ?? localStorage.getItem('name'),
-                image: parsed.image ?? localStorage.getItem('image'),
-                id: parsed.id ?? localStorage.getItem('id'),
+                branch: parsed.branch ?? this.storage.getItem('branch'),
+                fullName: parsed.fullName ?? this.storage.getItem('name'),
+                image: parsed.image ?? this.storage.getItem('image'),
+                id: parsed.id ?? this.storage.getItem('id'),
                 rights: parsed.rights ?? this.getRights(),
-                email: parsed.email ?? localStorage.getItem('email'),
-                nickName: parsed.nickName ?? localStorage.getItem('nickName'),
+                email: parsed.email ?? this.storage.getItem('email'),
+                nickName: parsed.nickName ?? this.storage.getItem('nickName'),
                 accessTokenExpiresAt: parsed.accessTokenExpiresAt ?? null
             };
         } catch {
             return {
-                branch: localStorage.getItem('branch'),
-                fullName: localStorage.getItem('name'),
-                image: localStorage.getItem('image'),
-                id: localStorage.getItem('id'),
+                branch: this.storage.getItem('branch'),
+                fullName: this.storage.getItem('name'),
+                image: this.storage.getItem('image'),
+                id: this.storage.getItem('id'),
                 rights: this.getRights(),
-                email: localStorage.getItem('email'),
-                nickName: localStorage.getItem('nickName')
+                email: this.storage.getItem('email'),
+                nickName: this.storage.getItem('nickName')
             };
         }
     }
 
     private readLegacyAccessToken(): string | null {
-        const bearerToken = localStorage.getItem(legacyAccessTokenKey);
+        const bearerToken = this.storage.getItem(legacyAccessTokenKey);
         if (bearerToken) {
             return bearerToken;
         }
 
-        const rawSession = localStorage.getItem(authStorageKey);
+        const rawSession = this.storage.getItem(authStorageKey);
         if (!rawSession) {
             return null;
         }
@@ -470,7 +472,7 @@ export class SessionService {
     }
 
     private clearLegacyAccessTokenStorage() {
-        localStorage.removeItem(legacyAccessTokenKey);
+        this.storage.removeItem(legacyAccessTokenKey);
         const storedSession = this.getStoredSession();
         this.persistSessionMetadata(storedSession);
     }
@@ -515,6 +517,6 @@ export class SessionService {
     }
 
     private getRawImageId(): string | null {
-        return localStorage.getItem('image');
+        return this.storage.getItem('image');
     }
 }

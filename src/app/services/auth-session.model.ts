@@ -7,7 +7,6 @@ export interface BranchOption {
 
 export interface AuthLoginResponse {
     statusCode?: number;
-    token?: string;
     accessToken?: string;
     expiresAt?: string | number | Date;
     expiresIn?: number;

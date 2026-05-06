@@ -1,14 +1,15 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
 import { Module } from '@/api/module';
+import { APP_CONFIG } from '@/config.token';
 
 @Injectable({
     providedIn: 'root'
 })
 export class ModulesServices {
-    url: string = `${environment.apiUrl}modules`;
+    private readonly appConfig = inject(APP_CONFIG);
+    url: string = `${this.appConfig.apiUrl}modules`;
     constructor(private http: HttpClient) {}
     getList(limit: number, page: number, sort: string[][], search: any): Observable<any> {
         const body = {

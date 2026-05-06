@@ -13,6 +13,7 @@ import { MessageModule } from 'primeng/message';
 import { ToastModule } from 'primeng/toast';
 import { MiscService } from '@/services/misc.service';
 import { StaffService } from '../module/service';
+import { buildSaveErrorDetail } from '@/lib/http-error';
 
 @Component({
   selector: 'app-staff-save',
@@ -147,7 +148,7 @@ export class SaveComponent implements OnInit {
           this.messageService.add({
             key: 'msg',
             severity: 'error',
-            detail: 'Error al guardar el registro de staff, error: ' + (error?.error?.message || error.message),
+            detail: buildSaveErrorDetail(error, 'el registro de staff'),
             life: 3000
           });
         }
@@ -173,7 +174,7 @@ export class SaveComponent implements OnInit {
         this.messageService.add({
           key: 'msg',
           severity: 'error',
-          detail: 'Error al guardar el registro de staff, error: ' + (error?.error?.message || error.message),
+          detail: buildSaveErrorDetail(error, 'el registro de staff'),
           life: 3000
         });
       }

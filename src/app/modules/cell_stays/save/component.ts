@@ -18,6 +18,7 @@ import { OffendersService } from '@/services/offenders.service';
 import { CellStaysService } from '../module/service';
 import { DateTimePickerComponent } from '@/components/date-time-picker/date-time-picker.component';
 import { deserializeApiDateTime } from '@/lib/date-time';
+import { buildSaveErrorDetail } from '@/lib/http-error';
 
 @Component({
   selector: 'app-cell-stays-save',
@@ -178,7 +179,7 @@ export class SaveComponent implements OnInit {
           this.messageService.add({
             key: 'msg',
             severity: 'error',
-            detail: 'Error al guardar la estadía en celda, error: ' + (error?.error?.message || error.message),
+            detail: buildSaveErrorDetail(error, 'la estadía en celda'),
             life: 3000
           });
         }
@@ -204,7 +205,7 @@ export class SaveComponent implements OnInit {
         this.messageService.add({
           key: 'msg',
           severity: 'error',
-          detail: 'Error al guardar la estadía en celda, error: ' + (error?.error?.message || error.message),
+          detail: buildSaveErrorDetail(error, 'la estadía en celda'),
           life: 3000
         });
       }

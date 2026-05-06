@@ -1,7 +1,7 @@
-import { Injectable } from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 import { HttpClient } from '@angular/common/http';
 import { Observable } from "rxjs";
-import { environment } from "src/environments/environment";
+import { APP_CONFIG } from '@/config.token';
 import { AdministrativeFaults } from '@/api/administrative-faults';
 import { AdministrativeFaultsCategory } from '@/api/administrative-faults-category';
 
@@ -9,7 +9,8 @@ import { AdministrativeFaultsCategory } from '@/api/administrative-faults-catego
     providedIn: 'root'
 })
 export class AdministrativeFaultsService {
-    url: string = `${environment.apiUrl}administrative_faults`;
+    private readonly appConfig = inject(APP_CONFIG);
+    url: string = `${this.appConfig.apiUrl}administrative_faults`;
     constructor(private http: HttpClient) {}
     getList(): Observable<AdministrativeFaults[]> {
         return this.http.get<AdministrativeFaults[]>(this.url);

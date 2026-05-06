@@ -7,6 +7,9 @@ import {providePrimeNG} from 'primeng/config';
 import {appRoutes} from './app.routes';
 import {definePreset} from '@primeng/themes';
 import { httpInterceptorService } from '@/interceptors/http.interceptor';
+import { BrowserSessionStorageAdapter, SessionStorageAdapter } from '@/services/session-storage.adapter';
+import { APP_CONFIG } from '@/config.token';
+import { environment } from 'src/environments/environment';
 
 const MyPreset = definePreset(Aura, {
     semantic: {
@@ -28,6 +31,8 @@ const MyPreset = definePreset(Aura, {
 
 export const appConfig: ApplicationConfig = {
     providers: [
+        { provide: APP_CONFIG, useValue: environment },
+        { provide: SessionStorageAdapter, useClass: BrowserSessionStorageAdapter },
         provideRouter(appRoutes, withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }), withEnabledBlockingInitialNavigation()),
         // provideHttpClient(withFetch()),
         provideHttpClient(

@@ -52,7 +52,6 @@ import { DateTimePickerComponent } from '@/components/date-time-picker/date-time
         FileUploadModule,
         ImageModule,
         InputMaskModule,
-        DatePicker,
         SelectModule,
         AddressesComponent,
         DateTimePickerComponent

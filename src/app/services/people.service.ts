@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from "@angular/common/http";
-import { Injectable } from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 import { Observable } from "rxjs";
-import { environment } from "src/environments/environment";
+import { APP_CONFIG } from '@/config.token';
 
 @Injectable({
   providedIn: 'root'
@@ -13,7 +13,8 @@ export class PeopleService {
         "startsWith":"$sw",
     }
     
-  url: string = `${environment.apiUrl}people`;
+  private readonly appConfig = inject(APP_CONFIG);
+  url: string = `${this.appConfig.apiUrl}people`;
   constructor(private http: HttpClient) { }
   getList(limit:number,page:number,sort:any,search :any):Observable<any[]> 
     {

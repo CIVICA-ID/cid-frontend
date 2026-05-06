@@ -19,6 +19,7 @@ import { OffendersService } from '@/services/offenders.service';
 import { StaffService } from '@/modules/staff/module/service';
 import { DateTimePickerComponent } from '@/components/date-time-picker/date-time-picker.component';
 import { deserializeApiDateTime } from '@/lib/date-time';
+import { buildSaveErrorDetail } from '@/lib/http-error';
 
 @Component({
   selector: 'app-medical-reports-save',
@@ -232,7 +233,7 @@ export class SaveComponent implements OnInit {
           this.messageService.add({
             key: 'msg',
             severity: 'error',
-            detail: 'Error al guardar el reporte médico, error: ' + (error?.error?.message || error.message),
+            detail: buildSaveErrorDetail(error, 'el reporte médico'),
             life: 3000
           });
         }
@@ -258,7 +259,7 @@ export class SaveComponent implements OnInit {
         this.messageService.add({
           key: 'msg',
           severity: 'error',
-          detail: 'Error al guardar el reporte médico, error: ' + (error?.error?.message || error.message),
+          detail: buildSaveErrorDetail(error, 'el reporte médico'),
           life: 3000
         });
       }

@@ -1,14 +1,16 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { APP_CONFIG } from '@/config.token';
 import { Belonging } from '@/api/belonging';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
+  
 })
 export class BelongingsService {
-  private readonly url = `${environment.apiUrl}belongings`;
+  private readonly appConfig = inject(APP_CONFIG);
+  private readonly url = `${this.appConfig.apiUrl}belongings`;
 
   constructor(private http: HttpClient) {}
 

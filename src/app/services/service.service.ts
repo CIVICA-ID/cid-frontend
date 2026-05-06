@@ -1,8 +1,8 @@
 import { Injectable, inject } from "@angular/core";
 import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
 import { Observable, firstValueFrom } from "rxjs";
-import { environment } from "@env/environment";
 import { SessionService } from '@/services/session.service';
+import { APP_CONFIG } from '@/config.token';
 
 export interface ApiResponse<T> {
   success: number;
@@ -17,7 +17,7 @@ export type HttpMethod = "formdata" | "post" | "get" | "delete" | "patch";
 export class ServiceService {
   private readonly httpClient = inject(HttpClient);
   private readonly sessionService = inject(SessionService);
-  private readonly baseUrl = environment.apiUrl;
+  private readonly appConfig = inject(APP_CONFIG);
 
   private getHeaders(includeContentType = true): HttpHeaders {
     const token = this.sessionService.getAccessToken();
@@ -70,7 +70,7 @@ export class ServiceService {
     list: boolean,
     fullPath: boolean
   ): Observable<T> {
-    const finalUrl = fullPath ? url : `${this.baseUrl}${url}`;
+    const finalUrl = fullPath ? url : `${this.appConfig.apiUrl}${url}`;
 
     switch (method) {
       case "post":
@@ -108,13 +108,13 @@ export class ServiceService {
     }
 
     if (list) {
-      return this.httpClient.get<T>(`${this.baseUrl}${url}`, {
+        return this.httpClient.get<T>(`${this.appConfig.apiUrl}${url}`, {
         headers: this.getHeaders(),
         params: this.buildParams(params ?? {})
       });
     }
 
-    return this.httpClient.get<T>(`${this.baseUrl}${url}/${params}`, {
+    return this.httpClient.get<T>(`${this.appConfig.apiUrl}${url}/${params}`, {
       headers: this.getHeaders()
     });
   }
@@ -145,7 +145,7 @@ export class ServiceService {
     }
     const headers = new HttpHeaders(headerValues);
 
-    const finalUrl = `${this.baseUrl}${url}`;
+    const finalUrl = `${this.appConfig.apiUrl}${url}`;
 
     const request$ = method === "post"
       ? this.httpClient.post(finalUrl, data, { headers, responseType: 'blob' })
