@@ -119,7 +119,7 @@ export class SessionService {
     }
 
     setSession(response: AuthLoginResponse) {
-        const accessToken = response.accessToken ?? response.token ?? null;
+        const accessToken = response.accessToken ?? null;
         if (!accessToken) {
             return;
         }
@@ -258,7 +258,7 @@ export class SessionService {
 
         this.refreshRequest$ = this.authService.refresh(request).pipe(
             map((response: AuthLoginResponse) => {
-                const accessToken = response.accessToken ?? response.token;
+                const accessToken = response.accessToken;
                 if (!accessToken) {
                     throw new Error('Refresh response did not include an access token');
                 }
